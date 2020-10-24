@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<robot name="gen3" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="$(find kinova_task_space_controller)/urdf/gen3.urdf.xacro" />
+    <xacro:load_arm parent="" dof="7" vision="false" prefix="">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:load_arm>
+</robot>

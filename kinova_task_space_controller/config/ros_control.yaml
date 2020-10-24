@@ -1,0 +1,7 @@
+task_space_controller:
+  type: "kinova_controllers/KinovaTaskSpaceController"
+  controlled_frame: "arm_end_effector"
+  target_pose_topic: "/target_pose"
+  current_pose_topic: "/current_pose"
+  publish_ros: true
+  publish_rate: 10
