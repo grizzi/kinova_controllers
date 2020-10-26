@@ -1,15 +1,44 @@
+# Publish all joint states -----------------------------------
+joint_state_controller:
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50
+
+positions_effort_controller:
+  type: effort_controllers/JointGroupPositionController
+  joints: ["arm_joint_1",
+           "arm_joint_2",
+           "arm_joint_3",
+           "arm_joint_4",
+           "arm_joint_5",
+           "arm_joint_6",
+           "arm_joint_7"]
+  arm_joint_1:
+    pid: { p: 12000, d: 50, i: 0.0, i_clamp: 10000 }
+  arm_joint_2:
+    pid: { p: 30000, d: 100, i: 0.02, i_clamp: 10000 }
+  arm_joint_3:
+    pid: { p: 18000, d: 50, i: 0.01, i_clamp: 1 }
+  arm_joint_4:
+    pid: { p: 18000, d: 70, i: 0.01, i_clamp: 10000 }
+  arm_joint_5:
+    pid: { p: 12000, d: 70, i: 0.01, i_clamp: 1 }
+  arm_joint_6:
+    pid: { p: 7000, d: 50, i: 0.01, i_clamp: 1 }
+  arm_joint_7:
+    pid: { p: 2000, d: 20, i: 0.0, i_clamp: 1 }
+
 kinova_task_space_ctrl_robot:
   type: "kinova_controllers/KinovaTaskSpaceControllerRobot"
   controlled_frame: "arm_end_effector"
   target_pose_topic: "/target_pose"
   current_pose_topic: "/current_pose"
   publish_ros: true
-  publish_rate: 10
+  publish_ros_rate: 10
 
 kinova_task_space_ctrl_sim:
-  type: "kinova_controllers/KinovaTaskSpaceControllerRobot"
+  type: "kinova_controllers/KinovaTaskSpaceControllerSim"
   controlled_frame: "arm_end_effector"
   target_pose_topic: "/target_pose"
   current_pose_topic: "/current_pose"
   publish_ros: true
-  publish_rate: 10
+  publish_ros_rate: 10

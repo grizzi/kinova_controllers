@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+    <arg name="description_file"        default="$(find kinova_task_space_controller)/urdf/gen3_standalone.urdf.xacro"/>
+    <param name="kinova_no_gripper"     command="$(find xacro)/xacro $(arg description_file) simulation:=true"/>
+
+    <include file="$(find kinova_task_space_controller)/launch/gazebo.launch">
+        <arg name="run_gui" value="false"/>
+        <arg name="debug"   value="false"/>
+        <arg name="verbose" value="false"/>
+    </include>
+
+    <rosparam command="load" file="$(find kinova_task_space_controller)/config/ros_control.yaml"/>
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
+          args="joint_state_controller kinova_task_space_ctrl_sim" />
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
+        <param name="publish_frequency" value="100"/>
+        <param name="use_tf_static"     value="true"/>
+        <param name="tf_prefix"         value=""/>
+        <remap from="robot_description" to="kinova_no_gripper"/>
+        <remap from="joint_states"      to="/joint_states"/>
+    </node>
+
+    <!--    Interactive marker to command the end effector-->
+    <node name="interactive_marker_node" pkg="robot_control_ros" type="interactive_marker.py" output="screen">
+        <param name="subscribe_initial_pose"  value="true"/>
+        <param name="initial_pose_topic"      value="/current_pose"/>
+        <param name="frame_id"                value="world"/>
+        <param name="target_pose_topic"       value="/target_pose"/>
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_task_space_controller)/config/config.rviz" output="screen"/>
+
+    <!-- Controller manager gui -->
+    <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
+
+    <!-- Joint state plotting -->
+    <node name="rqt_multiplot" pkg="rqt_multiplot" type="rqt_multiplot"
+          args="--multiplot-config $(find kinova_task_space_controller)/config/rqt_multiplot.xml"
+          output="screen"/>
+
+</launch>

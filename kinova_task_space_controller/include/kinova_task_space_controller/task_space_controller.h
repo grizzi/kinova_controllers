@@ -34,10 +34,7 @@ class KinovaTaskSpaceController : public controller_interface::Controller<Comman
 
   void newTargetCallback(const geometry_msgs::PoseStamped&);
 
-  void starting(const ros::Time&) override;
   void publishRos();
-
-  void control_thread();
   void publish_thread();
 
   void getJointPositions(Eigen::VectorXd& q) const;
@@ -55,8 +52,13 @@ class KinovaTaskSpaceController : public controller_interface::Controller<Comman
   std::vector<hardware_interface::JointStateHandle> state_handles_;
   std::vector<CommandHandle> joint_handles_;
 
-  std::string joint_names_[7] = {"joint1", "joint2", "joint3", "joint4", "joint5",
-                                   "joint6", "joint7"};
+  std::string joint_names_[7] = {"arm_joint_1",
+                                 "arm_joint_2",
+                                 "arm_joint_3",
+                                 "arm_joint_4",
+                                 "arm_joint_5",
+                                 "arm_joint_6",
+                                 "arm_joint_7"};
 
   std::string frame_id_ = "world";
   std::string controlled_frame_;
@@ -74,9 +76,11 @@ class KinovaTaskSpaceController : public controller_interface::Controller<Comman
 
  class KinovaTaskSpaceControllerRobot : public KinovaTaskSpaceController<hardware_interface::KortexCommandInterface, hardware_interface::KortexCommandHandle> {
   virtual void update(const ros::Time&, const ros::Duration& period) override;
+  virtual void starting(const ros::Time& time) override;
 };
 
  class KinovaTaskSpaceControllerSim : public KinovaTaskSpaceController<hardware_interface::EffortJointInterface, hardware_interface::JointHandle> {
   virtual void update(const ros::Time&, const ros::Duration& period) override;
+  virtual void starting(const ros::Time& time) override;
 };
 }

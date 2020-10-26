@@ -53,6 +53,8 @@ bool KinovaTaskSpaceController<I, H>::init(
     return false;
   }
 
+  q_.setZero(7);
+  qd_.setZero(7);
   robot_wrapper = std::make_shared<rc::RobotWrapper>();
   robot_wrapper->initFromXml(robot_description);
   controller = std::make_shared<rc::TaskSpaceController>(robot_wrapper, controlled_frame_);
@@ -81,19 +83,16 @@ void KinovaTaskSpaceController<I, H>::newTargetCallback(const geometry_msgs::Pos
 }
 
 template<class I, class H>
-void KinovaTaskSpaceController<I, H>::starting(const ros::Time& time) {}
-
-template<class I, class H>
-void KinovaTaskSpaceController<I, H>::getJointVelocities(Eigen::VectorXd& q) const {
+void KinovaTaskSpaceController<I, H>::getJointVelocities(Eigen::VectorXd& qd) const {
   for(size_t i=0; i < dof; i++){
-    q(i) = joint_handles_[i].getVelocity();
+    qd(i) = joint_handles_[i].getVelocity();
   }
 }
 
 template<class I, class H>
-void KinovaTaskSpaceController<I, H>::getJointPositions(Eigen::VectorXd& qd) const {
+void KinovaTaskSpaceController<I, H>::getJointPositions(Eigen::VectorXd& q) const {
   for(size_t i=0; i< dof; i++) {
-    qd(i) = joint_handles_[i].getPosition();
+    q(i) = joint_handles_[i].getPosition();
   }
 }
 
@@ -117,6 +116,16 @@ void KinovaTaskSpaceController<I, H>::publish_thread() {
     }
     rate.sleep();
   }
+}
+
+
+void KinovaTaskSpaceControllerRobot::starting(const ros::Time& time) {
+  ROS_INFO("KinovaTaskSpaceControllerRobot initialized");
+}
+
+
+void KinovaTaskSpaceControllerSim::starting(const ros::Time& time) {
+  ROS_INFO("KinovaTaskSpaceControllerSim initialized");
 }
 
 void KinovaTaskSpaceControllerRobot::update(const ros::Time& time, const ros::Duration& period) {

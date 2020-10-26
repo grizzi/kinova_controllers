@@ -7,6 +7,7 @@
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" output="screen">
         <remap from="robot_description" to="kinova_no_gripper"/>
         <remap from="joint_states"      to="/joint_states"/>
+        <param name="use_gui"           value="true"/>
     </node>
 
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
@@ -17,5 +18,5 @@
         <remap from="joint_states"      to="/joint_states"/>
     </node>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_task_space_controller)/config/urdf.rviz" output="screen"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_task_space_controller)/config/config.rviz" output="screen"/>
 </launch>
