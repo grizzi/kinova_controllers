@@ -1,9 +1,0 @@
-<library path="lib/libkinova_task_space_controller">
-    <class name="kinova_controllers/KinovaTaskSpaceController"
-           type="kinova_controllers::TaskSpaceController"
-           base_class_type="controller_interface::ControllerBase">
-        <description>
-            Task space controller for the kinova 7 dof arm
-        </description>
-    </class>
-</library>

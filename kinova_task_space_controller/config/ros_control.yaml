@@ -1,5 +1,13 @@
-task_space_controller:
-  type: "kinova_controllers/KinovaTaskSpaceController"
+kinova_task_space_ctrl_robot:
+  type: "kinova_controllers/KinovaTaskSpaceControllerRobot"
+  controlled_frame: "arm_end_effector"
+  target_pose_topic: "/target_pose"
+  current_pose_topic: "/current_pose"
+  publish_ros: true
+  publish_rate: 10
+
+kinova_task_space_ctrl_sim:
+  type: "kinova_controllers/KinovaTaskSpaceControllerRobot"
   controlled_frame: "arm_end_effector"
   target_pose_topic: "/target_pose"
   current_pose_topic: "/current_pose"

@@ -18,12 +18,14 @@
 
 namespace kinova_controllers {
 
-KinovaTaskSpaceController::~KinovaTaskSpaceController(){
+template<class I, class H>
+KinovaTaskSpaceController<I, H>::~KinovaTaskSpaceController(){
   if (publish_thread_.joinable()) publish_thread_.join();
 }
 
-bool KinovaTaskSpaceController::init(
-    hardware_interface::KortexCommandInterface* robot_hw,
+template<class I, class H>
+bool KinovaTaskSpaceController<I, H>::init(
+    I* robot_hw,
     ros::NodeHandle& node_handle,
     ros::NodeHandle& ctrl_handle) {
   std::string robot_description;
@@ -70,41 +72,33 @@ bool KinovaTaskSpaceController::init(
   return true;
 }
 
-void KinovaTaskSpaceController::newTargetCallback(const geometry_msgs::PoseStamped& msg) {
+template<class I, class H>
+void KinovaTaskSpaceController<I, H>::newTargetCallback(const geometry_msgs::PoseStamped& msg) {
   Eigen::Vector3d translation(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
   Eigen::Quaterniond rotation(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z);
   target_pose_ = pin::SE3(rotation, translation);
   controller->setTaskTarget(target_pose_);
 }
 
-void KinovaTaskSpaceController::starting(const ros::Time& time) {
-  for (size_t i=0; i < dof; i++) {
-    joint_handles_[i].setMode(hardware_interface::KortexControlMode::EFFORT);
-  }
-}
+template<class I, class H>
+void KinovaTaskSpaceController<I, H>::starting(const ros::Time& time) {}
 
-void KinovaTaskSpaceController::update(const ros::Time& time, const ros::Duration& period) {
-  getJointPositions(q_);
-  getJointVelocities(qd_);
-  cmd_ = controller->advance(q_, qd_);
-  for (size_t i=0; i < dof; i++) {
-    joint_handles_[i].setEffortCommand(cmd_[i]);
-  }
-}
-
-void KinovaTaskSpaceController::getJointVelocities(Eigen::VectorXd& q) const {
+template<class I, class H>
+void KinovaTaskSpaceController<I, H>::getJointVelocities(Eigen::VectorXd& q) const {
   for(size_t i=0; i < dof; i++){
     q(i) = joint_handles_[i].getVelocity();
   }
 }
 
-void KinovaTaskSpaceController::getJointPositions(Eigen::VectorXd& qd) const {
+template<class I, class H>
+void KinovaTaskSpaceController<I, H>::getJointPositions(Eigen::VectorXd& qd) const {
   for(size_t i=0; i< dof; i++) {
     qd(i) = joint_handles_[i].getPosition();
   }
 }
 
-void KinovaTaskSpaceController::publish_thread() {
+template<class I, class H>
+void KinovaTaskSpaceController<I, H>::publish_thread() {
   ros::Rate rate(publish_ros_rate_);
   while (ros::ok()){
     if (pose_publisher_->trylock()){
@@ -125,8 +119,29 @@ void KinovaTaskSpaceController::publish_thread() {
   }
 }
 
+void KinovaTaskSpaceControllerRobot::update(const ros::Time& time, const ros::Duration& period) {
+  getJointPositions(q_);
+  getJointVelocities(qd_);
+  cmd_ = controller->advance(q_, qd_);
+  for (size_t i=0; i < dof; i++) {
+    joint_handles_[i].setEffortCommand(cmd_[i]);
+    joint_handles_[i].setMode(hardware_interface::KortexControlMode::EFFORT);
+  }
 }
 
-PLUGINLIB_EXPORT_CLASS(kinova_controllers::KinovaTaskSpaceController, controller_interface::ControllerBase)
+void KinovaTaskSpaceControllerSim::update(const ros::Time& time, const ros::Duration& period) {
+  getJointPositions(q_);
+  getJointVelocities(qd_);
+  cmd_ = controller->advance(q_, qd_);
+  for (size_t i=0; i < dof; i++) {
+    joint_handles_[i].setCommand(cmd_[i]);
+  }
+}
 
+
+
+}
+
+PLUGINLIB_EXPORT_CLASS(kinova_controllers::KinovaTaskSpaceControllerRobot, controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(kinova_controllers::KinovaTaskSpaceControllerSim, controller_interface::ControllerBase)
 

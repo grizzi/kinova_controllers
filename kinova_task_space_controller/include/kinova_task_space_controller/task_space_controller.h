@@ -16,24 +16,25 @@
 #include <kortex_driver/non-generated/kortex_command_interface.h>
 #include <hardware_interface/robot_hw.h>
 #include <hardware_interface/joint_state_interface.h>
+#include <hardware_interface/joint_command_interface.h>
 #include <controller_interface/controller.h>
 
 #include <interactive_markers/interactive_marker_server.h>
 
 namespace kinova_controllers {
 
-class KinovaTaskSpaceController : public controller_interface::Controller<hardware_interface::KortexCommandInterface> {
+template<class CommandInterface, class CommandHandle>
+class KinovaTaskSpaceController : public controller_interface::Controller<CommandInterface> {
  public:
   ~KinovaTaskSpaceController();
 
-  bool init(hardware_interface::KortexCommandInterface* robot_hw,
+  bool init(CommandInterface* robot_hw,
       ros::NodeHandle& node_handle,
       ros::NodeHandle& ctrl_handle) override;
 
   void newTargetCallback(const geometry_msgs::PoseStamped&);
 
   void starting(const ros::Time&) override;
-  void update(const ros::Time&, const ros::Duration& period) override;
   void publishRos();
 
   void control_thread();
@@ -52,7 +53,7 @@ class KinovaTaskSpaceController : public controller_interface::Controller<hardwa
   std::shared_ptr<rc::TaskSpaceController> controller;
 
   std::vector<hardware_interface::JointStateHandle> state_handles_;
-  std::vector<hardware_interface::KortexCommandHandle> joint_handles_;
+  std::vector<CommandHandle> joint_handles_;
 
   std::string joint_names_[7] = {"joint1", "joint2", "joint3", "joint4", "joint5",
                                    "joint6", "joint7"};
@@ -71,4 +72,11 @@ class KinovaTaskSpaceController : public controller_interface::Controller<hardwa
 
 };
 
+ class KinovaTaskSpaceControllerRobot : public KinovaTaskSpaceController<hardware_interface::KortexCommandInterface, hardware_interface::KortexCommandHandle> {
+  virtual void update(const ros::Time&, const ros::Duration& period) override;
+};
+
+ class KinovaTaskSpaceControllerSim : public KinovaTaskSpaceController<hardware_interface::EffortJointInterface, hardware_interface::JointHandle> {
+  virtual void update(const ros::Time&, const ros::Duration& period) override;
+};
 }
