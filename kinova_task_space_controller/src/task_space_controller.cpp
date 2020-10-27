@@ -9,6 +9,7 @@
 #include "kinova_task_space_controller/task_space_controller.h"
 
 #include <cmath>
+#include <chrono>
 #include <ros/ros.h>
 #include <Eigen/Dense>
 
@@ -28,6 +29,7 @@ bool KinovaTaskSpaceController<I, H>::init(
     I* robot_hw,
     ros::NodeHandle& node_handle,
     ros::NodeHandle& ctrl_handle) {
+  started_ = false;
   std::string robot_description;
   if (!node_handle.getParam("/kinova_no_gripper", robot_description)) {
     ROS_ERROR_STREAM("Can't read robot description.");
@@ -35,11 +37,6 @@ bool KinovaTaskSpaceController<I, H>::init(
   }
   if (!ctrl_handle.getParam("controlled_frame", controlled_frame_)) {
     ROS_ERROR_STREAM("Set the controlled_frame parameter.");
-    return false;
-  }
-
-  if (!ctrl_handle.getParam("publish_ros", publish_ros_)) {
-    ROS_ERROR_STREAM("Set the publish_ros parameter.");
     return false;
   }
 
@@ -58,6 +55,9 @@ bool KinovaTaskSpaceController<I, H>::init(
   robot_wrapper = std::make_shared<rc::RobotWrapper>();
   robot_wrapper->initFromXml(robot_description);
   controller = std::make_shared<rc::TaskSpaceController>(robot_wrapper, controlled_frame_);
+
+  controller->setKp(Eigen::Matrix<double, 6, 1>::Ones()*100.0);
+  controller->setKd(Eigen::Matrix<double, 6, 1>::Ones()*1.0);
 
   for (auto& joint_name : joint_names_) {
     joint_handles_.push_back(robot_hw->getHandle(joint_name));
@@ -100,7 +100,7 @@ template<class I, class H>
 void KinovaTaskSpaceController<I, H>::publish_thread() {
   ros::Rate rate(publish_ros_rate_);
   while (ros::ok()){
-    if (pose_publisher_->trylock()){
+    if (started_ && pose_publisher_->trylock()){
       current_pose_ = robot_wrapper->getFramePlacement(controlled_frame_);
       pose_publisher_->msg_.header.stamp = ros::Time::now();
       pose_publisher_->msg_.header.frame_id = frame_id_;
@@ -120,12 +120,25 @@ void KinovaTaskSpaceController<I, H>::publish_thread() {
 
 
 void KinovaTaskSpaceControllerRobot::starting(const ros::Time& time) {
-  ROS_INFO("KinovaTaskSpaceControllerRobot initialized");
+  for (size_t i=0; i < dof; i++) {
+    joint_handles_[i].setMode(hardware_interface::KortexControlMode::EFFORT);
+  }
+  // init state
+  getJointPositions(q_);
+  getJointVelocities(qd_);
+  robot_wrapper->updateState(q_, qd_);
+
+  started_ = true;
+  ROS_INFO("KinovaTaskSpaceControllerRobot started");
 }
 
-
 void KinovaTaskSpaceControllerSim::starting(const ros::Time& time) {
-  ROS_INFO("KinovaTaskSpaceControllerSim initialized");
+  getJointPositions(q_);
+  getJointVelocities(qd_);
+  robot_wrapper->updateState(q_, qd_);
+
+  started_ = true;
+  ROS_INFO("KinovaTaskSpaceControllerSim started");
 }
 
 void KinovaTaskSpaceControllerRobot::update(const ros::Time& time, const ros::Duration& period) {
@@ -139,12 +152,15 @@ void KinovaTaskSpaceControllerRobot::update(const ros::Time& time, const ros::Du
 }
 
 void KinovaTaskSpaceControllerSim::update(const ros::Time& time, const ros::Duration& period) {
+  auto start = std::chrono::steady_clock::now();
   getJointPositions(q_);
   getJointVelocities(qd_);
   cmd_ = controller->advance(q_, qd_);
   for (size_t i=0; i < dof; i++) {
     joint_handles_[i].setCommand(cmd_[i]);
   }
+  auto end = std::chrono::steady_clock::now();
+  double dt = std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count()/1e6;
 }
 
 

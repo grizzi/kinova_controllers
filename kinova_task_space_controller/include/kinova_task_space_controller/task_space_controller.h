@@ -67,6 +67,7 @@ class KinovaTaskSpaceController : public controller_interface::Controller<Comman
 
   ros::Subscriber target_subscriber_;
 
+  std::atomic_bool started_;
   bool publish_ros_;
   double publish_ros_rate_;
   std::thread publish_thread_;
@@ -75,12 +76,14 @@ class KinovaTaskSpaceController : public controller_interface::Controller<Comman
 };
 
  class KinovaTaskSpaceControllerRobot : public KinovaTaskSpaceController<hardware_interface::KortexCommandInterface, hardware_interface::KortexCommandHandle> {
-  virtual void update(const ros::Time&, const ros::Duration& period) override;
-  virtual void starting(const ros::Time& time) override;
+  public:
+   void update(const ros::Time&, const ros::Duration& period) override;
+   void starting(const ros::Time& time) override;
 };
 
  class KinovaTaskSpaceControllerSim : public KinovaTaskSpaceController<hardware_interface::EffortJointInterface, hardware_interface::JointHandle> {
-  virtual void update(const ros::Time&, const ros::Duration& period) override;
-  virtual void starting(const ros::Time& time) override;
+  public:
+   void update(const ros::Time&, const ros::Duration& period) override;
+   void starting(const ros::Time& time) override;
 };
 }
