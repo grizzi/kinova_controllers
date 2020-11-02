@@ -19,7 +19,7 @@ namespace kinova_controllers {
  void update(const ros::Time& time, const ros::Duration& period) override {
    updateCommand();
    for (size_t i=0; i < nr_chain_joints_; i++) {
-     joint_handles_[i].setCommand(command_[i]);
+     joint_handles_[i].setEffortCommand(command_[i]);
      joint_handles_[i].setMode(hardware_interface::KortexControlMode::EFFORT);
    }
  }
