@@ -12,7 +12,7 @@
 
     <rosparam command="load" file="$(find kinova_task_space_controller)/config/ros_control.yaml"/>
     <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
-          args="joint_state_controller kinova_task_space_ctrl_sim" />
+          args="joint_state_controller kinova_ik_ctrl_sim" />
 
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
         <param name="publish_frequency" value="100"/>

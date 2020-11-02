@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>kinova_controllers</name>
+    <version>0.1.0</version>
+    <description>Package containing custom description used by the kinova controllers</description>
+    <maintainer email="grizzi@mavt.ethz.ch">Giuseppe Rizzi</maintainer>
+    <license>BSD</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <exec_depend>kinova_description_for_controllers</exec_depend>
+    <exec_depend>kinova_ik_controller</exec_depend>
+    <exec_depend>kinova_task_space_controller</exec_depend>
+</package>

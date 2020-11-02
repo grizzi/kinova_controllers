@@ -44,12 +44,12 @@
     <arg name="prefix"  value="arm_"/>
     <arg name="inital_config" default="
      -J $(arg prefix)joint_1 0.0
-     -J $(arg prefix)joint_2 0.0
-     -J $(arg prefix)joint_3 0.0
-     -J $(arg prefix)joint_4 0.0
+     -J $(arg prefix)joint_2 0.26
+     -J $(arg prefix)joint_3 3.14
+     -J $(arg prefix)joint_4 -2.27
      -J $(arg prefix)joint_5 0.0
-     -J $(arg prefix)joint_6 0.0
-     -J $(arg prefix)joint_7 0.0"/>
+     -J $(arg prefix)joint_6 0.96
+     -J $(arg prefix)joint_7 1.57"/>
     <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model"
           args="-param /robot_description -urdf $(arg inital_config) -model kinova"
           output="screen"/>
