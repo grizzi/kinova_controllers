@@ -8,18 +8,12 @@
 
     <buildtool_depend>catkin</buildtool_depend>
     <depend>robot_control_ros</depend>
-    <depend>eigen</depend>
     <depend>kortex_driver</depend>
-    <depend>kortex_description</depend>
     <depend>controller_interface</depend>
     <depend>hardware_interface</depend>
     <depend>pluginlib</depend>
     <depend>roscpp</depend>
-    <depend>pinocchio</depend>
-    <depend>realtime_tools</depend>
-    <depend>interactive_markers</depend>
-    <depend>visualization_msgs</depend>
-
+    
     <export>
         <controller_interface plugin="${prefix}/plugins.xml"/>
     </export>

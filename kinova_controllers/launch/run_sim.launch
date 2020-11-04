@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-    <arg name="description_file"        default="$(find kinova_task_space_controller)/urdf/gen3_standalone.urdf.xacro"/>
+    <arg name="description_file"        default="$(find kinova_description_for_controllers)/urdf/gen3_standalone.urdf.xacro"/>
     <param name="kinova_no_gripper"     command="$(find xacro)/xacro $(arg description_file) simulation:=true"/>
 
-    <include file="$(find kinova_task_space_controller)/launch/gazebo.launch">
+    <include file="$(find kinova_controllers)/launch/gazebo.launch">
         <arg name="run_gui" value="false"/>
         <arg name="debug"   value="false"/>
         <arg name="verbose" value="false"/>
+        <arg name="paused"  value="true"/>
     </include>
 
-    <rosparam command="load" file="$(find kinova_task_space_controller)/config/ros_control.yaml"/>
+    <rosparam command="load" file="$(find kinova_controllers)/config/ros_control.yaml"/>
     <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
-          args="joint_state_controller kinova_ik_ctrl_sim" />
+          args="joint_state_controller ik_kinova_sim" />
 
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
         <param name="publish_frequency" value="100"/>
@@ -22,6 +23,9 @@
         <remap from="joint_states"      to="/joint_states"/>
     </node>
 
+    <node name="unpause_gazebo_node" pkg="robot_control_ros" type="unpause_gazebo.py" output="screen"
+          args="--delay 5.0" />
+
     <!--    Interactive marker to command the end effector-->
     <node name="interactive_marker_node" pkg="robot_control_ros" type="interactive_marker.py" output="screen">
         <param name="subscribe_initial_pose"  value="true"/>
@@ -30,14 +34,14 @@
         <param name="target_pose_topic"       value="/target_pose"/>
     </node>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_task_space_controller)/config/config.rviz" output="screen"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_controllers)/config/config.rviz" output="screen"/>
 
     <!-- Controller manager gui -->
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
 
     <!-- Joint state plotting -->
     <node name="rqt_multiplot" pkg="rqt_multiplot" type="rqt_multiplot"
-          args="--multiplot-config $(find kinova_task_space_controller)/config/rqt_multiplot.xml"
+          args="--multiplot-config $(find kinova_controllers)/config/rqt_multiplot.xml"
           output="screen"/>
 
 </launch>

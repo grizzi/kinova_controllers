@@ -2,18 +2,14 @@ cmake_minimum_required(VERSION 3.10)
 project(kinova_ik_controller)
 
 find_package(Eigen3 3.3 REQUIRED)
-find_package(pinocchio REQUIRED)
 
 set(PROJECT_DEPENDENCIES
         robot_control_ros
         controller_interface
         kortex_driver
-        kortex_description
         hardware_interface
         pluginlib
         roscpp
-        realtime_tools
-        interactive_markers
         )
 
 find_package(catkin REQUIRED COMPONENTS ${PROJECT_DEPENDENCIES})
@@ -24,8 +20,8 @@ catkin_package(
         CATKIN_DEPENDS ${PROJECT_DEPENDENCIES}
 )
 
-set(DEPENDENCY_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} ${PINOCCHIO_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
-set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${PINOCCHIO_LIBRARIES})
+set(DEPENDENCY_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES})
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 

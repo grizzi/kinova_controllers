@@ -76,8 +76,8 @@
             <axis
                     xyz="0 0 1" />
             <limit
-                    lower="-20"
-                    upper="20"
+                    lower="-6.28"
+                    upper="6.28"
                     effort="39"
                     velocity="1.3963" />
         </joint>
@@ -148,8 +148,8 @@
             <axis
                     xyz="0 0 1" />
             <limit
-                    lower="-20"
-                    upper="20"
+                    lower="-6.28"
+                    upper="6.28"
                     effort="39"
                     velocity="1.3963" />
         </joint>
@@ -220,8 +220,8 @@
             <axis
                     xyz="0 0 1" />
             <limit
-                    lower="-20"
-                    upper="20"
+                    lower="-6.28"
+                    upper="6.28"
                     effort="9"
                     velocity="1.2218" />
         </joint>
@@ -318,8 +318,8 @@
             <axis
                     xyz="0 0 1" />
             <limit
-                    lower="-20"
-                    upper="20"
+                    lower="-6.28"
+                    upper="6.28"
                     effort="9"
                     velocity="1.2218" />
         </joint>
@@ -357,13 +357,12 @@
         </xacro:if>
 
         <xacro:if value="${simulation}">
-            <xacro:include filename="$(find kinova_task_space_controller)/urdf/transmission.urdf.xacro" />
+            <xacro:include filename="$(find kinova_description_for_controllers)/urdf/transmission.urdf.xacro" />
             <xacro:load_gazebo_arm_transmissions prefix="${prefix}"/>
 
             <gazebo>
                 <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
                     <legacyModeNS>true</legacyModeNS>
-                    <!--robotParam>kinova_no_finger</robotParam-->
                 </plugin>
             </gazebo>
         </xacro:if>

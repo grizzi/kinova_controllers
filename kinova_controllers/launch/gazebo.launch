@@ -21,7 +21,7 @@
     <arg name="run_gui"                               default="true"/>
 
     <!-- Path of robot description -->
-    <arg name="description_file"            default="$(find kinova_task_space_controller)/urdf/gen3_standalone.urdf.xacro"/>
+    <arg name="description_file"            default="$(find kinova_description_for_controllers)/urdf/gen3_standalone.urdf.xacro"/>
 
     <!-- Load robot description for gazebo -->
     <param name="robot_description" command="$(find xacro)/xacro.py $(arg description_file) simulation:=true"/>
@@ -46,7 +46,7 @@
      -J $(arg prefix)joint_1 0.0
      -J $(arg prefix)joint_2 0.26
      -J $(arg prefix)joint_3 3.14
-     -J $(arg prefix)joint_4 -2.27
+     -J $(arg prefix)joint_4 -2.00
      -J $(arg prefix)joint_5 0.0
      -J $(arg prefix)joint_6 0.96
      -J $(arg prefix)joint_7 1.57"/>

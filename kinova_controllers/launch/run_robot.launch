@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-    <arg name="description_file"        default="$(find kinova_task_space_controller)/urdf/gen3_standalone.urdf.xacro"/>
+    <arg name="description_file"        default="$(find kinova_description_for_controllers)/urdf/gen3_standalone.urdf.xacro"/>
     <param name="kinova_no_gripper"     command="$(find xacro)/xacro $(arg description_file) simulation:=true"/>
 
-    <rosparam command="load" file="$(find kinova_task_space_controller)/config/ros_control.yaml" ns="my_gen3" />
+    <rosparam command="load" file="$(find kinova_controllers)/config/ros_control.yaml" ns="my_gen3" />
 
     <!--    Interactive marker to command the end effector-->
     <node name="interactive_marker_node" pkg="robot_control_ros" type="interactive_marker.py" output="screen">
@@ -19,7 +19,7 @@
 
     <!-- Joint state plotting -->
     <node name="rqt_multiplot" pkg="rqt_multiplot" type="rqt_multiplot"
-          args="--multiplot-config $(find kinova_task_space_controller)/config/rqt_multiplot.xml"
+          args="--multiplot-config $(find kinova_controllers)/config/rqt_multiplot.xml"
           output="screen"/>
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_base_broadcaster"

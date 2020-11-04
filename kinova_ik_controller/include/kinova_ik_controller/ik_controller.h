@@ -9,6 +9,7 @@
 
 #include <robot_control_ros/ik_controller.h>
 #include <kortex_driver/non-generated/kortex_command_interface.h>
+#include <controller_interface/multi_interface_controller.h>
 
 namespace kinova_controllers {
  class IKControllerKinova : public rc_ros::IKControllerBase<hardware_interface::JointStateInterface,
@@ -16,14 +17,10 @@ namespace kinova_controllers {
                                                             hardware_interface::KortexCommandInterface,
                                                             hardware_interface::KortexCommandHandle> {
 
- void update(const ros::Time& time, const ros::Duration& period) override {
-   updateCommand();
-   for (size_t i=0; i < nr_chain_joints_; i++) {
-     joint_handles_[i].setEffortCommand(command_[i]);
-     joint_handles_[i].setMode(hardware_interface::KortexControlMode::EFFORT);
-   }
- }
+ void update(const ros::Time& time, const ros::Duration& period) override;
+ void stopping(const ros::Time& /*time*/) override;
 
-};
+ };
 
 }
+
