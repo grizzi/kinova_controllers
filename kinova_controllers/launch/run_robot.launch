@@ -18,15 +18,15 @@
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
 
     <!-- Joint state plotting -->
-    <node name="rqt_multiplot" pkg="rqt_multiplot" type="joint_positions_plot"
+    <node name="joint_positions_plot" pkg="rqt_multiplot" type="rqt_multiplot"
           args="--multiplot-config $(find kinova_controllers)/config/rqt_joint_positions.xml"
           output="screen"/>
 
-   <node name="rqt_multiplot" pkg="rqt_multiplot" type="joint_velocities_plot"
+   <node name="joint_velocities_plot" pkg="rqt_multiplot" type="rqt_multiplot"
           args="--multiplot-config $(find kinova_controllers)/config/rqt_joint_velocities.xml"
           output="screen"/>
     
-    <node name="rqt_multiplot" pkg="rqt_multiplot" type="joint_efforts_plot"
+    <node name="joint_efforts_plot" pkg="rqt_multiplot" type="rqt_multiplot"
           args="--multiplot-config $(find kinova_controllers)/config/rqt_joint_efforts.xml"
           output="screen"/>
 

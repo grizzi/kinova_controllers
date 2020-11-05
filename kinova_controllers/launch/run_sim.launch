@@ -24,7 +24,7 @@
     </node>
 
     <node name="unpause_gazebo_node" pkg="robot_control_ros" type="unpause_gazebo.py" output="screen"
-          args="--delay 5.0" />
+          args="--delay 10.0" />
 
     <!--    Interactive marker to command the end effector-->
     <node name="interactive_marker_node" pkg="robot_control_ros" type="interactive_marker.py" output="screen">
@@ -39,9 +39,5 @@
     <!-- Controller manager gui -->
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
 
-    <!-- Joint state plotting -->
-    <node name="rqt_multiplot" pkg="rqt_multiplot" type="rqt_multiplot"
-          args="--multiplot-config $(find kinova_controllers)/config/rqt_multiplot.xml"
-          output="screen"/>
 
 </launch>

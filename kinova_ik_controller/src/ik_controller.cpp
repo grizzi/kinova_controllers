@@ -20,7 +20,8 @@ template class rc_ros::IKControllerBase<hardware_interface::JointStateInterface,
 void IKControllerKinova::update(const ros::Time& time, const ros::Duration& period) {
   updateCommand();
   for (size_t i=0; i < nr_chain_joints_; i++) {
-    joint_handles_[i].setEffortCommand(command_[i]);
+    joint_handles_[i].setEffortCommand(eff_command_[i]);
+    joint_handles_[i].setPositionCommand(pos_command_[i]);
     joint_handles_[i].setMode(hardware_interface::KortexControlMode::EFFORT);
   }
 }
