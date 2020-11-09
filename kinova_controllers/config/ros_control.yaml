@@ -89,7 +89,12 @@ ik_kinova_sim:
   p_gains: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
   d_gains: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
   default_configuration: [0.0, 0.26, 3.14, -2.27, 0.0, 0.96, 1.57]
-  lower_limits: [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23, -6.28]
-  upper_limits: [6.28, 2.41, 6.28, 2.66, 6.28, 2.23, 6.28]
+  lower_limits: [-6.28, -2.323, -6.28, -2.573, -6.28, -2.143, -6.28]
+  upper_limits: [6.28, 2.323, 6.28, 2.573, 6.28, 2.143, 6.28]
   root_link: arm_base_link
   end_effector_link: arm_end_effector_link
+
+  # Original true limits. Using a more conservative bound to avoid
+  # dangerous configuration (+- 3 deg ~ 0.087)
+  #lower_limits: [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23, -6.28]
+  #upper_limits: [6.28, 2.41, 6.28, 2.66, 6.28, 2.23, 6.28]
