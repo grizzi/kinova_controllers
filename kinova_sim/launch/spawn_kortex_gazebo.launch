@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
     <!-- Arguments -->
@@ -23,6 +24,9 @@
     <arg name="robot_name" default="my_$(arg arm)"/>
     <arg name="prefix" default=""/>
     <arg name="cyclic_data_publish_rate" default="40"/> <!--Hz-->
+
+    <!-- Which object to spawn (check robot_control_assets/assets/objects) -->
+    <arg name="object"  default=""/>
 
     <!-- Gazebo parameters -->
     <arg name="use_sim_time" default="true"/>
@@ -129,7 +133,17 @@
         </node>
     </group>
 
+    <include file="$(find robot_control_assets)/launch/load_object.launch" unless="$(eval not arg('object'))">
+        <arg name="object"  value="$(arg object)"/>
+        <arg name="x"       value="1.0"/>
+        <arg name="y"       value="0.0"/>
+        <arg name="z"       value="0.5"/>
+    </include>
+    
     <!-- Start RViz -->
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_sim)/config/config.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_sim)/config/config.rviz" if="$(eval arg('object')=='')"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_sim)/config/$(arg object)_config.rviz" unless="$(eval arg('object')=='')"/>
+
+
 
 </launch>
