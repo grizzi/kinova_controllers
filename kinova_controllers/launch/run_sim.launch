@@ -3,8 +3,9 @@
 
 
     <arg name="robot_name"  value="my_gen3"/>
-    <arg name="prefix"      value="arm_"/>
-    <arg name="gripper"     value="robotiq_2f_85"/>
+    <arg name="prefix"      default="arm_"/>
+    <arg name="gripper"     default="robotiq_2f_85"/>
+    <arg name="object"      default=""/>
 
     <!-- Load additional custom controllers -->
     <group ns="$(arg robot_name)">
@@ -13,12 +14,12 @@
               args="ik_kinova_sim_gripper --stopped"/>
     </group>
 
-
     <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
         <arg name="robot_name"  value="$(arg robot_name)"/>
         <arg name="prefix"      value="$(arg prefix)"/>
         <arg name="gripper"     value="$(arg gripper)"/>
         <arg name="gazebo_gui"  value="false"/>
+        <arg name="object"      value="$(arg object)"/>
     </include>
 
     <!-- Controller manager gui -->
