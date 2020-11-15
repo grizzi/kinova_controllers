@@ -6,6 +6,7 @@
     <arg name="prefix"      default="arm_"/>
     <arg name="gripper"     default="robotiq_2f_85"/>
     <arg name="object"      default=""/>
+    <arg name="debug"       default="false"/>
 
     <!-- Load additional custom controllers -->
     <group ns="$(arg robot_name)">
@@ -20,6 +21,7 @@
         <arg name="gripper"     value="$(arg gripper)"/>
         <arg name="gazebo_gui"  value="false"/>
         <arg name="object"      value="$(arg object)"/>
+        <arg name="debug"       value="$(arg debug)"/>
     </include>
 
     <!-- Controller manager gui -->
