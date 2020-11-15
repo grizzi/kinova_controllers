@@ -10,4 +10,5 @@
     <exec_depend>kortex_gazebo</exec_depend>
     <exec_depend>kortex_description</exec_depend>
     <exec_depend>kortex_control</exec_depend>
+    <exec_depend>gen3_robotiq_2f_85_move_it_config</exec_depend>
 </package>
