@@ -1,0 +1,58 @@
+# Config file for the combined mission
+# Namespaces mirror (optionally) the state for better readability
+
+home_robot:
+  key: no_params
+
+reach_detection_hotspot:
+  goal_pose_topic: /move_base/goal
+  base_pose_topic: /base_pose_measured
+  roco_controller: MpcTrackLocalPlan
+  controller_manager_namespace: /smb_highlevel_controller
+  timeout: 10.0
+  tolerance_m: 0.10
+  tolerance_deg: 10
+  nav_goal_service_name: /piloting/get_nav_goal
+
+valve_detection:
+  detection_service_name : /piloting/detect_valve
+  valve_radius: 0.05
+  valve_frame: valve
+  reference_frame: world
+  detect_from_tf: true
+
+viewpoint_visitor:
+  joints_configurations:
+    - [ 0.00, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
+    - [-1.57, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
+    - [ 1.57, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
+
+open_gripper:
+  position: 1.0
+  max_effort: 100
+  tolerance: 0.01
+  timeout: 10.0
+  gripper_action_name: /gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
+
+pre_grasp:
+  controller_name: ik_kinova_sim
+  manager_namespace: /my_gen3
+  whitelist: []
+  pose_topic_name: /target_pose
+  pre_grasp_vertical_offset: 0.0
+
+close_gripper:
+  position: 0.2
+  max_effort: 100
+  tolerance: 0.01
+  timeout: 10.0
+  gripper_action_name: /gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
+
+manipulate_valve:
+  controller_name: kinova_ik_controller
+  manager_namespace: /my_gen3
+  whitelist: []
+  theta_max: 3.14
+  end_effector_frame: arm_tool_frame
+  reference_frame: arm_base_link
+  increment_dt: 0.1

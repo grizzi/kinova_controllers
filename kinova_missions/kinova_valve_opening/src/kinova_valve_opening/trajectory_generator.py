@@ -195,8 +195,8 @@ class ValveTrajectoryGenerator(object):
     def run(self, dt, theta_max):
         rate = rospy.Rate(1/dt)
         self.reset_grasp_pose()
-        while self.theta < theta_max and not rospy.is_shutdown():
-            pass
+        while self.theta_desired < theta_max and not rospy.is_shutdown():
+
             # adapt velocity based on the current tracking error
             self.adapt_velocity()
 
@@ -206,6 +206,7 @@ class ValveTrajectoryGenerator(object):
             # publish to controller
             self.target_pose_pub.publish(target_pose)
             rate.sleep()
+        return True
 
 
 if __name__ == "__main__":

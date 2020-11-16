@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>kinova_valve_opening</name>
+    <version>0.1.0</version>
+    <description>kinova_valve_opening</description>
+    <maintainer email="grizzi@mavt.ethz.ch">Giuseppe Rizzi</maintainer>
+    <license>BSD</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <exec_depend>smb_mission_planner</exec_depend>
+</package>

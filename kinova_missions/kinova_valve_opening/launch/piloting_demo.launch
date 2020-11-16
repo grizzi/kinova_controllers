@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="enable_viewer"           default="true"/>
+  <arg name="description_for_moveit"  default="robot_description"/>
+  <arg name="mock_modules"            default="false"/>
+  <arg name="arm_only"                default="false"/>
+
+  <!-- Remap description for moveit commander -->
+  <param name="/moveit_planner/description_name" value="$(arg description_for_moveit)"/>
+
+  <!--   Mock modules to test state machine without sim -->
+  <group if="$(arg mock_modules)">
+    <param name="/moveit_planner/fake_execution"   value="true"/>
+    <include file="$(find kinova_valve_opening)/launch/piloting_mock_modules.launch"/>
+  </group>
+
+  <!--    State dependent parameters-->
+  <rosparam command="load" file="$(find kinova_valve_opening)/config/mission.yaml" unless="$(arg arm_only)"/>
+  <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_arm_only.yaml" if="$(arg arm_only)"/>
+
+  <!--    State machine -->
+  <node pkg="kinova_valve_opening" type="piloting_demo.py"  name="piloting_demo" output="screen"/>
+
+  <!--    Smach viewer -->
+  <group if="$(arg enable_viewer)">
+    <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen" />
+  </group>
+
+</launch>
