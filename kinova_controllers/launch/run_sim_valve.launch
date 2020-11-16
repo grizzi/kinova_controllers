@@ -11,6 +11,7 @@
         <arg name="x"       value="0.5"/>
         <arg name="y"       value="0.0"/>
         <arg name="z"       value="0.1"/>
+        <arg name="roll"    value="3.14"/>
     </include>
 
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_sim)/config/valve_config.rviz"/>
