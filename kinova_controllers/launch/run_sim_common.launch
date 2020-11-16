@@ -5,8 +5,8 @@
     <arg name="robot_name"  value="my_gen3"/>
     <arg name="prefix"      default="arm_"/>
     <arg name="gripper"     default="robotiq_2f_85"/>
-    <arg name="object"      default=""/>
     <arg name="debug"       default="false"/>
+    <arg name="run_rviz"     default="true"/>
 
     <!-- Load additional custom controllers -->
     <group ns="$(arg robot_name)">
@@ -20,7 +20,6 @@
         <arg name="prefix"      value="$(arg prefix)"/>
         <arg name="gripper"     value="$(arg gripper)"/>
         <arg name="gazebo_gui"  value="false"/>
-        <arg name="object"      value="$(arg object)"/>
         <arg name="debug"       value="$(arg debug)"/>
     </include>
 
@@ -28,4 +27,6 @@
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
 
 
+    <!-- Start RViz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_sim)/config/config.rviz" if="$(arg run_rviz)"/>
 </launch>
