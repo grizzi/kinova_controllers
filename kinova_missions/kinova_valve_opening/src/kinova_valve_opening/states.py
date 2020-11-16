@@ -29,6 +29,7 @@ class ValveDetectionState(ObjectDetection):
         rospy.loginfo("Calling detection service with name: {}".format(self.detection_service_name))
 
     def execute(self, ud):
+        rospy.loginfo("Valve frame: {}, valve radius: {}".format(self.valve_frame, self.valve_radius))
         try:
             if self.detect_from_tf:
                 tf_buffer = tf2_ros.Buffer()

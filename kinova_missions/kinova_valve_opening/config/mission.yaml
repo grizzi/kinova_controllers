@@ -16,7 +16,7 @@ reach_detection_hotspot:
 
 valve_detection:
   detection_service_name : /piloting/detect_valve
-  valve_radius: 0.05
+  valve_radius: $(arg valve_radius)
   valve_frame: valve
   reference_frame: world
   detect_from_tf: true
@@ -49,7 +49,7 @@ close_gripper:
   gripper_action_name: /gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
 manipulate_valve:
-  controller_name: kinova_ik_controller
+  controller_name: $(arg manipulation_controller)
   manager_namespace: /my_gen3
   whitelist: []
   theta_max: 3.14
