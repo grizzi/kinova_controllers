@@ -2,12 +2,16 @@
 
 import rospy
 import actionlib
-from geometry_msgs.msg import PoseStamped
+import tf2_ros
+import tf_conversions
+import tf2_geometry_msgs
+from geometry_msgs.msg import PoseStamped, TransformStamped
 from rocoma_msgs.srv import SwitchControllerResponse, SwitchController
 from control_msgs.msg import GripperCommandAction, GripperCommandResult
-from controller_manager_msgs.srv import SwitchController as SwitchRosController
+from controller_manager_msgs.srv import SwitchController as SwitchRosController, ListControllers
 from controller_manager_msgs.srv import SwitchControllerResponse as SwitchRosControllerResponse
 from controller_manager_msgs.srv import SwitchControllerRequest as SwitchRosControllerRequest
+from controller_manager_msgs.srv import ListControllersResponse
 
 from smb_mission_planner.srv import DetectObject, DetectObjectResponse, BaseGoal, BaseGoalResponse
 
@@ -58,8 +62,11 @@ def planner_callback(msg):
 
 
 def ee_goal_callback(msg):
+    global current_ee_pose
     rospy.loginfo("Arm controller received a new ee goal")
-    rospy.sleep(1.0)
+    current_ee_pose = msg
+    update_ee_tf()
+
 
 
 def switch_roco_controller_service(req):
@@ -70,13 +77,35 @@ def switch_roco_controller_service(req):
     return res
 
 
-def switch_ros_control_controller_service():
-    req = SwitchRosControllerRequest()
+def switch_ros_control_controller_service(req):
     rospy.loginfo("Starting controllers {} and stopping controllers {}".format(req.start_controllers,
                                                                                req.stop_controllers))
     res = SwitchRosControllerResponse()
     res.ok = True
     return res
+
+def list_ros_controllers_service(req):
+    res = ListControllersResponse()
+    return res
+
+def update_ee_tf():
+    # transform the pose from whatever frame is expressed to the base link
+    transform = tf_buffer.lookup_transform(ee_pose_tf.header.frame_id, 
+                                           current_ee_pose.header.frame_id,
+                                           rospy.Time(0), #get the tf at first available time
+                                           rospy.Duration(1.0)) #wait for 1 second
+    pose_transformed = tf2_geometry_msgs.do_transform_pose(current_ee_pose, transform)
+    
+    # publish ee tf (perfect tracking)
+    ee_pose_tf.header.stamp = rospy.get_rostime()
+    ee_pose_tf.transform.translation.x = pose_transformed.pose.position.x
+    ee_pose_tf.transform.translation.y = pose_transformed.pose.position.y
+    ee_pose_tf.transform.translation.z = pose_transformed.pose.position.z
+    ee_pose_tf.transform.rotation.x = pose_transformed.pose.orientation.x
+    ee_pose_tf.transform.rotation.y = pose_transformed.pose.orientation.y
+    ee_pose_tf.transform.rotation.z = pose_transformed.pose.orientation.z
+    ee_pose_tf.transform.rotation.w = pose_transformed.pose.orientation.w
+    ee_pose_broadcaster.sendTransform(ee_pose_tf)
 
 
 if __name__ == "__main__":
@@ -91,6 +120,23 @@ if __name__ == "__main__":
     roco_manager_namespace = rospy.get_param("~roco_manager_namespace")
     ros_control_manager_namespace = rospy.get_param("~ros_control_manager_namespace")
 
+    # to broadcast the end effector pose and emulate perfect tracking
+    current_ee_pose = PoseStamped()
+    current_ee_pose.header.frame_id = "arm_base_link"
+    current_ee_pose.pose.position.x = 0.5
+    current_ee_pose.pose.position.y = 0.0
+    current_ee_pose.pose.position.z = 0.2
+    current_ee_pose.pose.orientation.w = 1.0
+
+    ee_pose_broadcaster = tf2_ros.TransformBroadcaster()
+    ee_pose_tf = TransformStamped()
+    ee_pose_tf.header.frame_id = "arm_base_link"
+    ee_pose_tf.child_frame_id = "arm_tool_frame"
+
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+
+
     nav_goal_subscriber = rospy.Subscriber(nav_goal_topic, PoseStamped, planner_callback, queue_size=10)
     base_pose_publisher = rospy.Publisher(base_odom_topic, PoseStamped, queue_size=10)
     ee_goal_subscriber = rospy.Subscriber(ee_goal_topic, PoseStamped, ee_goal_callback, queue_size=10)
@@ -101,9 +147,16 @@ if __name__ == "__main__":
                   switch_roco_controller_service)
     rospy.Service(ros_control_manager_namespace + "/controller_manager/switch_controller", SwitchRosController,
                   switch_ros_control_controller_service)
+    rospy.Service(ros_control_manager_namespace + "/controller_manager/list_controllers", ListControllers,
+                  list_ros_controllers_service)
 
     gripper_server = actionlib.SimpleActionServer(gripper_action_topic, GripperCommandAction,
                                                   execute_cb=gripper_goal_callback, auto_start=False)
     gripper_server.start()
+    
     rospy.loginfo("All Piloting mock modules started!")
-    rospy.spin()
+    
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        update_ee_tf()
+        rate.sleep()

@@ -5,7 +5,7 @@
     <param name="nav_goal_service_name"         value="/piloting/get_nav_goal"/>
     <param name="nav_goal_topic"                value="/move_base/goal"/>
     <param name="ee_goal_topic"                 value="/target_pose"/>
-    <param name="gripper_action_topic"          value="/gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd"/>
+    <param name="gripper_action_topic"          value="/my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd"/>
     <param name="base_odom_topic"               value="/base_pose_measured"/>
     <param name="detection_service_name"        value="/piloting/detect_valve"/>
     <param name="roco_manager_namespace"        value="/smb_highlevel_controller"/>
@@ -16,11 +16,8 @@
   <node name="world_arm_base_link_bc"  type="static_transform_publisher"  pkg="tf2_ros"
         args="0 0 0 0 0 0 world arm_base_link"/>
 
-  <node name="arm_base_arm_tool_bc"  type="static_transform_publisher"  pkg="tf2_ros"
-        args="0 0 0 0 0 0 arm_base_link arm_tool_frame"/>
-
   <node name="world_valve_bc"  type="static_transform_publisher"  pkg="tf2_ros"
-        args="0 0 0 0 0 0 world valve"/>
+        args="0.5 0.1 0.1 0 3.14 0 world valve_base"/>
 
 
 </launch>

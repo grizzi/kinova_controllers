@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="enable_viewer"           default="true"/>
+  <arg name="enable_viewer"           default="false"/>
   <arg name="description_for_moveit"  default="/my_gen3/robot_description"/>
-  <arg name="mock_modules"            default="false"/>
+  <arg name="test"                    default="false"/>
   <arg name="arm_only"                default="false"/>
   <arg name="simulation"              default="false"/>
 
@@ -13,9 +13,10 @@
   <param name="/moveit_planner/arm_group_name" value="arm"/>
 
   <!--   Mock modules to test state machine without sim -->
-  <group if="$(arg mock_modules)">
+  <group if="$(arg test)">
     <param name="/moveit_planner/fake_execution"   value="true"/>
     <include file="$(find kinova_valve_opening)/launch/piloting_mock_modules.launch"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/sm_test.rviz"/>
   </group>
 
   <!--    State dependent parameters-->

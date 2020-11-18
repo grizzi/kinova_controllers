@@ -101,7 +101,7 @@ ik_kinova_sim_gripper:
   target_pose_topic: "/target_pose"
   current_pose_topic: "/current_pose"
   publish_ros: true
-  debug: true
+  debug: false
   joint_names:
     - $(arg prefix)joint_1
     - $(arg prefix)joint_2

@@ -35,9 +35,9 @@ open_gripper:
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
 pre_grasp:
-  controller_name: ik_kinova_sim
+  controller_name: $(arg manipulation_controller)
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [arm_joint_state_controller]
   pose_topic_name: /target_pose
   pre_grasp_vertical_offset: 0.0
 
@@ -51,7 +51,7 @@ close_gripper:
 manipulate_valve:
   controller_name: $(arg manipulation_controller)
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [arm_joint_state_controller]
   theta_max: 3.14
   end_effector_frame: arm_tool_frame
   reference_frame: arm_base_link

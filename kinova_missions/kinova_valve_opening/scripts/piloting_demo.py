@@ -3,7 +3,7 @@
 import rospy
 import smach
 import smach_ros
-from kinova_valve_opening.states import PreGraspState, ValveDetectionState, ManipulateValve
+from kinova_valve_opening.states import LateralGraspState, ValveDetectionState, ManipulateValve, PostLateralGraspState
 from smb_mission_planner.navigation_states import SingleNavGoalServiceClientState
 from smb_mission_planner.manipulation_states import *
 
@@ -35,10 +35,10 @@ with state_machine:
                                         'Failure': 'Failure'})
 
     smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
-                           transitions={'Completed': 'PRE_GRASP',
+                           transitions={'Completed': 'LATERAL_GRASP',
                                         'Failure': 'Failure'})
 
-    smach.StateMachine.add('PRE_GRASP', PreGraspState(ns='pre_grasp'),
+    smach.StateMachine.add('LATERAL_GRASP', LateralGraspState(ns='lateral_grasp'),
                            transitions={'Completed': 'CLOSE_GRIPPER',
                                         'Failure': 'Failure'})
 
@@ -47,8 +47,14 @@ with state_machine:
                                         'Failure': 'Failure'})
 
     smach.StateMachine.add('MANIPULATE_VALVE', ManipulateValve(ns='manipulate_valve'),
-                           transitions={'Completed': 'Success',
+                           transitions={'Completed': 'RESET_LATERAL_GRASP',
+                                        'Failure': 'Failure',
+                                        'CompleteRotation': 'Success'})
+
+    smach.StateMachine.add('RESET_LATERAL_GRASP', PostLateralGraspState(ns='reset_lateral_grasp'),
+                           transitions={'Completed': 'LATERAL_GRASP',
                                         'Failure': 'Failure'})
+
 
 # Create and start the introspection server
 introspection_server = smach_ros.IntrospectionServer('mission_server', state_machine, '/mission_planner')
