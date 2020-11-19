@@ -21,7 +21,7 @@ valve_detection:
   valve_frame: valve_base
   reference_frame: world
   detect_from_tf: true
-  lateral_grasp: false
+  lateral_grasp: true
 
 viewpoint_visitor:
   default_outcome: Completed
