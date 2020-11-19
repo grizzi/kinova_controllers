@@ -3,7 +3,7 @@
 import rospy
 import smach
 import smach_ros
-from kinova_valve_opening.states import LateralGraspState, ValveDetectionState, ManipulateValve, PostLateralGraspState
+from kinova_valve_opening.states import *
 from smb_mission_planner.navigation_states import SingleNavGoalServiceClientState
 from smb_mission_planner.manipulation_states import *
 
@@ -18,6 +18,10 @@ rospy.init_node('piloting_mission')
 state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
 with state_machine:
     smach.StateMachine.add('HOME_ROBOT', MoveItHome(ns="home_robot"),
+                           transitions={'Completed': 'OPEN_GRIPPER',
+                                        'Failure': 'Failure'})
+
+    smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
                            transitions={'Completed': 'REACH_DETECTION_HOTSPOT',
                                         'Failure': 'Failure'})
 
@@ -26,36 +30,71 @@ with state_machine:
                                         'Aborted': 'Failure'})
 
     smach.StateMachine.add('VALVE_DETECTION', ValveDetectionState(max_num_failure=3, ns='valve_detection'),
-                           transitions={'Completed': 'OPEN_GRIPPER',
-                                        'Aborted': 'Failure',
+                           transitions={'LateralGrasp': 'LATERAL_MANIPULATION_SEQUENCE',
+                                        'FrontalGrasp': 'FRONTAL_MANIPULATION_SEQUENCE',
+                                        'Failure': 'Failure',
                                         'Retry': 'NEW_VIEWPOINT'})
 
     smach.StateMachine.add('NEW_VIEWPOINT', JointsConfigurationVisitor(ns='viewpoint_visitor'),
                            transitions={'Completed': 'VALVE_DETECTION',
                                         'Failure': 'Failure'})
 
-    smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
-                           transitions={'Completed': 'LATERAL_GRASP',
-                                        'Failure': 'Failure'})
+    #######################################################################
+    #                      Lateral Grasp Subsequence
+    ####################################################################### 
+    lateral_grasp_sm = smach.StateMachine(outcomes=['Success', 'Failure'])
+    with lateral_grasp_sm:
+        smach.StateMachine.add('LATERAL_GRASP', LateralGraspState(ns='grasp'),
+                                transitions={'Completed': 'CLOSE_GRIPPER',
+                                'Failure': 'Failure'})
 
-    smach.StateMachine.add('LATERAL_GRASP', LateralGraspState(ns='lateral_grasp'),
-                           transitions={'Completed': 'CLOSE_GRIPPER',
-                                        'Failure': 'Failure'})
+        smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
+                               transitions={'Completed': 'MANIPULATE_VALVE',
+                                            'Failure': 'Failure'})
 
-    smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
-                           transitions={'Completed': 'MANIPULATE_VALVE',
-                                        'Failure': 'Failure'})
+        smach.StateMachine.add('MANIPULATE_VALVE', LateralManipulation(ns='manipulate_valve'),
+                             transitions={'Completed': 'OPEN_GRIPPER',
+                                          'Failure': 'Failure',
+                                          'CompleteRotation': 'Success'})
+  
+        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+                             transitions={'Completed': 'RESET_LATERAL_GRASP',
+                                          'Failure': 'Failure'})
 
-    smach.StateMachine.add('MANIPULATE_VALVE', ManipulateValve(ns='manipulate_valve'),
-                           transitions={'Completed': 'RESET_LATERAL_GRASP',
-                                        'Failure': 'Failure',
-                                        'CompleteRotation': 'Success'})
+        smach.StateMachine.add('RESET_LATERAL_GRASP', PostLateralGraspState(ns='grasp'),
+                                transitions={'Completed': 'LATERAL_GRASP',
+                                'Failure': 'Failure'})
+    
+    #######################################################################
+    #                           Frontal Grasp Subsequence
+    #######################################################################
+    frontal_grasp_sm = smach.StateMachine(outcomes=['Success', 'Failure'])
+    with frontal_grasp_sm:
+        smach.StateMachine.add('FRONTAL_GRASP', FrontalGraspState(ns='grasp'),
+                                transitions={'Completed': 'CLOSE_GRIPPER',
+                                'Failure': 'Failure'})
 
-    smach.StateMachine.add('RESET_LATERAL_GRASP', PostLateralGraspState(ns='reset_lateral_grasp'),
-                           transitions={'Completed': 'LATERAL_GRASP',
-                                        'Failure': 'Failure'})
+        smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
+                               transitions={'Completed': 'MANIPULATE_VALVE',
+                                            'Failure': 'Failure'})
 
+        smach.StateMachine.add('MANIPULATE_VALVE', FrontalManipulation(ns='manipulate_valve'),
+                             transitions={'Completed': 'OPEN_GRIPPER',
+                                          'Failure': 'Failure',
+                                          'CompleteRotation': 'Success'})
+  
+        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+                             transitions={'Completed': 'RESET_FRONTAL_GRASP',
+                                          'Failure': 'Failure'})
 
+        smach.StateMachine.add('RESET_FRONTAL_GRASP', PostFrontalGraspState(ns='grasp'),
+                                transitions={'Completed': 'FRONTAL_GRASP',
+                                'Failure': 'Failure'})
+
+    # Add the two subsequences
+    smach.StateMachine.add('LATERAL_MANIPULATION_SEQUENCE', lateral_grasp_sm, transitions={'Success': 'Success', 'Failure': 'Failure'})
+    smach.StateMachine.add('FRONTAL_MANIPULATION_SEQUENCE', frontal_grasp_sm, transitions={'Success': 'Success', 'Failure': 'Failure'})
+    
 # Create and start the introspection server
 introspection_server = smach_ros.IntrospectionServer('mission_server', state_machine, '/mission_planner')
 introspection_server.start()

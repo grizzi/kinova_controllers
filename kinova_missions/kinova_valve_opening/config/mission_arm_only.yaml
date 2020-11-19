@@ -21,6 +21,7 @@ valve_detection:
   valve_frame: valve_base
   reference_frame: world
   detect_from_tf: true
+  lateral_grasp: false
 
 viewpoint_visitor:
   default_outcome: Completed
@@ -36,15 +37,12 @@ open_gripper:
   timeout: 10.0
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
-lateral_grasp:
-  base_frame: arm_base_link
-  valve_frame: valve_base
+grasp:
   controller_name: $(arg manipulation_controller)
   manager_namespace: /my_gen3
   whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
   pose_topic_name: /target_pose
-  pre_grasp_offset: -0.05 # in the z direction of the end effector
-
+  
 close_gripper:
   position: 0.6
   max_effort: 100
@@ -58,16 +56,4 @@ manipulate_valve:
   whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
   theta_step: 0.50
   theta_desired: 2.5
-  end_effector_frame: arm_tool_frame
-  reference_frame: arm_base_link
-  increment_dt: 0.1
-
-reset_lateral_grasp:
-  base_frame: arm_base_link
-  end_effector_frame: arm_tool_frame
-  valve_frame: valve_base
-  controller_name: $(arg manipulation_controller)
-  manager_namespace: /my_gen3
-  whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
-  pose_topic_name: /target_pose
-  post_grasp_offset: -0.05 # in the z direction of the end effector
+  dt: 0.1

@@ -8,8 +8,7 @@ from smb_mission_planner.srv import DetectObject, DetectObjectRequest
 from smb_mission_planner.manipulation_states import RosControlPoseReaching
 from smb_mission_planner.detection_states import ObjectDetection
 
-from kinova_valve_opening.trajectory_generator import ValveTrajectoryGenerator
-from kinova_valve_opening.trajectory_generator import compute_later_grasp
+from kinova_valve_opening.trajectory_generator import *
 
 
 class ValveDetectionState(ObjectDetection):
@@ -18,7 +17,8 @@ class ValveDetectionState(ObjectDetection):
     """
 
     def __init__(self, max_num_failure, ns):
-        ObjectDetection.__init__(self, max_num_failure=max_num_failure, ns=ns)
+        ObjectDetection.__init__(self, max_num_failure=max_num_failure, ns=ns,
+                                 outcomes=['FrontalGrasp', 'LateralGrasp', 'Retry', 'Failure'])
 
         # TODO(giuseppe) this should be returned by detection as well
         self.valve_radius = self.get_scoped_param("valve_radius")
@@ -53,7 +53,7 @@ class ValveDetectionState(ObjectDetection):
                     self.set_context_data("valve_radius", self.valve_radius)
                 except Exception as exc:
                     rospy.logerr(exc)
-                    return 'Aborted'
+                    return 'Failure'
             else:
                 self.detection_service.wait_for_service(timeout=10.0)
                 req = DetectObjectRequest()
@@ -66,11 +66,16 @@ class ValveDetectionState(ObjectDetection):
                         return 'Retry'
                     else:
                         rospy.logerr("Maximum number of detection failures achieved")
-                        return 'Aborted'
+                        return 'Failure'
 
                 self.set_context_data("valve_pose", res.object_pose)
                 self.set_context_data("valve_radius", self.valve_radius)
-            return 'Completed'
+            
+            lateral_grasp = self.get_scoped_param("lateral_grasp")
+            if lateral_grasp:
+                return 'LateralGrasp'
+            else:
+                return 'FrontalGrasp'
 
         except rospy.ROSException as exc:
             rospy.logerr(exc)
@@ -84,66 +89,85 @@ class LateralGraspState(RosControlPoseReaching):
     def __init__(self, ns):
         RosControlPoseReaching.__init__(self, ns=ns)
         pose_topic_name = self.get_scoped_param("pose_topic_name")
-        self.valve_frame = self.get_scoped_param("valve_frame")
-        self.base_frame = self.get_scoped_param("base_frame")
         self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
-        self.offset = self.get_scoped_param("pre_grasp_offset")
-
+        
     def execute(self, ud):
         controller_switched = self.do_switch()
         if not controller_switched:
             return 'Failure'
         
-        valve_radius = self.get_context_data("valve_radius")
-        if not valve_radius:
-            return 'Failure'
-        
         # Goal 1: get close to the grasping pose, not yet around the valve
-        rospy.loginfo("Sending intermediate goal with offset {} in z direction".format(self.offset))
-        goal = compute_later_grasp(reference_frame=self.base_frame, 
-                                   tool_frame=self.base_frame,
-                                   valve_frame=self.valve_frame, 
-                                   valve_radius=valve_radius, 
-                                   offset=self.offset)
-        if goal is None: 
-            return 'Failure'
-
-        self.pose_goal_publisher.publish(goal)
+        self.pose_goal_publisher.publish(compute_pre_lateral_grasp())
         rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
         rospy.sleep(2.0)
 
         # Goal 2: move forward to surround the valve
-        goal = compute_later_grasp(reference_frame=self.base_frame, 
-                                   tool_frame=self.base_frame,
-                                   valve_frame=self.valve_frame, 
-                                   valve_radius=valve_radius, 
-                                   offset=0.0)
-        if goal is None: 
-            return 'Failure'
-
-        self.pose_goal_publisher.publish(goal)
+        self.pose_goal_publisher.publish(compute_lateral_grasp())
         rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
         rospy.sleep(2.0)
 
-        self.set_context_data("lateral_grasp", True)
         return 'Completed'
 
-
-class ManipulateValve(RosControlPoseReaching):
+class FrontalGraspState(RosControlPoseReaching):
     """
-    Switch and send target poses to the controller manager
+    Switch and send target pose to the controller
     """
     def __init__(self, ns):
-        RosControlPoseReaching.__init__(self, ns=ns, outcomes=['Completed', 'Failure', 'CompleteRotation'])
+        RosControlPoseReaching.__init__(self, ns=ns)
+        pose_topic_name = self.get_scoped_param("pose_topic_name")
+        self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
+        
+    def execute(self, ud):
+        controller_switched = self.do_switch()
+        if not controller_switched:
+            return 'Failure'
+        
+        # Goal 1: get close to the grasping pose, not yet around the valve
+        self.pose_goal_publisher.publish(compute_pre_frontal_grasp())
+        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
+        rospy.sleep(2.0)
+
+        # Goal 2: move forward to surround the valve
+        self.pose_goal_publisher.publish(compute_frontal_grasp())
+        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
+        rospy.sleep(2.0)
+
+        return 'Completed'
+
+class ValveManipulation(RosControlPoseReaching):
+    def __init__(self, ns):
+        RosControlPoseReaching.__init__(self, 
+                                        ns=ns, 
+                                        outcomes=['Completed', 'Failure', 'CompleteRotation'])
 
         self.theta_step = self.get_scoped_param("theta_step")
         self.theta_desired = self.get_scoped_param("theta_desired")
         assert self.theta_step <= self.theta_desired
 
-        self.end_effector_frame = self.get_scoped_param("end_effector_frame")
-        self.reference_frame = self.get_scoped_param("reference_frame")
-        self.increment_dt = self.get_scoped_param("increment_dt")
+        self.dt = self.get_scoped_param("dt")
+        self.trajectory_generator = ValveTrajectoryGenerator()
         self.theta_current = 0.0
+
+    def run(self):
+        theta_diff = self.theta_desired - self.theta_current
+        if theta_diff < 0.01:
+            return 'CompleteRotation'
+        
+        theta_step = min(self.theta_desired - self.theta_current, self.theta_step)
+        self.trajectory_generator.reset()
+        success = self.trajectory_generator.run(dt=self.dt, theta_target=theta_step)
+        self.theta_current += theta_step
+        if success:
+            return 'Completed'
+        else:
+            return 'Failure'
+
+class FrontalManipulation(ValveManipulation):
+    """
+    Switch and send target poses to the controller manager
+    """
+    def __init__(self, ns):
+        ValveManipulation.__init__(self, ns=ns)
 
     def execute(self, ud):
         if self.default_outcome:
@@ -153,29 +177,26 @@ class ManipulateValve(RosControlPoseReaching):
         if not controller_switched:
             return 'Failure'
 
-        valve_radius = self.get_context_data("valve_radius")
-        if not valve_radius:
-            rospy.logerr("Unable to retrieve the valve radius")
+        self.trajectory_generator.estimate_valve_from_frontal_grasp()
+        return self.run()
+
+class LateralManipulation(ValveManipulation):
+    """
+    Switch and send target poses to the controller manager
+    """
+    def __init__(self, ns):
+        ValveManipulation.__init__(self, ns=ns)
+
+    def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
+        controller_switched = self.do_switch()
+        if not controller_switched:
             return 'Failure'
 
-        lateral_grasp = self.get_context_data("lateral_grasp")
-        if lateral_grasp is None:
-            rospy.logerr("Unable to retrieve the lateral grasp")
-            return 'Failure'
-
-        trajectory_generator = ValveTrajectoryGenerator(valve_radius,
-                                                        self.end_effector_frame,
-                                                        self.reference_frame,
-                                                        lateral_grasp=lateral_grasp)
-        theta_diff = self.theta_desired - self.theta_current
-        if theta_diff < 0.01:
-            return 'CompleteRotation'
-        
-        theta_max = min(self.theta_desired - self.theta_current, self.theta_step)
-        success = trajectory_generator.run(dt=self.increment_dt, theta_max=theta_max)
-        self.theta_current += theta_max
-
-        return 'Completed'
+        self.trajectory_generator.estimate_valve_from_lateral_grasp()
+        return self.run()
 
 class PostLateralGraspState(RosControlPoseReaching):
     """
@@ -184,33 +205,38 @@ class PostLateralGraspState(RosControlPoseReaching):
     def __init__(self, ns):
         RosControlPoseReaching.__init__(self, ns=ns)
         pose_topic_name = self.get_scoped_param("pose_topic_name")
-        self.valve_frame = self.get_scoped_param("valve_frame")
-        self.base_frame = self.get_scoped_param("base_frame")
-        self.end_effector_frame = self.get_scoped_param("end_effector_frame")
         self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
-        self.offset = self.get_scoped_param("post_grasp_offset")
-
+        
     def execute(self, ud):
         controller_switched = self.do_switch()
         if not controller_switched:
             return 'Failure'
         
-        valve_radius = self.get_context_data("valve_radius")
-        if not valve_radius:
+        # Goal 1: move away from the valve in the radial direction
+        # Assumption is that we are in a grasp state
+        self.pose_goal_publisher.publish(compute_post_lateral_grasp())
+        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
+        rospy.sleep(2.0)
+
+        return 'Completed'
+
+class PostFrontalGraspState(RosControlPoseReaching):
+    """
+    Move away from the valve to restart the grasping in the same pose
+    """
+    def __init__(self, ns):
+        RosControlPoseReaching.__init__(self, ns=ns)
+        pose_topic_name = self.get_scoped_param("pose_topic_name")
+        self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
+        
+    def execute(self, ud):
+        controller_switched = self.do_switch()
+        if not controller_switched:
             return 'Failure'
         
         # Goal 1: move away from the valve in the radial direction
         # Assumption is that we are in a grasp state
-        print("ref:  " + self.base_frame)
-        goal = compute_later_grasp(reference_frame=self.base_frame, 
-                                   tool_frame=self.end_effector_frame,
-                                   valve_frame=self.valve_frame, 
-                                   valve_radius=valve_radius, 
-                                   offset=self.offset)
-        if goal is None: 
-            return 'Failure'
-
-        self.pose_goal_publisher.publish(goal)
+        self.pose_goal_publisher.publish(compute_post_frontal_grasp())
         rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
         rospy.sleep(2.0)
 
