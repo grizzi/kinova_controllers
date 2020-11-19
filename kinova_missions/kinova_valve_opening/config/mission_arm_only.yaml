@@ -63,6 +63,7 @@ manipulate_valve:
   increment_dt: 0.1
 
 reset_lateral_grasp:
+  base_frame: arm_base_link
   end_effector_frame: arm_tool_frame
   valve_frame: valve_base
   controller_name: $(arg manipulation_controller)

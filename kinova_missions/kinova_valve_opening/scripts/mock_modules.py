@@ -63,7 +63,7 @@ def planner_callback(msg):
 
 def ee_goal_callback(msg):
     global current_ee_pose
-    rospy.loginfo("Arm controller received a new ee goal")
+    rospy.loginfo_throttle(1.0, "Arm controller received a new ee goal")
     current_ee_pose = msg
     update_ee_tf()
 

@@ -100,7 +100,11 @@ class LateralGraspState(RosControlPoseReaching):
         
         # Goal 1: get close to the grasping pose, not yet around the valve
         rospy.loginfo("Sending intermediate goal with offset {} in z direction".format(self.offset))
-        goal = compute_later_grasp(self.base_frame, self.valve_frame, valve_radius, offset=self.offset)
+        goal = compute_later_grasp(reference_frame=self.base_frame, 
+                                   tool_frame=self.base_frame,
+                                   valve_frame=self.valve_frame, 
+                                   valve_radius=valve_radius, 
+                                   offset=self.offset)
         if goal is None: 
             return 'Failure'
 
@@ -109,7 +113,11 @@ class LateralGraspState(RosControlPoseReaching):
         rospy.sleep(2.0)
 
         # Goal 2: move forward to surround the valve
-        goal = compute_later_grasp(self.base_frame, self.valve_frame, valve_radius, offset=0.0)
+        goal = compute_later_grasp(reference_frame=self.base_frame, 
+                                   tool_frame=self.base_frame,
+                                   valve_frame=self.valve_frame, 
+                                   valve_radius=valve_radius, 
+                                   offset=0.0)
         if goal is None: 
             return 'Failure'
 
@@ -177,6 +185,7 @@ class PostLateralGraspState(RosControlPoseReaching):
         RosControlPoseReaching.__init__(self, ns=ns)
         pose_topic_name = self.get_scoped_param("pose_topic_name")
         self.valve_frame = self.get_scoped_param("valve_frame")
+        self.base_frame = self.get_scoped_param("base_frame")
         self.end_effector_frame = self.get_scoped_param("end_effector_frame")
         self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
         self.offset = self.get_scoped_param("post_grasp_offset")
@@ -191,7 +200,13 @@ class PostLateralGraspState(RosControlPoseReaching):
             return 'Failure'
         
         # Goal 1: move away from the valve in the radial direction
-        goal = compute_later_grasp(self.end_effector_frame, self.valve_frame, valve_radius, offset=self.offset)
+        # Assumption is that we are in a grasp state
+        print("ref:  " + self.base_frame)
+        goal = compute_later_grasp(reference_frame=self.base_frame, 
+                                   tool_frame=self.end_effector_frame,
+                                   valve_frame=self.valve_frame, 
+                                   valve_radius=valve_radius, 
+                                   offset=self.offset)
         if goal is None: 
             return 'Failure'
 

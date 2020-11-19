@@ -3,6 +3,7 @@
 import numpy as np
 import rospy
 import tf2_ros
+import tf2_geometry_msgs
 import pinocchio as pin
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 import matplotlib.pyplot as plt
@@ -65,7 +66,7 @@ def pose_to_se3(pose):
     return pin.SE3(q, t)
 
 
-def compute_later_grasp(reference_frame, valve_frame, valve_radius, offset):
+def compute_later_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset):
     """
     Computes the grasp pose when the adopted strategy is a lateral grasp 
     Assumption: z of the valve pointing down
@@ -75,22 +76,22 @@ def compute_later_grasp(reference_frame, valve_frame, valve_radius, offset):
     tf_listener = tf2_ros.TransformListener(tf_buffer)
     transform = TransformStamped()
     try:
-        transform = tf_buffer.lookup_transform(reference_frame,            # target frame
-                                               valve_frame,                # source frame
-                                               rospy.Time(0),              # tf at first available time
-                                               rospy.Duration(3))
+        t_tool_valve = tf_buffer.lookup_transform(tool_frame,            # target frame
+                                                  valve_frame,                # source frame
+                                                  rospy.Time(0),              # tf at first available time
+                                                  rospy.Duration(3))
     except Exception as exc: 
         rospy.logerr(exc)
         return None
 
-    origin = [transform.transform.translation.x,
-              transform.transform.translation.y,
-              transform.transform.translation.z]
+    origin = [t_tool_valve.transform.translation.x,
+              t_tool_valve.transform.translation.y,
+              t_tool_valve.transform.translation.z]
 
-    quaternion = [transform.transform.rotation.x,
-                  transform.transform.rotation.y,
-                  transform.transform.rotation.z,
-                  transform.transform.rotation.w]
+    quaternion = [t_tool_valve.transform.rotation.x,
+                  t_tool_valve.transform.rotation.y,
+                  t_tool_valve.transform.rotation.z,
+                  t_tool_valve.transform.rotation.w]
     rotation = R.from_quat(quaternion).as_dcm()
     normal = rotation[:, 2]
 
@@ -111,7 +112,7 @@ def compute_later_grasp(reference_frame, valve_frame, valve_radius, offset):
 
     # Pose ros 
     pose = PoseStamped()
-    pose.header.frame_id = reference_frame
+    pose.header.frame_id = tool_frame
     pose.header.stamp = rospy.get_rostime()
     pose.pose.position.x = grasp_position[0]
     pose.pose.position.y = grasp_position[1]
@@ -121,13 +122,24 @@ def compute_later_grasp(reference_frame, valve_frame, valve_radius, offset):
     pose.pose.orientation.z = grasp_quat[2]
     pose.pose.orientation.w = grasp_quat[3]
 
-    if offset == 0:
-        return pose
+    if offset != 0:
+        t_tool_grasp = pose_to_se3(pose.pose)
+        t_grasp_ee_des = pin.SE3(pin.Quaternion(1, 0, 0, 0), np.array([0.0, 0.0, offset]))
+        t_tool_ee_des = t_tool_grasp.act(t_grasp_ee_des)
+        pose.pose = se3_to_pose_ros(t_tool_ee_des)
+    
+    # Transform in reference frame (optional)
+    if reference_frame != tool_frame:
+        try:
+            t_ref_tool = tf_buffer.lookup_transform(reference_frame,            # target frame
+                                                    tool_frame,                # source frame
+                                                    rospy.Time(0),              # tf at first available time
+                                                    rospy.Duration(3))
+            pose = tf2_geometry_msgs.do_transform_pose(pose, t_ref_tool)
+        except Exception as exc: 
+            rospy.logerr(exc)
+            return None
 
-    t_reference_grasp = pose_to_se3(pose.pose)
-    t_grasp_ee_des = pin.SE3(pin.Quaternion(1, 0, 0, 0), np.array([0.0, 0.0, offset]))
-    t_reference_ee_des = t_reference_grasp.act(t_grasp_ee_des)
-    pose.pose = se3_to_pose_ros(t_reference_ee_des)
     return pose
 
 class ValveTrajectoryGenerator(object):
