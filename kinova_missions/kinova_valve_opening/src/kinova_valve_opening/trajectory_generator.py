@@ -72,6 +72,9 @@ def compute_later_grasp(reference_frame, tool_frame, valve_frame, valve_radius, 
     Assumption: z of the valve pointing down
     Assumption: z of tool point out of the end effector
     """
+    if (valve_frame == tool_frame):
+        raise NameError("The point of grasp is undefined when the valve_frame is given as tool frame.")
+    
     tf_buffer = tf2_ros.Buffer()
     tf_listener = tf2_ros.TransformListener(tf_buffer)
     transform = TransformStamped()
@@ -104,6 +107,7 @@ def compute_later_grasp(reference_frame, tool_frame, valve_frame, valve_radius, 
     grasp_position = origin + plane_vector
     
     # orientation 
+    # for the frontal grasp should be just a matter of different orientation
     grasp_orientation = np.ndarray(shape=(3, 3))
     grasp_orientation[:, 2] = -plane_vector / np.linalg.norm(plane_vector)
     grasp_orientation[:, 0] = normal
