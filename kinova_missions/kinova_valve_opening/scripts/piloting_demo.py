@@ -17,7 +17,7 @@ rospy.init_node('piloting_mission')
 # Build the state machine
 state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
 with state_machine:
-    smach.StateMachine.add('HOME_ROBOT', MoveItHome(ns="home_robot"),
+    smach.StateMachine.add('HOME_ROBOT', HomeKinova(ns="home_robot"),
                            transitions={'Completed': 'OPEN_GRIPPER',
                                         'Failure': 'Failure'})
 

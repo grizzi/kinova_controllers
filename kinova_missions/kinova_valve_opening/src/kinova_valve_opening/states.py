@@ -7,8 +7,29 @@ from geometry_msgs.msg import TransformStamped
 from smb_mission_planner.srv import DetectObject, DetectObjectRequest
 from smb_mission_planner.manipulation_states import RosControlPoseReaching
 from smb_mission_planner.detection_states import ObjectDetection
+from smb_mission_planner.utils.moveit_utils import MoveItPlanner
 
 from kinova_valve_opening.trajectory_generator import *
+
+class HomeKinova(RosControlPoseReaching):
+    """
+    Switct to the trajectory controller and homes the robot
+    """
+    def __init__(self, ns):
+        RosControlPoseReaching.__init__(self, ns=ns)
+        self.moveit_planner = MoveItPlanner()
+        
+    def execute(self, ud):
+        controller_switched = self.do_switch()
+        if not controller_switched:
+            return 'Failure'
+
+        rospy.loginfo("Reaching named position: home")
+        success = self.moveit_planner.reach_named_position("home")
+        if success:
+            return 'Completed'
+        else:
+            return 'Failure'
 
 
 class ValveDetectionState(ObjectDetection):
@@ -97,14 +118,18 @@ class LateralGraspState(RosControlPoseReaching):
             return 'Failure'
         
         # Goal 1: get close to the grasping pose, not yet around the valve
-        self.pose_goal_publisher.publish(compute_pre_lateral_grasp())
-        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
-        rospy.sleep(20.0)
+        target_pose = compute_pre_lateral_grasp()
+        dt = compute_execution_time(target_pose, max_linear_speed=0.05, max_angular_speed=0.1)
+        self.pose_goal_publisher.publish(target_pose)
+        rospy.loginfo("Waiting {}s for pose to be reached".format(dt))
+        rospy.sleep(dt)
 
         # Goal 2: move forward to surround the valve
-        self.pose_goal_publisher.publish(compute_lateral_grasp())
-        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
-        rospy.sleep(20.0)
+        target_pose = compute_lateral_grasp()
+        dt = compute_execution_time(target_pose, max_linear_speed=0.05, max_angular_speed=0.1)
+        self.pose_goal_publisher.publish(target_pose)
+        rospy.loginfo("Waiting {}s for pose to be reached".format(dt))
+        rospy.sleep(dt)
 
         return 'Completed'
 
@@ -123,15 +148,17 @@ class FrontalGraspState(RosControlPoseReaching):
             return 'Failure'
         
         # Goal 1: get close to the grasping pose, not yet around the valve
-        self.pose_goal_publisher.publish(compute_pre_frontal_grasp())
-        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
-        rospy.sleep(20.0)
-
+        target_pose = compute_pre_frontal_grasp()
+        dt = compute_execution_time(target_pose, max_linear_speed=0.05, max_angular_speed=0.1)
+        self.pose_goal_publisher.publish(target_pose)
+        rospy.loginfo("Waiting {}s for pose to be reached".format(dt))
+        
         # Goal 2: move forward to surround the valve
-        self.pose_goal_publisher.publish(compute_frontal_grasp())
-        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
-        rospy.sleep(20.0)
-
+        target_pose = compute_frontal_grasp()
+        dt = compute_execution_time(target_pose, max_linear_speed=0.05, max_angular_speed=0.1)
+        self.pose_goal_publisher.publish(target_pose)
+        rospy.loginfo("Waiting {}s for pose to be reached".format(dt))
+        
         return 'Completed'
 
 class ValveManipulation(RosControlPoseReaching):
@@ -214,10 +241,11 @@ class PostLateralGraspState(RosControlPoseReaching):
         
         # Goal 1: move away from the valve in the radial direction
         # Assumption is that we are in a grasp state
-        self.pose_goal_publisher.publish(compute_post_lateral_grasp())
-        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
-        rospy.sleep(20.0)
-
+        target_pose = compute_post_lateral_grasp()
+        dt = compute_execution_time(target_pose, max_linear_speed=0.05, max_angular_speed=0.1)
+        self.pose_goal_publisher.publish(target_pose)
+        rospy.loginfo("Waiting {}s for pose to be reached".format(dt))
+        rospy.sleep(dt)
         return 'Completed'
 
 class PostFrontalGraspState(RosControlPoseReaching):
@@ -236,8 +264,9 @@ class PostFrontalGraspState(RosControlPoseReaching):
         
         # Goal 1: move away from the valve in the radial direction
         # Assumption is that we are in a grasp state
-        self.pose_goal_publisher.publish(compute_post_frontal_grasp())
-        rospy.loginfo("Waiting {}s for pose to be reached".format(20.0))
-        rospy.sleep(20.0)
-
+        target_pose = compute_post_frontal_grasp()
+        dt = compute_execution_time(target_pose, max_linear_speed=0.05, max_angular_speed=0.1)
+        self.pose_goal_publisher.publish(target_pose)
+        rospy.loginfo("Waiting {}s for pose to be reached".format(dt))
+        rospy.sleep(dt)
         return 'Completed'

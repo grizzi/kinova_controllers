@@ -2,7 +2,10 @@
 # Namespaces mirror (optionally) the state for better readability
 
 home_robot:
-  key: no_params
+  controller_name: arm_gen3_joint_trajectory_controller
+  manager_namespace: /my_gen3
+  whitelist: [arm_joint_state_controller]
+  
 
 reach_detection_hotspot:
   default_outcome: Completed
@@ -31,6 +34,9 @@ viewpoint_visitor:
     - [ 1.57, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
 
 open_gripper:
+  controller_name: arm_robotiq_2f_85_gripper_controller
+  manager_namespace: /my_gen3
+  whitelist: [arm_joint_state_controller, $(arg manipulation_controller), arm_gen3_joint_trajectory_controller]
   position: 0.0
   max_effort: 100
   tolerance: 0.01
@@ -44,6 +50,9 @@ grasp:
   pose_topic_name: /target_pose
   
 close_gripper:
+  controller_name: arm_robotiq_2f_85_gripper_controller
+  manager_namespace: /my_gen3
+  whitelist: [arm_joint_state_controller, $(arg manipulation_controller), arm_gen3_joint_trajectory_controller]
   position: 0.6
   max_effort: 100
   tolerance: 0.01

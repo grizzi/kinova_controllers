@@ -216,6 +216,26 @@ def compute_frontal_grasp():
 def compute_post_frontal_grasp(): 
     return _compute_frontal_grasp(valve_traj_data.tool_frame, valve_traj_data.frontal_grasp_offset)
 
+#######################################################
+# Timing
+#######################################################
+def compute_execution_time(target_pose, max_linear_speed, max_angular_speed):
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+    transform = tf_buffer.lookup_transform(target_pose.header.frame_id,     # target frame
+                                           valve_traj_data.tool_frame,      # source frame
+                                           rospy.Time(0),                   # tf at first available time
+                                           rospy.Duration(3))
+    t_ee = tf_to_se3(transform)
+    t_target = pose_to_se3(target_pose.pose)
+    m = pin.log6(t_ee.actInv(t_target)) # motion that brings in 1 sec ee to target
+
+    # find the max speed and scale
+    linear_scale = max(abs(m.linear))/max_linear_speed
+    angular_scale = max(abs(m.angular))/max_angular_speed
+    scale = max(linear_scale, angular_scale)
+
+    return scale * 1.0 # s
 
 #######################################################
 # Trajectory generation
