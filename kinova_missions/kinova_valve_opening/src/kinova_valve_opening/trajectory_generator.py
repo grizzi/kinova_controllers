@@ -237,6 +237,39 @@ def compute_execution_time(target_pose, max_linear_speed, max_angular_speed):
 
     return scale * 1.0 # s
 
+def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.01, timeout=0):
+    """
+    Returns once the target pose has been reached
+    """
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+    tolerance_met = False
+    time_elapsed = 0.0
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        if tolerance_met:
+            return True
+
+        if timeout != 0 and time_elapsed > timeout:
+            rospy.logerror("Timeout elapsed while reaching a pose")
+            return False
+
+        transform = tf_buffer.lookup_transform(target_pose.header.frame_id,     # target frame
+                                               valve_traj_data.tool_frame,      # source frame
+                                               rospy.Time(0),                   # tf at first available time
+                                               rospy.Duration(3))
+        t_ee = tf_to_se3(transform)
+        t_target = pose_to_se3(target_pose.pose)
+        error = pin.log6(t_ee.actInv(t_target)) # motion that brings in 1 sec ee to target
+        linear_error = max(abs(error.linear))
+        angular_error = max(abs(error.angular))
+        if linear_error < linear_tolerance and angular_error < angular_tolerance:
+            tolerance_met = True
+
+        rate.sleep()
+        time_elapsed += 0.1
+
+
 #######################################################
 # Trajectory generation
 #######################################################

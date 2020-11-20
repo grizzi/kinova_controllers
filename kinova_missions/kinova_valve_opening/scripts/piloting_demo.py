@@ -17,13 +17,18 @@ rospy.init_node('piloting_mission')
 # Build the state machine
 state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
 with state_machine:
-    smach.StateMachine.add('HOME_ROBOT', HomeKinova(ns="home_robot"),
-                           transitions={'Completed': 'OPEN_GRIPPER',
-                                        'Failure': 'Failure'})
+    homing_sequence = smach.StateMachine(outcomes=['Success', 'Failure'])
+    with homing_sequence:
+        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+                                transitions={'Completed': 'HOME_ROBOT',
+                                             'Failure': 'Failure'})
 
-    smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
-                           transitions={'Completed': 'REACH_DETECTION_HOTSPOT',
-                                        'Failure': 'Failure'})
+        smach.StateMachine.add('HOME_ROBOT', HomeKinova(ns="home_robot"),
+                                transitions={'Completed': 'Success',
+                                             'Failure': 'Failure'})
+
+    smach.StateMachine.add('HOME_ROBOT_START', homing_sequence,
+                           transitions={'Success': 'REACH_DETECTION_HOTSPOT', 'Failure': 'Failure'})
 
     smach.StateMachine.add('REACH_DETECTION_HOTSPOT', SingleNavGoalServiceClientState(ns="reach_detection_hotspot"),
                            transitions={'Completed': 'VALVE_DETECTION',
@@ -89,12 +94,13 @@ with state_machine:
 
         smach.StateMachine.add('RESET_FRONTAL_GRASP', PostFrontalGraspState(ns='grasp'),
                                 transitions={'Completed': 'FRONTAL_GRASP',
-                                'Failure': 'Failure'})
-
+                                             'Failure': 'Failure'})
     # Add the two subsequences
-    smach.StateMachine.add('LATERAL_MANIPULATION_SEQUENCE', lateral_grasp_sm, transitions={'Success': 'Success', 'Failure': 'Failure'})
-    smach.StateMachine.add('FRONTAL_MANIPULATION_SEQUENCE', frontal_grasp_sm, transitions={'Success': 'Success', 'Failure': 'Failure'})
-    
+    smach.StateMachine.add('LATERAL_MANIPULATION_SEQUENCE', lateral_grasp_sm, transitions={'Success': 'HOME_ROBOT_END', 'Failure': 'Failure'})
+    smach.StateMachine.add('FRONTAL_MANIPULATION_SEQUENCE', frontal_grasp_sm, transitions={'Success': 'HOME_ROBOT_END', 'Failure': 'Failure'})
+
+    smach.StateMachine.add('HOME_ROBOT_END', homing_sequence, transitions={'Success': 'Success', 'Failure': 'Failure'})
+
 # Create and start the introspection server
 introspection_server = smach_ros.IntrospectionServer('mission_server', state_machine, '/mission_planner')
 introspection_server.start()

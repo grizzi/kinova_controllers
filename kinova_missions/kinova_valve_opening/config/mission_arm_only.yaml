@@ -24,7 +24,7 @@ valve_detection:
   valve_frame: valve_base
   reference_frame: world
   detect_from_tf: true
-  lateral_grasp: true
+  lateral_grasp: false
 
 viewpoint_visitor:
   default_outcome: Completed
@@ -53,7 +53,7 @@ close_gripper:
   controller_name: arm_robotiq_2f_85_gripper_controller
   manager_namespace: /my_gen3
   whitelist: [arm_joint_state_controller, $(arg manipulation_controller), arm_gen3_joint_trajectory_controller]
-  position: 0.6
+  position: 0.7
   max_effort: 100
   tolerance: 0.01
   timeout: 10.0
@@ -63,6 +63,6 @@ manipulate_valve:
   controller_name: $(arg manipulation_controller)
   manager_namespace: /my_gen3
   whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
-  theta_step: 0.50
-  theta_desired: 2.5
+  theta_step: 0.5
+  theta_desired: 1.0
   dt: 0.1
