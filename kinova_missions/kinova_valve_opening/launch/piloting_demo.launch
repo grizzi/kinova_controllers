@@ -4,8 +4,8 @@
   <arg name="enable_viewer"           default="false"/>
   <arg name="description_for_moveit"  default="/my_gen3/robot_description"/>
   <arg name="test"                    default="false"/>
-  <arg name="arm_only"                default="false"/>
   <arg name="simulation"              default="false"/>
+  <arg name="use_apriltag"            default="false"/>
 
   <!-- Remap description for moveit commander -->
   <param name="/moveit_planner/description_name" value="$(arg description_for_moveit)"/>
@@ -19,13 +19,30 @@
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/sm_test.rviz"/>
   </group>
 
-  <!--    State dependent parameters-->
+  <!--    State dependent parameters -->
   <arg name="valve_radius"            default="0.1225"/>
+
+  <!--    Manipulation Controller -->
   <arg name="manipulation_controller" default="ik_kinova_sim_gripper" if="$(arg simulation)"/>
   <arg name="manipulation_controller" default="ik_kinova_robot_gripper" unless="$(arg simulation)"/>
-  <rosparam command="load" file="$(find kinova_valve_opening)/config/mission.yaml" unless="$(arg arm_only)" subst_value="true"/>
-  <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_arm_only.yaml" if="$(arg arm_only)" subst_value="true"/>
+  
+  <!--    Gripper controller (none for the real robot)-->
+  <arg name="gripper_controller"      default="arm_robotiq_2f_85_gripper_controller" if="$(arg simulation)"/>
+  <arg name="gripper_controller"      default="" unless="$(arg simulation)"/>
 
+  <rosparam command="load" file="$(find kinova_valve_opening)/config/mission.yaml" subst_value="true"/>
+
+  <!--   In simulation spawn the tag -->
+  <group if="$(arg use_apriltag)">
+    <include file="$(find kinova_valve_opening)/apriltag/apriltag_detection.launch"/>
+  </group>
+  
+  <!--   Load the valve in simulation -->
+  <group if="$(arg simulation)">
+    <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
+    <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz" unless="$(arg test)"/>
+  </group>
+  
   <!--    State machine -->
   <node pkg="kinova_valve_opening" type="piloting_demo.py"  name="piloting_demo" output="screen"/>
 

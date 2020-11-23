@@ -161,9 +161,7 @@ class FrontalGraspState(RosControlPoseReaching):
 
 class ValveManipulation(RosControlPoseReaching):
     def __init__(self, ns):
-        RosControlPoseReaching.__init__(self, 
-                                        ns=ns, 
-                                        outcomes=['Completed', 'Failure', 'CompleteRotation'])
+        RosControlPoseReaching.__init__(self, ns=ns)
 
         self.theta_step = self.get_scoped_param("theta_step")
         self.theta_desired = self.get_scoped_param("theta_desired")
@@ -172,17 +170,17 @@ class ValveManipulation(RosControlPoseReaching):
         self.dt = self.get_scoped_param("dt")
         self.trajectory_generator = ValveTrajectoryGenerator()
         self.theta_current = 0.0
-
+        self.set_context_data('full_rotation_done', False)
+            
     def run(self):
-        theta_diff = self.theta_desired - self.theta_current
-        if theta_diff < 0.01:
-            return 'CompleteRotation'
-        
         theta_step = min(self.theta_desired - self.theta_current, self.theta_step)
         self.trajectory_generator.reset()
         success = self.trajectory_generator.run(dt=self.dt, theta_target=theta_step)
         self.theta_current += theta_step
         if success:
+            theta_diff = abs(self.theta_desired - self.theta_current)
+            if theta_diff < 0.01:
+                self.set_context_data('full_rotation_done', True, overwrite=True)
             return 'Completed'
         else:
             return 'Failure'
@@ -228,7 +226,8 @@ class PostLateralGraspState(RosControlPoseReaching):
     Move away from the valve to restart the grasping in the same pose
     """
     def __init__(self, ns):
-        RosControlPoseReaching.__init__(self, ns=ns)
+        RosControlPoseReaching.__init__(self, ns=ns,
+                                        outcomes=['Completed', 'Failure', 'FullRotationDone'])
         pose_topic_name = self.get_scoped_param("pose_topic_name")
         self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
         
@@ -244,6 +243,9 @@ class PostLateralGraspState(RosControlPoseReaching):
         if not wait_until_reached(target_pose):
             return 'Failure'
 
+        if self.get_context_data('full_rotation_done'):
+            return 'FullRotationDone'
+
         return 'Completed'
 
 class PostFrontalGraspState(RosControlPoseReaching):
@@ -251,7 +253,8 @@ class PostFrontalGraspState(RosControlPoseReaching):
     Move away from the valve to restart the grasping in the same pose
     """
     def __init__(self, ns):
-        RosControlPoseReaching.__init__(self, ns=ns)
+        RosControlPoseReaching.__init__(self, ns=ns,
+                                        outcomes=['Completed', 'Failure', 'FullRotationDone'])
         pose_topic_name = self.get_scoped_param("pose_topic_name")
         self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
         
@@ -267,4 +270,7 @@ class PostFrontalGraspState(RosControlPoseReaching):
         if not wait_until_reached(target_pose):
             return 'Failure'
 
+        if self.get_context_data('full_rotation_done'):
+            return 'FullRotationDone'
+        
         return 'Completed'

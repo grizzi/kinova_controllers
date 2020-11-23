@@ -2,9 +2,13 @@
 # Namespaces mirror (optionally) the state for better readability
 
 home_robot:
-  key: no_params
+  controller_name: arm_gen3_joint_trajectory_controller
+  manager_namespace: /my_gen3
+  whitelist: [arm_joint_state_controller]
+  
 
 reach_detection_hotspot:
+  default_outcome: Completed
   goal_pose_topic: /move_base/goal
   base_pose_topic: /base_pose_measured
   roco_controller: MpcTrackLocalPlan
@@ -20,29 +24,36 @@ valve_detection:
   valve_frame: valve_base
   reference_frame: world
   detect_from_tf: true
+  lateral_grasp: true
 
 viewpoint_visitor:
+  default_outcome: Completed
   joints_configurations:
     - [ 0.00, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
     - [-1.57, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
     - [ 1.57, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
 
 open_gripper:
-  position: 1.0
+  controller_name: $(arg gripper_controller)
+  manager_namespace: /my_gen3
+  whitelist: [arm_joint_state_controller, $(arg manipulation_controller), arm_gen3_joint_trajectory_controller]
+  position: 0.0
   max_effort: 100
   tolerance: 0.01
   timeout: 10.0
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
-pre_grasp:
+grasp:
   controller_name: $(arg manipulation_controller)
   manager_namespace: /my_gen3
-  whitelist: [arm_joint_state_controller]
+  whitelist: [arm_joint_state_controller, $(arg gripper_controller)]
   pose_topic_name: /target_pose
-  pre_grasp_vertical_offset: 0.0
-
+  
 close_gripper:
-  position: 0.2
+  controller_name: $(arg gripper_controller)
+  manager_namespace: /my_gen3
+  whitelist: [arm_joint_state_controller, $(arg manipulation_controller), arm_gen3_joint_trajectory_controller]
+  position: 0.5
   max_effort: 100
   tolerance: 0.01
   timeout: 10.0
@@ -51,8 +62,7 @@ close_gripper:
 manipulate_valve:
   controller_name: $(arg manipulation_controller)
   manager_namespace: /my_gen3
-  whitelist: [arm_joint_state_controller]
-  theta_max: 3.14
-  end_effector_frame: arm_tool_frame
-  reference_frame: arm_base_link
-  increment_dt: 0.1
+  whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
+  theta_step: 0.5
+  theta_desired: 1.0
+  dt: 0.05
