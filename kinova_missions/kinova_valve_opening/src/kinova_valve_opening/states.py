@@ -32,6 +32,30 @@ class HomeKinova(RosControlPoseReaching):
             return 'Failure'
 
 
+class GripperPositionControlState(BaseStateRos):
+    """
+    TODO
+    """
+    def __init__(self, ns):
+        BaseStateRos.__init__(self, ns=ns)
+        command_topic_name = self.get_scoped_param("command_topic")
+        self.command = self.get_scoped_param("command")
+        self.command_publisher = rospy.Publisher(command_topic_name, Float64, queue_size=1)
+
+    def execute(self, ud):
+        # It should actually switch to the right controller but assuming that 
+        # the controller is already switched
+        rospy.loginfo("Sending target gripper position: {} %".format(self.command))
+        cmd = Float64()
+        cmd.data = self.command
+        self.command_publisher.publish(command)
+        
+        rospy.loginfo("Sleeping 5.0s before returning.")
+        rospy.sleep(5.0)
+
+        return 'Completed'
+
+
 class ValveDetectionState(ObjectDetection):
     """
     Detects the valve

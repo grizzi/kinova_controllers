@@ -24,7 +24,7 @@ class valve_traj_data:
     valve_haptic_frame = "valve_est_frame"
     
     # geometry
-    valve_radius = 0.1225
+    valve_radius = 0.07
 
     # relative transformation from grasp to point on valve perimeter
     rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_dcm()
@@ -237,7 +237,7 @@ def compute_execution_time(target_pose, max_linear_speed, max_angular_speed):
 
     return scale * 1.0 # s
 
-def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.01, timeout=0):
+def wait_until_reached(target_pose, linear_tolerance=0.005, angular_tolerance=0.01, timeout=0):
     """
     Returns once the target pose has been reached
     """

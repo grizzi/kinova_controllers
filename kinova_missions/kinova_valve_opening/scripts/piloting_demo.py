@@ -23,9 +23,13 @@ with state_machine:
     
     homing_sequence = smach.StateMachine(outcomes=['Success', 'Failure'])
     with homing_sequence:
-        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
-                                transitions={'Completed': 'HOME_ROBOT',
-                                             'Failure': 'Failure'})
+        #smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+        #                        transitions={'Completed': 'HOME_ROBOT',
+        #                                     'Failure': 'Failure'})
+        
+        smach.StateMachine.add('OPEN_GRIPPER', GripperPositionControlState(ns='open_gripper_ll'),
+                        transitions={'Completed': 'HOME_ROBOT',
+                                     'Failure': 'Failure'})
 
         smach.StateMachine.add('HOME_ROBOT', HomeKinova(ns="home_robot"),
                                 transitions={'Completed': 'Success',
@@ -44,6 +48,7 @@ with state_machine:
     #######################################################################
     #                      Detection Subsequence
     ####################################################################### 
+    # TODO(giuseppe) add state / branch for detection with apriltag
     smach.StateMachine.add('VALVE_DETECTION', ValveDetectionState(max_num_failure=3, ns='valve_detection'),
                            transitions={'LateralGrasp': 'LATERAL_MANIPULATION_SEQUENCE',
                                         'FrontalGrasp': 'FRONTAL_MANIPULATION_SEQUENCE',
@@ -63,17 +68,25 @@ with state_machine:
                                 transitions={'Completed': 'CLOSE_GRIPPER',
                                 'Failure': 'Failure'})
 
-        smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
-                               transitions={'Completed': 'MANIPULATE_VALVE',
-                                            'Failure': 'Failure'})
+        #smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
+        #                       transitions={'Completed': 'MANIPULATE_VALVE',
+        #                                    'Failure': 'Failure'})
+
+        smach.StateMachine.add('CLOSE_GRIPPER', GripperPositionControlState(ns='close_gripper_ll'),
+                        transitions={'Completed': 'MANIPULATE_VALVE',
+                                     'Failure': 'Failure'})
 
         smach.StateMachine.add('MANIPULATE_VALVE', LateralManipulation(ns='manipulate_valve'),
                              transitions={'Completed': 'OPEN_GRIPPER',
                                           'Failure': 'Failure'})
   
-        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
-                             transitions={'Completed': 'RESET_LATERAL_GRASP',
-                                          'Failure': 'Failure'})
+        #smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+        #                     transitions={'Completed': 'RESET_LATERAL_GRASP',
+        #                                  'Failure': 'Failure'})
+
+        smach.StateMachine.add('OPEN_GRIPPER', GripperPositionControlState(ns='open_gripper_ll'),
+                transitions={'Completed': 'RESET_LATERAL_GRASP',
+                             'Failure': 'Failure'})
 
         smach.StateMachine.add('RESET_LATERAL_GRASP', PostLateralGraspState(ns='grasp'),
                                 transitions={'Completed': 'LATERAL_GRASP',
@@ -89,17 +102,25 @@ with state_machine:
                                 transitions={'Completed': 'CLOSE_GRIPPER',
                                 'Failure': 'Failure'})
 
-        smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
-                               transitions={'Completed': 'MANIPULATE_VALVE',
-                                            'Failure': 'Failure'})
+        #smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
+        #                       transitions={'Completed': 'MANIPULATE_VALVE',
+        #                                    'Failure': 'Failure'})
+
+        smach.StateMachine.add('CLOSE_GRIPPER', GripperPositionControlState(ns='close_gripper_ll'),
+                transitions={'Completed': 'MANIPULATE_VALVE',
+                             'Failure': 'Failure'})
 
         smach.StateMachine.add('MANIPULATE_VALVE', FrontalManipulation(ns='manipulate_valve'),
                              transitions={'Completed': 'OPEN_GRIPPER',
                                           'Failure': 'Failure'})
   
-        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
-                             transitions={'Completed': 'RESET_FRONTAL_GRASP',
-                                          'Failure': 'Failure'})
+        #smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+        #                     transitions={'Completed': 'RESET_FRONTAL_GRASP',
+        #                                  'Failure': 'Failure'})
+
+        smach.StateMachine.add('OPEN_GRIPPER', GripperPositionControlState(ns='open_gripper_ll'),
+                transitions={'Completed': 'RESET_FRONTAL_GRASP',
+                             'Failure': 'Failure'})
 
         smach.StateMachine.add('RESET_FRONTAL_GRASP', PostFrontalGraspState(ns='grasp'),
                                 transitions={'Completed': 'FRONTAL_GRASP',

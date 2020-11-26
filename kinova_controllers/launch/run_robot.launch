@@ -9,14 +9,6 @@
         <rosparam command="load" file="$(find kinova_controllers)/config/ros_control.yaml" subst_value="true"/>
     </group>
 
-    <!--    Interactive marker to command the end effector-->
-    <node name="interactive_marker_node" pkg="robot_control_ros" type="interactive_marker.py" output="screen">
-        <param name="subscribe_initial_pose"  value="true"/>
-        <param name="initial_pose_topic"      value="/current_pose"/>
-        <param name="frame_id"                value="world"/>
-        <param name="target_pose_topic"       value="/target_pose"/>
-    </node>
-
     <!-- Controller manager gui -->
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
 

@@ -3,6 +3,10 @@ joint_state_controller:
   type: "joint_state_controller/JointStateController"
   publish_rate: 50
 
+gripper_position_controller:
+  type: "position_controllers/JointPositionController"
+  joint: "gripper"
+
 task_space_kinova_robot:
   type: "kinova_controllers/KinovaTaskSpaceControllerRobot"
   controlled_frame: "$(arg prefix)end_effector"

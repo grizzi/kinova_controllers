@@ -20,29 +20,30 @@
   </group>
 
   <!--    State dependent parameters -->
-  <arg name="valve_radius"            default="0.1225"/>
+  <arg name="valve_radius"            default="0.07"/>
 
-  <!--    Manipulation Controller -->
-  <arg name="manipulation_controller" default="ik_kinova_sim_gripper" if="$(arg simulation)"/>
-  <arg name="manipulation_controller" default="ik_kinova_robot_gripper" unless="$(arg simulation)"/>
-  
-  <!--    Gripper controller (none for the real robot)-->
-  <arg name="gripper_controller"      default="arm_robotiq_2f_85_gripper_controller" if="$(arg simulation)"/>
-  <arg name="gripper_controller"      default="" unless="$(arg simulation)"/>
-
-  <rosparam command="load" file="$(find kinova_valve_opening)/config/mission.yaml" subst_value="true"/>
-
-  <!--   In simulation spawn the tag -->
-  <group if="$(arg use_apriltag)">
-    <include file="$(find kinova_valve_opening)/apriltag/apriltag_detection.launch"/>
-  </group>
-  
-  <!--   Load the valve in simulation -->
   <group if="$(arg simulation)">
+    <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
+
+    <!-- Load valve model in simulation -->
     <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
     <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz" unless="$(arg test)"/>
   </group>
+
+  <group unless="$(arg simulation)">
+    <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_robot.yaml" subst_value="true"/>
+    <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
+      output="screen" args=" --stopped ik_kinova_robot_gripper"/>
+  </group>
   
+  <!--   Apriltag detection -->
+  <group if="$(arg use_apriltag)">
+    <include file="$(find kinova_valve_opening)/apriltag/apriltag_detection.launch"/>
+  </group>
+  <group unless="$(arg use_apriltag)">
+    <node name="valve_broadcaster"  type="static_transform_publisher"  pkg="tf2_ros" args="-0.179 0.751 0.390 0.7071068 -0.7071068 0 0 arm_base_link valve_base"/>
+  </group>
+  <!-- From apriltag: -0.201, 0.763, 0.391 0.717, -0.695, -0.040, 0.008 -->
   <!--    State machine -->
   <node pkg="kinova_valve_opening" type="piloting_demo.py"  name="piloting_demo" output="screen"/>
 

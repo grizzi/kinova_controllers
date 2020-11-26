@@ -9,5 +9,5 @@ tag_debug:         0          # default: 0
 publish_tf:        true       # default: false
 
 # Definitions of tags to detect
-standalone_tags: [{id: 0, size: 0.092}]
+standalone_tags: [{id: 0, size: 0.163}] # 0.092
 tag_bundles: []
