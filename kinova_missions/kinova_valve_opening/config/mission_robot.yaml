@@ -4,7 +4,7 @@
 home_robot:
   controller_name: ''
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [gripper_position_controller]
   
 
 reach_detection_hotspot:
@@ -36,7 +36,7 @@ viewpoint_visitor:
 open_gripper:
   controller_name: ''
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [gripper_position_controller]
   position: 0.0
   max_effort: 100
   tolerance: 0.01
@@ -46,13 +46,13 @@ open_gripper:
 grasp:
   controller_name: ik_kinova_robot_gripper
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [gripper_position_controller]
   pose_topic_name: /target_pose
   
 close_gripper:
   controller_name: ''
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [gripper_position_controller]
   position: 0.0 # 0.5
   max_effort: 100
   tolerance: 0.01
@@ -62,15 +62,15 @@ close_gripper:
 manipulate_valve:
   controller_name: ik_kinova_robot_gripper
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [gripper_position_controller]
   theta_step: 0.5
   theta_desired: 1.0
   dt: 0.05
 
 open_gripper_ll:
   command: 0.0
-  command_topic: my_gen3/command
+  command_topic: /my_gen3/gripper_position_controller/command
 
 close_gripper_ll:
   command: 80.0
-  command_topic: my_gen3/command
+  command_topic: /my_gen3/gripper_position_controller/command

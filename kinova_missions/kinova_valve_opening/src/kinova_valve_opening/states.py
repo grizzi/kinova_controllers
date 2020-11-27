@@ -3,7 +3,9 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
+from std_msgs.msg import Float64
 
+from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.srv import DetectObject, DetectObjectRequest
 from smb_mission_planner.manipulation_states import RosControlPoseReaching
 from smb_mission_planner.detection_states import ObjectDetection
@@ -36,11 +38,11 @@ class GripperPositionControlState(BaseStateRos):
     """
     TODO
     """
-    def __init__(self, ns):
-        BaseStateRos.__init__(self, ns=ns)
+    def __init__(self, ns, outcomes=['Completed', 'Failure']):
+        BaseStateRos.__init__(self, ns=ns, outcomes=outcomes)
         command_topic_name = self.get_scoped_param("command_topic")
         self.command = self.get_scoped_param("command")
-        self.command_publisher = rospy.Publisher(command_topic_name, Float64, queue_size=1)
+        self.command_publisher = rospy.Publisher(command_topic_name, Float64, queue_size=10)
 
     def execute(self, ud):
         # It should actually switch to the right controller but assuming that 
@@ -48,7 +50,7 @@ class GripperPositionControlState(BaseStateRos):
         rospy.loginfo("Sending target gripper position: {} %".format(self.command))
         cmd = Float64()
         cmd.data = self.command
-        self.command_publisher.publish(command)
+        self.command_publisher.publish(cmd)
         
         rospy.loginfo("Sleeping 5.0s before returning.")
         rospy.sleep(5.0)
