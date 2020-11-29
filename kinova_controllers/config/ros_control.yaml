@@ -128,3 +128,44 @@ ik_kinova_sim_gripper:
   # dangerous configuration (+- 3 deg ~ 0.087)
   #lower_limits: [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23, -6.28]
   #upper_limits: [6.28, 2.41, 6.28, 2.66, 6.28, 2.23, 6.28]
+
+impedance_kinova_sim_gripper:
+  description_name: "/my_gen3/robot_description"
+  type: "robot_control_ros/ImpedanceControllerTest"
+  target_pose_topic: "/target_pose"
+  current_pose_topic: "/current_pose"
+  publish_ros: true
+  debug: false
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7
+  lower_limits: [-6.28, -2.323, -6.28, -2.573, -6.28, -2.143, -6.28]
+  upper_limits: [6.28, 2.323, 6.28, 2.573, 6.28, 2.143, 6.28]
+
+  # outer impedance control parameters
+  wrench_frame: $(arg prefix)tool_frame
+  admittance_p_gains: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  admittance_d_gains: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]   # not used at the moment
+  force_threshold: [0.0, 0.0, 0.0]
+  torque_threshold: [0.0, 0.0, 0.0]
+
+  # ik tracking parameters
+  root_link: $(arg prefix)base_link
+  end_effector_link: $(arg prefix)tool_frame
+  max_velocity: 0.3
+  max_acceleration: 100.0
+  default_configuration: [0.0, 0.26, 3.14, -2.27, 0.0, 0.96, 1.57]
+
+  # low level joint pd control
+  p_gains: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
+  d_gains: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+
+  # Original true limits. Using a more conservative bound to avoid
+  # dangerous configuration (+- 3 deg ~ 0.087)
+  #lower_limits: [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23, -6.28]
+  #upper_limits: [6.28, 2.41, 6.28, 2.66, 6.28, 2.23, 6.28]

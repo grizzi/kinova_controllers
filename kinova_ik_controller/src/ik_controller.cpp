@@ -26,7 +26,8 @@ void IKControllerKinova::update(const ros::Time& time, const ros::Duration& peri
   }
 }
 
-void IKControllerKinova::stopping(const ros::Time& /*time*/) {
+void IKControllerKinova::stopping(const ros::Time& time) {
+  IKControllerBase::stopping(time);
   for (size_t i=0; i < nr_chain_joints_; i++) {
     joint_handles_[i].setMode(hardware_interface::KortexControlMode::VELOCITY);
   }

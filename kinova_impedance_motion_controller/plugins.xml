@@ -1,0 +1,10 @@
+<library path="lib/libkinova_impedance_motion_controller">
+    <class name="kinova_controllers/ImpedanceControllerKinova"
+           type="kinova_controllers::ImpedanceControllerKinova"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Impedance Motion Controller for the kinova 7 dof arm to use on hardware
+        </description>
+    </class>
+
+</library>
