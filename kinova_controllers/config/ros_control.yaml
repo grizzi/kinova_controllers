@@ -157,7 +157,7 @@ impedance_kinova_sim_gripper:
   # ik tracking parameters
   root_link: $(arg prefix)base_link
   end_effector_link: $(arg prefix)tool_frame
-  max_velocity: 0.3
+  max_velocity: 0.1
   max_acceleration: 100.0
   default_configuration: [0.0, 0.26, 3.14, -2.27, 0.0, 0.96, 1.57]
 
