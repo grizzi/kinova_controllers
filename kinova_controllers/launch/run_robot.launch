@@ -25,6 +25,9 @@
           args="--multiplot-config $(find kinova_controllers)/config/rqt_joint_efforts.xml"
           output="screen"/>
 
+    <node name="external_wrench_plot" pkg="rqt_multiplot" type="rqt_multiplot"
+          args="--multiplot-config $(find kinova_controllers)/config/rqt_external_wrench.xml"
+          output="screen"/>
 
     <!-- A world link exists only in the simulation urdf -->
     <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_base_broadcaster"
