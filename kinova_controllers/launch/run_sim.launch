@@ -11,8 +11,8 @@
     <!-- Load additional custom controllers -->
     <group ns="$(arg robot_name)">
         <rosparam command="load" file="$(find kinova_controllers)/config/ros_control.yaml" subst_value="true"/>
-        <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
-              args="ik_kinova_sim_gripper --stopped"/>
+        <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"/>
+              <!--args="controller name -/-stopped"/ -->
     </group>
 
     <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">

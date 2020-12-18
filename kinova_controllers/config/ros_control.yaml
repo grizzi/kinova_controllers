@@ -200,3 +200,32 @@ impedance_kinova_robot_gripper:
   # low level joint pd control
   p_gains: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
   d_gains: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+
+impedance_controller_effort_sim:
+  description_name: /my_gen3/robot_description
+  type: "robot_control_ros/ImpedanceControllerEffortSim"
+  controlled_frame: $(arg prefix)tool_frame
+  reference_frame: $(arg prefix)base_link
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7
+
+wrench_estimator_controller_sim:
+  description_name: /my_gen3/robot_description
+  type: "robot_control_ros/WrenchEstimatorSim"
+  gain: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 0, 0, 0, 0, 0, 0]
+  alpha: 0.9
+  frame: $(arg prefix)tool_frame
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7
