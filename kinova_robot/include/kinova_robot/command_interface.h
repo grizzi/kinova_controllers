@@ -56,6 +56,15 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
       *vel_ = cmd;
   }
 
+  void setCommand(const double cmd){
+    if (*mode_ == KinovaControlMode::EFFORT)
+      *eff_ = cmd;
+    else if (*mode_ == KinovaControlMode::EFFORT)
+      *pos_ = cmd;
+    else if (*mode_ == KinovaControlMode::VELOCITY)
+      *vel_ = cmd;
+  }
+
   /**
    * Gets the given command for the current mode.
    *
