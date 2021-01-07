@@ -1,0 +1,28 @@
+<launch>
+    <!-- Robot description for MPC -->
+    <arg name="task_file"   default="$(find kinova_mpc_controllers)/config/task.info"/>
+    <param name="robot_description_mpc"
+           command="$(find xacro)/xacro --inorder $(find kinova_description_for_controllers)/urdf/kinova.urdf.xacro"/>
+    <param name="task_folder" value="$(arg task_file)"/>
+
+    <!-- Gazebo simulation -->
+    <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
+        <arg name="gazebo_gui" value="false"/>
+    </include>
+
+    <!-- Load controllers -->
+    <arg name="simulation"  value="true"/>
+    <arg name="prefix" default=""/>
+    <rosparam file="$(find kinova_mpc_controllers)/config/controllers.yaml" command="load" ns="my_gen3" subst_value="true"/>
+
+    <!-- Controller manager gui -->
+    <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
+
+    <!-- Interactive reference -->
+    <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"
+          output="screen" args="$(arg task_file)"/>
+
+    <!-- RViz -->
+    <arg name="rvizconfig"  default="$(find kinova_mpc_controllers)/config/ocs2_test.rviz"/>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rvizconfig)" output="screen"/>
+</launch>
