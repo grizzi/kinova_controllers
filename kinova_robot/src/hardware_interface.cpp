@@ -16,7 +16,7 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
     joint_names[i] = m_arm_joint_names[i];
   }
 
-  ROS_INFO_STREAM("Starting Kinova hardware interface in namespace: " << nh.getNamespace());
+  ROS_INFO_STREAM("Starting Kinova Robot interface in namespace: " << nh.getNamespace());
   for (std::size_t i = 0; i < 7; ++i) {
     // connect and register the joint state interface
     hardware_interface::JointStateHandle state_handle(joint_names[i], &pos_wrapped[i], &vel[i],
@@ -570,13 +570,13 @@ void KinovaHardwareInterface::write(const double dt) {
 /// Start main threads
 void KinovaHardwareInterface::run() {
   if (!initialized_) {
-    ROS_ERROR_STREAM("Kinova hardware interface failed to initialize. Not running.");
+    ROS_ERROR_STREAM("Kinova Robot interface failed to initialize. Not running.");
     return;
   }
 
   write_thread = std::thread(&KinovaHardwareInterface::write_loop, this);
   read_update_thread = std::thread(&KinovaHardwareInterface::read_loop, this, 100);
-  ROS_INFO_STREAM("Kinova ros controller interface is running.");
+  ROS_INFO_STREAM("Kinova Robot interface is running.");
 }
 
 /// Additional methods

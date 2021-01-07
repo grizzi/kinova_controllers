@@ -22,9 +22,17 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME} src/hardware_interface.cpp)
+add_library(${PROJECT_NAME}
+  src/command_interface.cpp
+  src/hardware_interface.cpp
+  src/kinova_robot_node.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC include)
+
+# Robot Driver ROS node
+add_executable(${PROJECT_NAME}_node src/kinova_robot_node.cpp)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${catkin_LIBRARIES})
+add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME})
 
 install(DIRECTORY launch
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
