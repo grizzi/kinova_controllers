@@ -85,10 +85,16 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
   bool set_actuators_control_mode(const KinovaControlMode& mode);
 
   /**
-   * @brief Send command to the hardware
+   * @brief Send lowlevel command to the hardware
    * @return
    */
-  bool send_command();
+  bool send_lowlevel_command();
+
+  /**
+   * @brief Send a highlevel joint velocity command
+   * @return
+   */
+  bool send_joint_velocity_command();
 
   /**
    * @brief Set the hardware command from the command copy and adds feedforward pid torque
