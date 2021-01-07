@@ -1,0 +1,8 @@
+arm_pid:
+  $(arg prefix)joint_1: {p: 0.0, i: 0.0, d: 0.0, i_clamp: 2.0, antiwindup: true}
+  $(arg prefix)joint_2: {p: 0.0, i: 0.0, d: 0.0, i_clamp: 2.0, antiwindup: true}
+  $(arg prefix)joint_3: {p: 0.0, i: 0.0, d: 0.0, i_clamp: 2.0, antiwindup: true}
+  $(arg prefix)joint_4: {p: 0.0, i: 0.0, d: 0.0, i_clamp: 2.0, antiwindup: true}
+  $(arg prefix)joint_5: {p: 0.0, i: 0.0, d: 0.0, i_clamp: 2.0, antiwindup: true}
+  $(arg prefix)joint_6: {p: 0.0, i: 0.0, d: 0.0, i_clamp: 2.0, antiwindup: true}
+  $(arg prefix)joint_7: {p: 0.0, i: 0.0, d: 0.0, i_clamp: 2.0, antiwindup: true}
