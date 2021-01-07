@@ -6,8 +6,7 @@
 #include <robot_control/modeling/robot_wrapper.h>
 
 #include <control_toolbox/pid.h>
-#include <kortex_driver/non-generated/kortex_command_interface.h>
-#include <ocs2_mobile_manipulator_example/MobileManipulatorController.h>
+#include <kinova_robot/command_interface.h>
 
 #include <controller_interface/multi_interface_controller.h>
 #include <hardware_interface/joint_command_interface.h>
@@ -19,7 +18,7 @@ namespace kinova_controllers {
 class KinovaMpcVelocityController : public controller_interface::MultiInterfaceController<
                                         hardware_interface::JointStateInterface> {
  public:
-  using joint_vector = Eigen::Matrix<double, 7, 1>;
+  using joint_vector_t = Eigen::Matrix<double, 7, 1>;
 
   KinovaMpcVelocityController() = default;
   ~KinovaMpcVelocityController() = default;
@@ -52,7 +51,7 @@ class KinovaMpcVelocityController : public controller_interface::MultiInterfaceC
 
   // joint handles
   std::array<hardware_interface::JointStateHandle, 7> state_handles_;
-  std::array<hardware_inteface::JointHandle, 7> sim_command_handles_;
-  std::array<hardware_interface::KortexCommandHandle, 7> robot_command_handles_;
+  std::array<hardware_interface::JointHandle, 7> sim_command_handles_;
+  std::array<hardware_interface::KinovaCommandHandle, 7> robot_command_handles_;
 };
 }  // namespace kinova_controllers

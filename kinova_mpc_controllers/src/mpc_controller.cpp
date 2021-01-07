@@ -10,8 +10,8 @@ namespace kinova_controllers {
 MPC_Controller::MPC_Controller(const ros::NodeHandle& nh) : nh_(nh) {}
 
 bool MPC_Controller::init() {
-  nh_.param<std::string>("/robot_description_mpc", robotDescription_, "");
-  nh_.param<std::string>("/task_folder", taskFolder_, "");
+  nh_.param<std::string>("/robot_description_mpc", robot_description_, "");
+  nh_.param<std::string>("/task_file", taskFile_, "");
 
   nh_.param<double>("mpc_frequency", mpcFrequency_, -1);
 
@@ -30,7 +30,7 @@ bool MPC_Controller::init() {
       nh_.advertise<ocs2_msgs::mpc_observation>("/" + robotName + "_mpc_observation", 10);
 
   mm_interface_.reset(
-      new mobile_manipulator::MobileManipulatorInterface(taskFolder_, robotDescription_));
+      new mobile_manipulator::MobileManipulatorInterface(taskFile_, robot_description_));
   mpcPtr_ = mm_interface_->getMpc();
   mpc_mrt_interface_.reset(new ocs2::MPC_MRT_Interface(*mpcPtr_));
 

@@ -8,8 +8,7 @@
 
     <buildtool_depend>catkin</buildtool_depend>
     <depend>eigen</depend>
-    <depend>kortex_driver</depend>
-    <depend>kortex_description</depend>
+    <depend>kinova_robot</depend>
     <depend>controller_interface</depend>
     <depend>hardware_interface</depend>
     <depend>pluginlib</depend>

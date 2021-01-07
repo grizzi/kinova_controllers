@@ -6,8 +6,7 @@ find_package(Eigen3 3.3 REQUIRED)
 
 set(PROJECT_DEPENDENCIES
         controller_interface
-        kortex_driver
-        kortex_description
+        kinova_robot
         hardware_interface
         pluginlib
         roscpp
@@ -30,9 +29,7 @@ set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES})
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME}
-  src/mpc_controller.cpp
-  src/kinova_mpc_velocity_controller.cpp)
+add_library(${PROJECT_NAME} src/mpc_controller.cpp src/kinova_mpc_velocity_controller.cpp)
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 
 install(DIRECTORY launch config

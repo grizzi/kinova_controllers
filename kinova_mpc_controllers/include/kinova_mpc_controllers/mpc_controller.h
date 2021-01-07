@@ -68,7 +68,7 @@ class MPC_Controller{
  private:
   std::unique_ptr<ocs2::MPC_DDP> mpcPtr_;
   double mpcFrequency_;
-  std::string taskFolder_;
+  std::string taskFile_;
 
   std::atomic_bool referenceEverReceived_;
 
