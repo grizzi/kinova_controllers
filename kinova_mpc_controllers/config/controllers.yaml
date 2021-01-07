@@ -1,0 +1,35 @@
+# -------------------------------------------------------------
+# Publish all joint states
+# -------------------------------------------------------------
+joint_state_controller:
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50
+
+# -------------------------------------------------------------
+# Mpc controllers
+# -------------------------------------------------------------
+
+$(arg prefix)mpc_velocity_controller:
+  type: kinova_controllers/KinovaMpcVelocityController
+  robot_name: "mobile_manipulator"
+  is_real_robot: $(arg simulation)
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7
+  gains:
+    $(arg prefix)joint_1: { p: 3000.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0 }
+    $(arg prefix)joint_2: { p: 50000.0, i: 0.0, d: 0.0, i_clamp_min: -5.0, i_clamp_max: 5.0 }
+    $(arg prefix)joint_3: { p: 3000.0, i: 0.0, d: 0.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_4: { p: 50000.0, i: 0.0, d: 0.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_5: { p: 750.0, i: 0.0, d: 0.2, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_6: { p: 5000.0, i: 0.0, d: 1.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_7: { p: 100.0, i: 0.0, d: 0.0, i_clamp_min: -0.1, i_clamp_max: 0.1 }
+
+  mpc_frequency: 100
+  command_topic: "/joints_position_controller/command"
+  path_topic: "/desired_path"
