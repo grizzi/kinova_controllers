@@ -60,7 +60,7 @@
         <rosparam command="load" file="$(find kinova_robot)/config/arm_pid.yaml" subst_value="true"/>
 
         <!-- Start the kortex_driver node -->
-        <arg name="launch_prefix" default="gdb -ex run arg" if="$(arg debug)"/>
+        <arg name="launch_prefix" default="gdb -ex run --args" if="$(arg debug)"/>
         <arg name="launch_prefix" default="" unless="$(arg debug)"/>
         <node name="kinova_robot" pkg="kinova_robot" type="kinova_robot_node" output="screen" launch-prefix="$(arg launch_prefix)">
             <param name="sim" value="false"/>

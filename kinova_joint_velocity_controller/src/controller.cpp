@@ -13,7 +13,7 @@ bool KinovaJointVelocityController::init(hardware_interface::RobotHW* hw, ros::N
 
   auto command_interface = hw->get<hardware_interface::KinovaCommandInterface>();
   if (command_interface == nullptr) {
-    ROS_ERROR_STREAM("Can't get state interface");
+    ROS_ERROR_STREAM("Can't get command interface");
     return false;
   }
   for (size_t i = 0; i < 7; i++) {

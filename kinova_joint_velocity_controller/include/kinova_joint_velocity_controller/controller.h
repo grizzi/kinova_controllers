@@ -7,10 +7,13 @@
 
 namespace kinova_controllers {
 
-class KinovaJointVelocityController : public controller_interface::MultiInterfaceController<
-                                        hardware_interface::JointStateInterface> {
+class KinovaJointVelocityController
+    : public controller_interface::MultiInterfaceController<
+          hardware_interface::JointStateInterface, hardware_interface::KinovaCommandInterface> {
  public:
-  KinovaJointVelocityController() = default;
+  using BASE = controller_interface::MultiInterfaceController<hardware_interface::JointStateInterface, hardware_interface::KinovaCommandInterface>;
+  // not all interfaces are mandatory
+  KinovaJointVelocityController() : BASE(true) {};
   ~KinovaJointVelocityController() = default;
 
  private:
