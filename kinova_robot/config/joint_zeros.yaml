@@ -1,8 +1,8 @@
 joint_zeros:
-  $(arg prefix)joint_1: -0.0574971
-  $(arg prefix)joint_2: 0.0113692
-  $(arg prefix)joint_3: 0.0220308
-  $(arg prefix)joint_4: -0.0904473
-  $(arg prefix)joint_5: -0.0404539
-  $(arg prefix)joint_6: -0.0697812
-  $(arg prefix)joint_7: -0.0151369
+  $(arg prefix)joint_1: 0.0
+  $(arg prefix)joint_2: 0.0
+  $(arg prefix)joint_3: 0.0
+  $(arg prefix)joint_4: 0.0
+  $(arg prefix)joint_5: 0.0
+  $(arg prefix)joint_6: 0.0
+  $(arg prefix)joint_7: 0.0

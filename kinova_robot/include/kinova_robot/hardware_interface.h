@@ -214,6 +214,7 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
   Feedback current_state;
   Kinova::Api::BaseCyclic::Command kortex_cmd;
   Kinova::Api::GripperCyclic::MotorCommand* kortex_gripper_cmd;
+  Kinova::Api::Base::ServoingMode current_servoing_mode;
 
   // publish state and command
   std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState> > realtime_state_pub_;

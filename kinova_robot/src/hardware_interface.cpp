@@ -55,6 +55,7 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
   }
   // at start up write to command the current state
   current_mode = KinovaControlMode::NO_MODE;
+  current_servoing_mode = Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING;
   mode = current_mode;
   mode_copy = current_mode;
 
@@ -63,7 +64,7 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
   for (size_t i = 0; i < 7; i++) {
     pos_cmd[i] = pos[i];
     pos_wrapped[i] = pos[i];
-    vel_cmd[i] = vel[i];
+    vel_cmd[i] = 0.0;
     eff_cmd[i] = eff[i];
     pos_error[i] = 0.0;
     vel_error[i] = 0.0;
@@ -588,6 +589,7 @@ bool KinovaHardwareInterface::set_servoing_mode(const Kinova::Api::Base::Servoin
     servoing_mode.set_servoing_mode(mode);
     m_base->SetServoingMode(servoing_mode);
     ROS_INFO("New servoing mode set.");
+    current_servoing_mode = mode;
     success = true;
   } catch (Kinova::Api::KDetailedException& ex) {
     ROS_ERROR_STREAM_THROTTLE(5.0, "Kortex exception: " << ex.what());
@@ -608,9 +610,14 @@ bool KinovaHardwareInterface::set_actuators_control_mode(const KinovaControlMode
     // SINGLE LEVEL SERVOING (aka high level position/velocity control)
     // switch happens in reverse mode: first actuator, then servoing mode
     if (mode == KinovaControlMode::NO_MODE || mode == KinovaControlMode::VELOCITY) {
-      stop_writing = true;
+      if (current_servoing_mode == Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING){
+        current_mode = mode;
+        ROS_INFO("Already in high servoing mode.");
+        return true;
+      }
 
       // set command same as the current measurement
+      stop_writing = true;
       bool same_as_readings = true;
       set_hardware_command(0.0, same_as_readings);
       send_lowlevel_command();

@@ -15,12 +15,20 @@
 
 namespace kinova_controllers {
 
-class KinovaMpcVelocityController : public controller_interface::MultiInterfaceController<
-                                        hardware_interface::JointStateInterface> {
+class KinovaMpcVelocityController
+    : public controller_interface::MultiInterfaceController<
+          hardware_interface::JointStateInterface, hardware_interface::EffortJointInterface,
+          hardware_interface::KinovaCommandInterface> {
  public:
   using joint_vector_t = Eigen::Matrix<double, 7, 1>;
 
-  KinovaMpcVelocityController() = default;
+  using BASE =
+      controller_interface::MultiInterfaceController<hardware_interface::JointStateInterface,
+                                                     hardware_interface::EffortJointInterface,
+                                                     hardware_interface::KinovaCommandInterface>;
+
+  // optional interfaces
+  KinovaMpcVelocityController() : BASE(true){};
   ~KinovaMpcVelocityController() = default;
 
  private:

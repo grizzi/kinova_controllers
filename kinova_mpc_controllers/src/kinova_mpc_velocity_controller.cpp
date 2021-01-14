@@ -18,11 +18,12 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   }
 
   controller_nh.param<bool>("is_real_robot", is_real_robot_, {});
+  ROS_INFO_STREAM("Is real robot? " << is_real_robot_);
 
   // init pid controller for sim
   if  (!is_real_robot_){
     for (size_t i = 0; i < 7; i++) {
-      if (!pid_controllers_[i].init(ros::NodeHandle(controller_nh, joint_names_[i] + "/pid"))) {
+      if (!pid_controllers_[i].init(ros::NodeHandle(controller_nh, "gains/" + joint_names_[i]), true)) {
         ROS_ERROR_STREAM("Failed to load PID parameters from " << joint_names_[i] + "/pid");
         return false;
       }
@@ -49,6 +50,9 @@ void KinovaMpcVelocityController::update(const ros::Time& time, const ros::Durat
 
 void KinovaMpcVelocityController::stopping(const ros::Time& time){
   mpc_controller_->stop();
+  if (is_real_robot_){
+    for(auto& handle : robot_command_handles_) handle.setCommand(0.0);
+  }
 }
 
 bool KinovaMpcVelocityController::addStateHandles(hardware_interface::RobotHW* hw) {

@@ -2,6 +2,7 @@
 <launch>
 
     <!-- Arm configuration -->
+    <arg name="debug" default="false"/>
     <arg name="arm" default="gen3"/>
     <arg name="dof" default="7"/>
     <arg name="vision" default="true"/> <!-- True if the arm has a Vision module -->
@@ -139,15 +140,15 @@
         <test test-name="publish_test_kortex_driver" pkg="rostest" type="publishtest">
             <rosparam subst_value="true">
                 topics:
-                - name: /$(arg robot_name)/base_feedback
-                timeout: 10
-                negative: False
-                - name: /$(arg robot_name)/base_feedback/joint_state
-                timeout: 10
-                negative: False
-                - name: /$(arg robot_name)/joint_states
-                timeout: 10
-                negative: False
+                    - name: /$(arg robot_name)/base_feedback
+                      timeout: 10
+                      negative: False
+                    - name: /$(arg robot_name)/base_feedback/joint_state
+                      timeout: 10
+                      negative: False
+                    - name: /$(arg robot_name)/joint_states
+                      timeout: 10
+                      negative: False
             </rosparam>
         </test>
 

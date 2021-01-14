@@ -15,22 +15,25 @@ ddp
   constraintTolerance           1e-3
 
   displayInfo                   false
-  displayShortSummary           false
+  displayShortSummary           true
   checkNumericalStability       false
 
   AbsTolODE                     1e-5
   RelTolODE                     1e-3
   minTimeStep                   1e-3
-  maxNumStepsPerSecond          100000
+  maxNumStepsPerSecond          50000
   backwardPassIntegratorType    ODE45
 
-  inequalityConstraintMu        100.0
-  inequalityConstraintDelta     1.1
-
+  inequalityConstraintMu        1e-2
+  inequalityConstraintDelta     1e-3
+  constraintPenaltyInitialValue 0
+  constraintPenaltyIncreaseRate 0.001
   preComputeRiccatiTerms        true
   useNominalTimeForBackwardPass false
 
   useFeedbackPolicy             false
+
+
 
   strategy                      LINE_SEARCH
   lineSearch
@@ -48,7 +51,7 @@ rollout
   AbsTolODE                     1e-5    ;1e-6
   RelTolODE                     1e-3    ;1e-4
   minTimeStep                   1e-3
-  maxNumStepsPerSecond          100000
+  maxNumStepsPerSecond          50000
   checkNumericalStability       false
 }
 
@@ -128,7 +131,7 @@ endEffectorCost
   ; final end effector cost weight matrix
   Q_final
   {
-    scaling 1e+0
+    scaling 1e+2
 
     (0,0) 1.0  ; end effector x
     (1,1) 1.0  ; end effector y
@@ -141,51 +144,45 @@ endEffectorCost
 
 joint_limits
 {
-  active false
+  active true
   lower
   {
     scaling 1e+0
 
-    (0,0) -100.0  ; position x
-    (1,0) -100.0  ; position y
-    (2,0) -20.0  ; heading
-    (3,0) -6.14  ; SH_ROT
-    (4,0) -2.2  ; SH_FLE
-    (5,0) -6.14  ; EL_FLE
-    (6,0) -2.14  ; EL_ROT
-    (7,0) -6.14  ; WR_FLE
-    (8,0) -2.14  ; WR_ROT
-    (9,0) -6.14
+    (0,0) -6.14  ; SH_ROT
+    (1,0) -2.14  ; SH_FLE
+    (2,0) -6.14  ; EL_FLE
+    (3,0) -2.14  ; EL_ROT
+    (4,0) -6.14  ; WR_FLE
+    (5,0) -2.14  ; WR_ROT
+    (6,0) -6.14
   }
   upper
   {
     scaling 1e+0
 
-    (0,0)  100.0  ; position x
-    (1,0)  100.0  ; position y
-    (2,0)  20.0  ; heading
-    (3,0)  6.14  ; SH_ROT
-    (4,0)  2.14  ; SH_FLE
-    (5,0)  6.14  ; EL_FLE
-    (6,0)  2.14  ; EL_ROT
-    (7,0)  6.14  ; WR_FLE
-    (8,0)  2.14  ; WR_ROT
-    (9,0)  6.14
+    (0,0)  6.14  ; SH_ROT
+    (1,0)  2.14  ; SH_FLE
+    (2,0)  6.14  ; EL_FLE
+    (3,0)  2.14  ; EL_ROT
+    (4,0)  6.14  ; WR_FLE
+    (5,0)  2.14  ; WR_ROT
+    (6,0)  6.14
   }
   velocity
   {
-    scaling 1e+1
+    scaling 1e+0
 
-    (0,0)  2.0  ; position x
-    (1,0)  2.0  ; position y
-    (2,0)  2.0  ; heading
-    (3,0)  2.0  ; SH_ROT
-    (4,0)  2.0  ; SH_FLE
-    (5,0)  2.0  ; EL_FLE
-    (6,0)  2.0  ; EL_ROT
-    (7,0)  2.0  ; WR_FLE
-    (8,0)  2.0  ; WR_ROT
-    (9,0)  2.0
+    (0,0)  1.0  ; position x
+    (1,0)  1.0  ; position y
+    (2,0)  1.0  ; heading
+    (3,0)  1.0  ; SH_ROT
+    (4,0)  1.0  ; SH_FLE
+    (5,0)  1.0  ; EL_FLE
+    (6,0)  1.0  ; EL_ROT
+    (7,0)  1.0  ; WR_FLE
+    (8,0)  1.0  ; WR_ROT
+    (9,0)  1.0
   }
 }
 selfCollisionCost
@@ -197,13 +194,13 @@ selfCollisionCost
   {
   }
 
-  ; Self Collision pairs
+  ; Self Collision pairs    [0] "bracelet_link, half_arm_1_link"
   collisionLinkPairs
   {
   }
 
   ; minimum distance allowed between the pairs
-  minimumDistance  0.1
+  minimumDistance  0.2
 
   ; relaxed log barrier mu
   mu  0.01
