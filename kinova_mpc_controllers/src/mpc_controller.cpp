@@ -48,6 +48,7 @@ bool MPC_Controller::init() {
 
 void MPC_Controller::start(const joint_vector_t& initial_observation) {
   // initial observation
+  stop_ = false;
   jointInitialState_ = initial_observation;
   setObservation(initial_observation);
 
@@ -64,7 +65,7 @@ void MPC_Controller::start(const joint_vector_t& initial_observation) {
 void MPC_Controller::advanceMpc() {
   static double elapsed;
 
-  while (ros::ok()) {
+  while (ros::ok() && !stop_) {
     if (!referenceEverReceived_) {
       ROS_WARN_THROTTLE(3.0, "Reference never received. Skipping MPC update.");
       continue;
@@ -233,7 +234,10 @@ void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) const {
 }
 
 void MPC_Controller::stop() {
-  if (mpcThread_.joinable()) mpcThread_.join();
+  ROS_INFO("Stopping MPC update thread");
+  stop_ = true;
+  mpcThread_.join();
+  ROS_INFO("Stopped MPC update thread");
 }
 
 }  // namespace kinova_controllers

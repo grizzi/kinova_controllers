@@ -69,6 +69,7 @@ class MPC_Controller{
   ros::Subscriber targetPathSubscriber_;
 
  private:
+  std::atomic_bool stop_;
   std::unique_ptr<ocs2::MPC_DDP> mpcPtr_;
   double mpcFrequency_;
   std::string taskFile_;
