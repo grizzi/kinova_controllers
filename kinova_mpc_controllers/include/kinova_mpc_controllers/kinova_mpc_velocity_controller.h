@@ -47,12 +47,17 @@ class KinovaMpcVelocityController
 
  private:
   bool is_real_robot_;
-  joint_vector_t joint_state_;
+  std::string robot_description_;
   std::vector<std::string> joint_names_;
 
   // model for the simulation
   std::unique_ptr<rc::RobotWrapper> model_;
-  std::vector<control_toolbox::Pid> pid_controllers_;
+  std::array<control_toolbox::Pid, 7> pid_controllers_;
+  joint_vector_t position_error_;
+  joint_vector_t velocity_error_;
+  joint_vector_t gravity_and_coriolis_;
+  Eigen::VectorXd position_current_;    // compute PD error: dynamic vector in the gripper case
+  Eigen::VectorXd velocity_current_;    // compute PD error: dynamic vector in the gripper case
 
   // mpc controller
   std::unique_ptr<MPC_Controller> mpc_controller_;

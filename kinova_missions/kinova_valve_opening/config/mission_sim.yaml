@@ -36,7 +36,7 @@ viewpoint_visitor:
 open_gripper:
   controller_name: arm_robotiq_2f_85_gripper_controller
   manager_namespace: /my_gen3
-  whitelist: [arm_joint_state_controller, ik_kinova_sim_gripper, arm_gen3_joint_trajectory_controller]
+  whitelist: [arm_joint_state_controller, arm_gen3_joint_trajectory_controller, mpc_velocity_controller]
   position: 0.0
   max_effort: 100
   tolerance: 0.01
@@ -44,15 +44,16 @@ open_gripper:
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
 grasp:
-  controller_name: ik_kinova_sim_gripper
+  controller_name: mpc_velocity_controller
   manager_namespace: /my_gen3
   whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
   pose_topic_name: /target_pose
+  path_topic_name: /desired_path
   
 close_gripper:
   controller_name: arm_robotiq_2f_85_gripper_controller
   manager_namespace: /my_gen3
-  whitelist: [arm_joint_state_controller, ik_kinova_sim_gripper, arm_gen3_joint_trajectory_controller]
+  whitelist: [arm_joint_state_controller, arm_gen3_joint_trajectory_controller, mpc_velocity_controller]
   position: 0.5
   max_effort: 100
   tolerance: 0.01
@@ -60,9 +61,9 @@ close_gripper:
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
 manipulate_valve:
-  controller_name: ik_kinova_sim_gripper
+  controller_name: mpc_velocity_controller
   manager_namespace: /my_gen3
-  whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
+  whitelist: [arm_joint_state_controller, aGripperPositionControlrm_robotiq_2f_85_gripper_controller]
   theta_step: 0.5
   theta_desired: 1.0
   dt: 0.05

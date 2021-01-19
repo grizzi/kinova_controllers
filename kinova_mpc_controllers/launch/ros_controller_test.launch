@@ -1,4 +1,5 @@
 <launch>
+
     <!-- Robot description for MPC -->
     <arg name="task_file"   default="$(find kinova_mpc_controllers)/config/task.info"/>
     <param name="robot_description_mpc"
@@ -6,8 +7,12 @@
     <param name="task_file" value="$(arg task_file)"/>
 
     <!-- Gazebo simulation -->
+    <arg name="robot_name"  default="my_gen3"/>
+    <arg name="gripper" default=""/>
     <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
         <arg name="gazebo_gui" value="false"/>
+        <arg name="robot_name" value="$(arg robot_name)"/>
+        <arg name="gripper" value="$(arg gripper)"/>
     </include>
 
     <!-- Load controllers -->
@@ -17,6 +22,10 @@
 
     <!-- Controller manager gui -->
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
+
+    <!-- Load only MPC Controller -->
+    <node name="mpc_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" ns="my_gen3"
+          output="screen" args="--stopped mpc_velocity_controller"/>
 
     <!-- Interactive reference -->
     <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"

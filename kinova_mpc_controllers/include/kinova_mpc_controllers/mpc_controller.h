@@ -45,7 +45,7 @@ class MPC_Controller{
    * Optional preprocessing step for the tracked path.
    * @param desiredPath
    */
-  virtual void adaptPath(const nav_msgs::PathConstPtr& desiredPath) const {};
+  virtual nav_msgs::Path adaptPath(const nav_msgs::PathConstPtr& desiredPath) const;
 
  private:
   void advanceMpc();
@@ -56,6 +56,7 @@ class MPC_Controller{
 
  protected:
   std::string robot_description_;
+  joint_vector_t jointInitialState_;
   joint_vector_t positionCommand_;
   joint_vector_t velocityCommand_;
   std::vector<std::string> jointNames_;

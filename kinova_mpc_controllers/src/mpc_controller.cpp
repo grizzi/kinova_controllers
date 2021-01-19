@@ -44,6 +44,7 @@ bool MPC_Controller::init() {
 
 void MPC_Controller::start(const joint_vector_t& initial_observation) {
   // initial observation
+  jointInitialState_ = initial_observation;
   setObservation(initial_observation);
 
   // reference
@@ -113,8 +114,7 @@ void MPC_Controller::updateCommand() {
 
   if (!referenceEverReceived_ || !mpc_mrt_interface_->initialPolicyReceived()) {
     std::lock_guard<std::mutex> lock(observationMutex_);
-    static auto command = observation_.state;
-    positionCommand_ = command.tail(7);
+    positionCommand_ = jointInitialState_;
     velocityCommand_.setZero();
     return;
   }
@@ -122,7 +122,7 @@ void MPC_Controller::updateCommand() {
   mpc_mrt_interface_->updatePolicy();
   mpc_mrt_interface_->evaluatePolicy(observation_.time, observation_.state, mpcState, mpcInput,
                                      mode);
-  positionCommand_ = mpcState.tail(7);
+  positionCommand_ = observation_.state.tail(7);  // when mpc active, only velocity command
   velocityCommand_ = mpcInput.tail(7);
 }
 
@@ -133,6 +133,19 @@ void MPC_Controller::publishObservation() {
     ocs2::ros_msg_conversions::createObservationMsg(observation_, observationMsg);
   }
   observationPublisher_.publish(observationMsg);
+}
+
+nav_msgs::Path MPC_Controller::adaptPath(const nav_msgs::PathConstPtr& desiredPath) const {
+  nav_msgs::Path path_copy = *desiredPath;
+
+  auto time_offset = ros::Time::now().toSec() - desiredPath->poses[0].header.stamp.toSec();
+  if (time_offset < 0) return *desiredPath;
+
+  ROS_INFO_STREAM("Adapting path with a time offset of: " << time_offset << "s.");
+  for(auto& pose : path_copy.poses){
+    pose.header.stamp += ros::Duration(time_offset);
+  }
+  return path_copy;
 }
 
 void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
@@ -147,11 +160,11 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
     return;
   }
 
-  adaptPath(desiredPath);
-
-  ocs2::CostDesiredTrajectories costDesiredTrajectories(desiredPath->poses.size());
+  nav_msgs::Path adaptedPath = adaptPath(desiredPath);
+  ROS_INFO_STREAM("Received new path with " << adaptedPath.poses.size());
+  ocs2::CostDesiredTrajectories costDesiredTrajectories(adaptedPath.poses.size());
   size_t idx = 0;
-  for (const auto& waypoint : desiredPath->poses) {
+  for (const auto& waypoint : adaptedPath.poses) {
     // Desired state trajectory
     ocs2::scalar_array_t& tDesiredTrajectory = costDesiredTrajectories.desiredTimeTrajectory();
     tDesiredTrajectory[idx] = waypoint.header.stamp.toSec();

@@ -10,5 +10,10 @@ catkin_package(
 )
 catkin_python_setup()
 
+catkin_install_python(PROGRAMS
+        scripts/mock_modules.py
+        scripts/piloting_demo.pyas
+        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 install(DIRECTORY launch config
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

@@ -68,7 +68,6 @@ def ee_goal_callback(msg):
     update_ee_tf()
 
 
-
 def switch_roco_controller_service(req):
     rospy.sleep(1.0)
     rospy.loginfo("Switching to controller: " + str(req.name))

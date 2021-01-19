@@ -13,6 +13,7 @@ from smb_mission_planner.utils.moveit_utils import MoveItPlanner
 
 from kinova_valve_opening.trajectory_generator import *
 
+
 class HomeKinova(RosControlPoseReaching):
     """
     Switct to the trajectory controller and homes the robot
@@ -135,23 +136,26 @@ class LateralGraspState(RosControlPoseReaching):
     """
     def __init__(self, ns):
         RosControlPoseReaching.__init__(self, ns=ns)
-        pose_topic_name = self.get_scoped_param("pose_topic_name")
-        self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
+        path_topic_name = self.get_scoped_param("path_topic_name")
+        self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
         
     def execute(self, ud):
         controller_switched = self.do_switch()
         if not controller_switched:
             return 'Failure'
-        
+
         # Goal 1: get close to the grasping pose, not yet around the valve
         target_pose = compute_pre_lateral_grasp()
-        self.pose_goal_publisher.publish(target_pose)
+        path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
+        self.path_publisher.publish(path)
+
         if not wait_until_reached(target_pose):
             return 'Failure'
 
         # Goal 2: move forward to surround the valve
         target_pose = compute_lateral_grasp()
-        self.pose_goal_publisher.publish(target_pose)
+        path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
+        self.path_publisher.publish(path)
         if not wait_until_reached(target_pose):
             return 'Failure'
 

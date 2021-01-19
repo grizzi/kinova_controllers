@@ -1,0 +1,16 @@
+<launch>
+    <!-- Robot description for MPC -->
+    <arg name="task_file"   default="$(find kinova_mpc_controllers)/config/task.info"/>
+    <param name="robot_description_mpc"
+           command="$(find xacro)/xacro --inorder $(find kinova_description_for_controllers)/urdf/kinova.urdf.xacro"/>
+    <param name="task_file" value="$(arg task_file)"/>
+
+    <!-- Load controllers -->
+    <arg name="simulation"  default="true"/>
+    <arg name="prefix" default=""/>
+    <rosparam file="$(find kinova_mpc_controllers)/config/controllers.yaml" command="load" ns="my_gen3" subst_value="true"/>
+
+    <!-- Load only MPC Controller -->
+    <node name="mpc_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" ns="my_gen3"
+          output="screen" args="--stopped mpc_velocity_controller"/>
+</launch>

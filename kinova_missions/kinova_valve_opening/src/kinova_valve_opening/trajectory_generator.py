@@ -6,6 +6,8 @@ import tf2_ros
 import tf2_geometry_msgs
 import pinocchio as pin
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
+from nav_msgs.msg import Path
+
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from mpl_toolkits.mplot3d import Axes3D
@@ -27,8 +29,8 @@ class valve_traj_data:
     valve_radius = 0.07
 
     # relative transformation from grasp to point on valve perimeter
-    rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_dcm()
-    rotation_valve_frontgrasp = R.from_euler('xyz', [0.0, 0.0, 180.0], degrees=True).as_dcm()
+    rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_matrix()
+    rotation_valve_frontgrasp = R.from_euler('xyz', [0.0, 0.0, 180.0], degrees=True).as_matrix()
     translation_valve_latgrasp = np.array([valve_radius, 0.0, 0.0])
     translation_valve_frontgrasp = np.array([valve_radius, 0.0, 0.0])
 
@@ -39,6 +41,48 @@ class valve_traj_data:
 #####################################
 #  Generic utility functions
 #####################################
+
+def get_end_effector_pose():
+    """ Retrieve the end effector pose. Let it fail if unable to get the transform """
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+
+    transform = tf_buffer.lookup_transform(valve_traj_data.base_frame,      # target frame
+                                           valve_traj_data.tool_frame,      # source frame
+                                           rospy.Time(0),                   # tf at first available time
+                                           rospy.Duration(3))
+    return tf_to_se3(transform)
+
+
+def get_timed_path_to_target(target_pose: PoseStamped, linear_velocity: float, angular_velocity: float) -> Path:
+    """ Return a path from current pose to target timed with a specific velocity """
+    start = get_end_effector_pose()
+    if target_pose.header.frame_id != valve_traj_data.base_frame:
+        raise NameError("Target pose is not in the same frame as the current ee pose.")
+
+    path = Path()
+    path.header.stamp = rospy.Time.from_sec(0)
+    path.header.frame_id = valve_traj_data.base_frame
+
+    pose_stamped_start = PoseStamped()
+    pose_stamped_start.pose = se3_to_pose_ros(start)
+    pose_stamped_start.header.frame_id = valve_traj_data.base_frame
+    pose_stamped_start.header.stamp = rospy.Time.from_sec(0)
+
+    pose_stamped_end = target_pose
+
+    end = pose_to_se3(target_pose.pose)
+    vel = pin.log6(end.actInv(start))
+    max_lin = max(abs(vel.linear))  # linear velocity to get there in 1 sec
+    max_ang = max(abs(vel.angular)) # angular velocity to get there in 1 sec
+
+    reach_time = 1.0 * max(1.0, max(max_lin/linear_velocity, max_ang/angular_velocity))
+    pose_stamped_end.header.stamp = rospy.Time.from_sec(reach_time)
+
+    path.poses.append(pose_stamped_start)
+    path.poses.append(pose_stamped_end)
+    return path
+
 
 def project_to_plane(plane_origin, plane_normal, p, in_plane=False):
     """
@@ -66,7 +110,7 @@ def se3_to_pose_ros(se3pose):
     pose_ros.position.x = se3pose.translation[0]
     pose_ros.position.y = se3pose.translation[1]
     pose_ros.position.z = se3pose.translation[2]
-    q = R.from_dcm(se3pose.rotation).as_quat()
+    q = R.from_matrix(se3pose.rotation).as_quat()
     pose_ros.orientation.x = q[0]
     pose_ros.orientation.y = q[1]
     pose_ros.orientation.z = q[2]
@@ -124,7 +168,7 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
                   t_tool_valve.transform.rotation.y,
                   t_tool_valve.transform.rotation.z,
                   t_tool_valve.transform.rotation.w]
-    rotation = R.from_quat(quaternion).as_dcm()
+    rotation = R.from_quat(quaternion).as_matrix()
     normal = rotation[:, 2]
 
     # get the point on the plane which intersects with the perimeter
@@ -145,7 +189,7 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
     grasp_orientation[:, 1] =  np.cross(grasp_orientation[:, 2], grasp_orientation[:, 0])
     
     grasp_orientation = np.dot(grasp_orientation, relative_grasp_rotation)
-    grasp_quat = R.from_dcm(grasp_orientation).as_quat()
+    grasp_quat = R.from_matrix(grasp_orientation).as_quat()
 
     # Pose ros 
     pose = PoseStamped()
@@ -339,7 +383,7 @@ class ValveTrajectoryGenerator(object):
         tf_ref_valve_ros.transform.translation.x = self.tf_ref_valve.translation[0]
         tf_ref_valve_ros.transform.translation.y = self.tf_ref_valve.translation[1]
         tf_ref_valve_ros.transform.translation.z = self.tf_ref_valve.translation[2]
-        q = R.from_dcm(self.tf_ref_valve.rotation).as_quat()
+        q = R.from_matrix(self.tf_ref_valve.rotation).as_quat()
         tf_ref_valve_ros.transform.rotation.x = q[0]
         tf_ref_valve_ros.transform.rotation.y = q[1]
         tf_ref_valve_ros.transform.rotation.z = q[2]
@@ -428,3 +472,62 @@ class ValveTrajectoryGenerator(object):
             self.advance(dt)
             rate.sleep()
         return True
+
+    def get_path(self, angle_start_deg, angle_end_deg, speed_deg=5.0, angle_delta_deg=5):
+        angle_start = np.deg2rad(angle_start_deg)
+        angle_end = np.deg2rad(angle_end_deg)
+        speed = np.deg2rad(speed_deg)
+        angle_delta = np.deg2rad(angle_delta_deg)
+
+        if speed == 0:
+            rospy.logwarn("Trajectory generator: velocity is zero!")
+            return None
+
+        if angle_end == angle_start:
+            rospy.logwarn("Trajectory generator: start and end angles are the same.")
+            return None
+
+        angle = angle_end
+        speed = abs(speed)
+        dt = angle_delta/speed
+        direction = (angle_end - angle_start) / abs(angle_end - angle_start)
+
+        time = 0
+        path = Path()
+        while True:
+            # Manage last point on path
+            if (angle - angle_end) * direction > 0:
+                pose = self.compute_target(angle_end)
+                pose.header.stamp = time - dt + (angle - angle_end) * direction / speed
+                path.poses.append(pose)
+                break
+
+            pose = self.compute_target(angle)
+            pose.header.stamp = time
+            angle += direction * angle_delta
+            time += dt
+            path.poses.append(pose)
+
+        path.header = path.poses[0].header.stamp
+        return path
+
+
+if __name__ == "__main__":
+    rospy.init_node("trajectory_generator")
+    path_publisher = rospy.Publisher("desired_path", Path, queue_size=1)
+
+    # Test trajectory generation
+    generator = ValveTrajectoryGenerator()
+    generator.estimate_valve_from_lateral_grasp()
+
+    rospy.loginfo("Generating path from 0 to 10 and sleeping 10 secs.")
+    path = generator.get_path(0, 10)
+    path_publisher.publish(path)
+    rospy.sleep(10)
+
+    rospy.loginfo("Generating path from 10 to 0 and sleeping 10 secs.")
+    path = generator.get_path(10, 0)
+    path_publisher.publish(path)
+    rospy.sleep(10)
+
+

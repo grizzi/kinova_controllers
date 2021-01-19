@@ -1,55 +1,63 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="enable_viewer"           default="false"/>
-  <arg name="description_for_moveit"  default="/my_gen3/robot_description"/>
-  <arg name="test"                    default="false"/>
-  <arg name="simulation"              default="false"/>
-  <arg name="use_apriltag"            default="false"/>
+    <arg name="enable_viewer" default="false"/>
+    <arg name="description_for_moveit" default="/my_gen3/robot_description"/>
+    <arg name="test" default="false"/>
+    <arg name="simulation" default="false"/>
+    <arg name="use_apriltag" default="false"/>
 
-  <!-- Remap description for moveit commander -->
-  <param name="/moveit_planner/description_name" value="$(arg description_for_moveit)"/>
-  <param name="/moveit_planner/namespace" value="my_gen3"/>
-  <param name="/moveit_planner/arm_group_name" value="arm"/>
+    <!-- Remap description for moveit commander -->
+    <param name="/moveit_planner/description_name" value="$(arg description_for_moveit)"/>
+    <param name="/moveit_planner/namespace" value="my_gen3"/>
+    <param name="/moveit_planner/arm_group_name" value="arm"/>
 
-  <!--   Mock modules to test state machine without sim -->
-  <group if="$(arg test)">
-    <param name="/moveit_planner/fake_execution"   value="true"/>
-    <include file="$(find kinova_valve_opening)/launch/piloting_mock_modules.launch"/>
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/sm_test.rviz"/>
-  </group>
+    <!--   Mock modules to test state machine without sim -->
+    <group if="$(arg test)">
+        <param name="/moveit_planner/fake_execution" value="true"/>
+        <include file="$(find kinova_valve_opening)/launch/piloting_mock_modules.launch"/>
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/sm_test.rviz"/>
+    </group>
 
-  <!--    State dependent parameters -->
-  <arg name="valve_radius"            default="0.07"/>
+    <!--    State dependent parameters -->
+    <arg name="valve_radius" default="0.07"/>
 
-  <group if="$(arg simulation)">
-    <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
+    <include file="$(find kinova_mpc_controllers)/launch/controller.launch">
+        <arg name="prefix" value="arm_"/>
+        <arg name="simulation" value="$(arg simulation)"/>
+    </include>
 
-    <!-- Load valve model in simulation -->
-    <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
-    <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz" unless="$(arg test)"/>
-  </group>
+    <group if="$(arg simulation)">
+        <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
 
-  <group unless="$(arg simulation)">
-    <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_robot.yaml" subst_value="true"/>
-    <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
-      output="screen" args=" --stopped ik_kinova_robot_gripper"/>
-  </group>
-  
-  <!--   Apriltag detection -->
-  <group if="$(arg use_apriltag)">
-    <include file="$(find kinova_valve_opening)/apriltag/apriltag_detection.launch"/>
-  </group>
-  <group unless="$(arg use_apriltag)">
-    <node name="valve_broadcaster"  type="static_transform_publisher"  pkg="tf2_ros" args="-0.179 0.751 0.390 0.7071068 -0.7071068 0 0 arm_base_link valve_base"/>
-  </group>
-  <!-- From apriltag: -0.201, 0.763, 0.391 0.717, -0.695, -0.040, 0.008 -->
-  <!--    State machine -->
-  <node pkg="kinova_valve_opening" type="piloting_demo.py"  name="piloting_demo" output="screen"/>
+        <!-- Load valve model in simulation -->
+        <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
+        <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz"
+              unless="$(arg test)"/>
+    </group>
 
-  <!--    Smach viewer -->
-  <group if="$(arg enable_viewer)">
-    <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen" />
-  </group>
+    <group unless="$(arg simulation)">
+        <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_robot.yaml" subst_value="true"/>
+        <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
+              output="screen" args=" --stopped mpc_velocity_controller"/>
+
+        <!--   Apriltag detection -->
+        <group if="$(arg use_apriltag)">
+            <include file="$(find kinova_valve_opening)/apriltag/apriltag_detection.launch"/>
+        </group>
+        <group unless="$(arg use_apriltag)">
+            <node name="valve_broadcaster" type="static_transform_publisher" pkg="tf2_ros"
+                  args="-0.179 0.751 0.390 0.7071068 -0.7071068 0 0 arm_base_link valve_base"/>
+        </group>
+    </group>
+
+    <!-- From apriltag: -0.201, 0.763, 0.391 0.717, -0.695, -0.040, 0.008 -->
+    <!--    State machine -->
+    <node pkg="kinova_valve_opening" type="piloting_demo.py" name="piloting_demo" output="screen"/>
+
+    <!--    Smach viewer -->
+    <group if="$(arg enable_viewer)">
+        <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen"/>
+    </group>
 
 </launch>

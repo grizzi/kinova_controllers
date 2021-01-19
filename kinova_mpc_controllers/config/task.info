@@ -15,7 +15,7 @@ ddp
   constraintTolerance           1e-3
 
   displayInfo                   false
-  displayShortSummary           true
+  displayShortSummary           false
   checkNumericalStability       false
 
   AbsTolODE                     1e-5
@@ -144,7 +144,7 @@ endEffectorCost
 
 joint_limits
 {
-  active true
+  active false
   lower
   {
     scaling 1e+0
@@ -200,7 +200,7 @@ selfCollisionCost
   }
 
   ; minimum distance allowed between the pairs
-  minimumDistance  0.2
+  minimumDistance  0.0
 
   ; relaxed log barrier mu
   mu  0.01
