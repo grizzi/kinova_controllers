@@ -12,6 +12,7 @@
 #include <hardware_interface/joint_command_interface.h>
 
 #include <kinova_mpc_controllers/mpc_controller.h>
+#include <sensor_msgs/JointState.h>
 
 namespace kinova_controllers {
 
@@ -46,9 +47,16 @@ class KinovaMpcVelocityController
   void readState();
 
  private:
+  std::string ee_frame_;
   bool is_real_robot_;
   std::string robot_description_;
   std::vector<std::string> joint_names_;
+  ros::Publisher reset_imarker_pose_pub_;
+
+  sensor_msgs::JointState joint_state_des_;
+  sensor_msgs::JointState joint_state_cur_;
+  ros::Publisher joint_state_des_pub_;
+  ros::Publisher joint_state_cur_pub_;
 
   // model for the simulation
   std::unique_ptr<rc::RobotWrapper> model_;

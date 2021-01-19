@@ -3,7 +3,11 @@
 //
 
 #include "kinova_mpc_controllers/mpc_controller.h"
+#include <geometry_msgs/TransformStamped.h>
 #include <ocs2_ros_interfaces/common/RosMsgConversions.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 namespace kinova_controllers {
 
@@ -21,8 +25,7 @@ bool MPC_Controller::init() {
 
   std::string pathTopic;
   nh_.param<std::string>("path_topic", pathTopic, "/desired_path");
-  targetPathSubscriber_ =
-      nh_.subscribe(pathTopic, 10, &MPC_Controller::pathCallback, this);
+  targetPathSubscriber_ = nh_.subscribe(pathTopic, 10, &MPC_Controller::pathCallback, this);
 
   std::string robotName;
   nh_.param<std::string>("robot_name", robotName, "/mobile_manipulator");
@@ -122,7 +125,7 @@ void MPC_Controller::updateCommand() {
   mpc_mrt_interface_->updatePolicy();
   mpc_mrt_interface_->evaluatePolicy(observation_.time, observation_.state, mpcState, mpcInput,
                                      mode);
-  positionCommand_ = observation_.state.tail(7);  // when mpc active, only velocity command
+  positionCommand_ = mpcState.tail(7);  // when mpc active, only velocity command
   velocityCommand_ = mpcInput.tail(7);
 }
 
@@ -135,17 +138,14 @@ void MPC_Controller::publishObservation() {
   observationPublisher_.publish(observationMsg);
 }
 
-nav_msgs::Path MPC_Controller::adaptPath(const nav_msgs::PathConstPtr& desiredPath) const {
-  nav_msgs::Path path_copy = *desiredPath;
-
-  auto time_offset = ros::Time::now().toSec() - desiredPath->poses[0].header.stamp.toSec();
-  if (time_offset < 0) return *desiredPath;
+void MPC_Controller::adjustPathTime(nav_msgs::Path& desiredPath) const {
+  auto time_offset = ros::Time::now().toSec() - desiredPath.poses[0].header.stamp.toSec();
+  if (time_offset < 0) return;
 
   ROS_INFO_STREAM("Adapting path with a time offset of: " << time_offset << "s.");
-  for(auto& pose : path_copy.poses){
+  for (auto& pose : desiredPath.poses) {
     pose.header.stamp += ros::Duration(time_offset);
   }
-  return path_copy;
 }
 
 void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
@@ -160,8 +160,11 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
     return;
   }
 
-  nav_msgs::Path adaptedPath = adaptPath(desiredPath);
-  ROS_INFO_STREAM("Received new path with " << adaptedPath.poses.size());
+  nav_msgs::Path adaptedPath = *desiredPath;
+  adjustPathTime(adaptedPath);
+  transformPath(adaptedPath);
+
+  ROS_INFO_STREAM("Received new path with " << adaptedPath.poses.size() << " poses.");
   ocs2::CostDesiredTrajectories costDesiredTrajectories(adaptedPath.poses.size());
   size_t idx = 0;
   for (const auto& waypoint : adaptedPath.poses) {
@@ -190,6 +193,8 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
     desiredTrajectory_ = costDesiredTrajectories;
     ROS_INFO_STREAM("New target trajectory: " << desiredTrajectory_);
   }
+
+  if (!referenceEverReceived_) std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   referenceEverReceived_ = true;
 }
 
@@ -201,6 +206,26 @@ bool MPC_Controller::sanityCheck(const nav_msgs::Path& path) {
     }
   }
   return true;
+}
+
+void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) const {
+  ROS_INFO("Transforming path in base_link");
+  geometry_msgs::TransformStamped transformStamped;
+  tf2_ros::Buffer tfBuffer;
+  tf2_ros::TransformListener tfListener(tfBuffer);
+  try {
+    // target_frame, source_frame ...
+    transformStamped = tfBuffer.lookupTransform(
+        "base_link", desiredPath.header.frame_id, ros::Time(0), ros::Duration(3.0));
+  } catch (tf2::TransformException& ex) {
+    ROS_WARN("%s", ex.what());
+    ros::Duration(1.0).sleep();
+  }
+
+  desiredPath.header.frame_id = "base_link";
+  for (auto& pose : desiredPath.poses){
+    tf2::doTransform(pose, pose, transformStamped);
+  }
 }
 
 void MPC_Controller::stop() {

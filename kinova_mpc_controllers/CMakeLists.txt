@@ -14,6 +14,9 @@ set(PROJECT_DEPENDENCIES
         ocs2_mobile_manipulator_example
         robot_control
         control_toolbox
+        angles
+        tf2
+        tf2_ros
         )
 
 find_package(catkin REQUIRED COMPONENTS ${PROJECT_DEPENDENCIES})

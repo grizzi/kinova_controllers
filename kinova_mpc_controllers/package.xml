@@ -17,6 +17,9 @@
     <depend>robot_control</depend>
     <depend>control_toolbox</depend>
     <depend>ocs2_mobile_manipulator_example</depend>
+    <depend>angles</depend>
+    <depend>tf2</depend>
+    <depend>tf2_ros</depend>
     <export>
         <controller_interface plugin="${prefix}/plugins.xml"/>
     </export>

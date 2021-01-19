@@ -45,7 +45,8 @@ class MPC_Controller{
    * Optional preprocessing step for the tracked path.
    * @param desiredPath
    */
-  virtual nav_msgs::Path adaptPath(const nav_msgs::PathConstPtr& desiredPath) const;
+  void transformPath(nav_msgs::Path& desiredPath) const;
+  void adjustPathTime(nav_msgs::Path& desiredPath) const;
 
  private:
   void advanceMpc();

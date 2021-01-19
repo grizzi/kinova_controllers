@@ -22,10 +22,10 @@ mpc_velocity_controller:
     - $(arg prefix)joint_6
     - $(arg prefix)joint_7
   gains:
-    $(arg prefix)joint_1: { p: 100.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0 }
-    $(arg prefix)joint_2: { p: 100.0, i: 0.0, d: 2.0, i_clamp_min: -5.0, i_clamp_max: 5.0 }
-    $(arg prefix)joint_3: { p: 100.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
-    $(arg prefix)joint_4: { p: 100.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_1: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0 }
+    $(arg prefix)joint_2: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -5.0, i_clamp_max: 5.0 }
+    $(arg prefix)joint_3: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_4: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
     $(arg prefix)joint_5: { p: 20.0, i: 0.0, d: 0.2, i_clamp_min: -1.0, i_clamp_max: 1.0 }
     $(arg prefix)joint_6: { p: 20.0, i: 0.0, d: 1.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
     $(arg prefix)joint_7: { p: 10.0, i: 0.0, d: 0.1, i_clamp_min: -0.1, i_clamp_max: 0.1 }
