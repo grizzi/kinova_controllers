@@ -159,25 +159,20 @@ def pose_to_se3(pose):
 #  Grasp computation utility functions
 #########################################
 
-def compute_candidate_grasps(radius=valve_traj_data.valve_radius, offset=0, rotation=None):
+def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=0.0, normal_offset=0.0, rotation=None):
     path = Path()
     path.header.frame_id = valve_traj_data.base_frame
     angles = np.linspace(start=0, stop=2 * np.pi, num=10)
     t_base_valve = get_valve_pose()
 
     for angle in angles:
-        t = np.array([(offset + radius) * np.cos(angle), (offset + radius) * np.sin(angle), 0.0])
+        t = np.array([(radial_offset + radius) * np.cos(angle), (radial_offset + radius) * np.sin(angle), normal_offset])
         orientation = np.ndarray(shape=(3, 3))
         orientation[:, 2] = np.array([0.0, 0.0, 1.0])
         orientation[:, 0] = t / np.linalg.norm(t)
         orientation[:, 1] = np.cross(orientation[:, 2], orientation[:, 0])
-        print("Applied orientation: ")
-        print(orientation)
         r = R.from_matrix(orientation).as_quat()
-        print("As quaternion")
-        print(r)
         q = pin.Quaternion(r[3], r[0], r[1], r[2])
-        print("Corresponding pinocchio quaternion: {}".format(q))
 
         t_valve_grasp = pin.SE3(q, t)
         t_base_grasp = t_base_valve.act(t_valve_grasp)
@@ -211,15 +206,21 @@ def filter_grasps(poses):
             best_grasp = copy.deepcopy(candidate)
     return best_grasp
 
+def compute_pre_pre_lateral_grasp2():
+    candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
+                                          radial_offset=abs(valve_traj_data.lateral_grasp_offset),
+                                          normal_offset=0.1).poses
+    return filter_grasps(candidates)
+
 def compute_pre_lateral_grasp2():
     candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
-                                          offset=abs(valve_traj_data.lateral_grasp_offset)).poses
+                                          radial_offset=abs(valve_traj_data.lateral_grasp_offset)).poses
     return filter_grasps(candidates)
 
 
 def compute_lateral_grasp2():
     candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
-                                          offset=0).poses
+                                          radial_offset=0).poses
     return filter_grasps(candidates)
 
 

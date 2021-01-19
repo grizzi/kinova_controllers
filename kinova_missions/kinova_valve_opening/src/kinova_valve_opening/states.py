@@ -143,27 +143,47 @@ class LateralGraspState(RosControlPoseReaching):
         self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
         self.candidate_poses_publisher = rospy.Publisher("/candidate_poses", Path, queue_size=1)
 
+        self.first_run = True # select the candidate grasp only at the first run
+        self.pre_grasp = None
+        self.grasp = None
+
     def execute(self, ud):
         controller_switched = self.do_switch()
         if not controller_switched:
             return 'Failure'
 
-        candidates = compute_candidate_lateral_grasps()
-        self.candidate_poses_publisher.publish(candidates)
+        if self.first_run:
+            # For debugging only
+            candidates = compute_candidate_lateral_grasps()
+            self.candidate_poses_publisher.publish(candidates)
 
-        # Goal 1: get close to the grasping pose, not yet around the valve
-        target_pose = compute_pre_lateral_grasp2()
-        path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
+            # Goal 0: get close to the grasping pose, not yet around the valve
+            #         this preliminary pose is meant to avoid collisions
+            pre_pre_grasp = compute_pre_pre_lateral_grasp2()
+            path = get_timed_path_to_target(pre_pre_grasp, linear_velocity=0.5, angular_velocity=0.5)
+            self.path_publisher.publish(path)
+            if not wait_until_reached(pre_pre_grasp):
+                return 'Failure'
+
+        # Goal 1: move tool to the valve plane, not yet at the handle
+            self.pre_grasp = compute_pre_lateral_grasp2()
+
+            # Goal 2: move tool forward to grasp the handle
+            self.grasp = compute_lateral_grasp2()
+
+            # Next run the same positions will be used
+            self.first_run = False
+
+
+        path = get_timed_path_to_target(self.pre_grasp, linear_velocity=0.5, angular_velocity=0.5)
         self.path_publisher.publish(path)
-
-        if not wait_until_reached(target_pose):
+        if not wait_until_reached(self.pre_grasp):
             return 'Failure'
 
         # Goal 2: move forward to surround the valve
-        target_pose = compute_lateral_grasp2()
-        path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
+        path = get_timed_path_to_target(self.grasp, linear_velocity=0.1, angular_velocity=0.1)
         self.path_publisher.publish(path)
-        if not wait_until_reached(target_pose):
+        if not wait_until_reached(self.grasp):
             return 'Failure'
 
         return 'Completed'
@@ -203,9 +223,11 @@ class ValveManipulation(RosControlPoseReaching):
     def __init__(self, ns):
         RosControlPoseReaching.__init__(self, ns=ns)
 
-        self.angle_start_deg = self.get_scoped_param("angle_start_deg")
+        self.angle_start_deg = 0.0
+        self.angle_step_deg = self.get_scoped_param("angle_step_deg")
         self.angle_end_deg = self.get_scoped_param("angle_end_deg")
         self.angle_delta_deg = self.get_scoped_param("angle_delta_deg")
+        self.total_angle = 0
         self.speed_deg = self.get_scoped_param("speed_deg")
 
         path_topic_name = self.get_scoped_param("path_topic_name")
@@ -216,16 +238,18 @@ class ValveManipulation(RosControlPoseReaching):
         self.set_context_data('full_rotation_done', False)
 
     def run(self):
-        path = self.trajectory_generator.get_path(angle_start_deg=self.angle_start_deg,
-                                                  angle_end_deg=self.angle_end_deg,
+        path = self.trajectory_generator.get_path(angle_start_deg=0.0,
+                                                  angle_end_deg=self.angle_step_deg,
                                                   speed_deg=self.speed_deg,
                                                   angle_delta_deg=self.angle_delta_deg)
         self.path_publisher.publish(path)
         if not wait_until_reached(path.poses[-1]):
             return 'Failure'
         else:
-            # TODO(giuseppe) remove, obsolete but keep now to let SM run
-            self.set_context_data('full_rotation_done', True, overwrite=True)
+            self.total_angle += self.angle_step_deg
+            if self.total_angle >= self.angle_end_deg:
+                rospy.loginfo("Valve has been successfully operated.")
+                self.set_context_data("full_rotation_done", True, overwrite=True)
             return 'Completed'
 
 

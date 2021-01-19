@@ -90,8 +90,8 @@ void MPC_Controller::advanceMpc() {
     mpcTimer_.endTimer();
     elapsed = mpcTimer_.getLastIntervalInMilliseconds() / 1e3;
     if (1. / elapsed < mpcFrequency_) {
-      ROS_WARN_STREAM("Mpc thread running slower than real time: " << elapsed << " > "
-                                                                   << 1. / mpcFrequency_);
+      ROS_WARN_STREAM_THROTTLE(5.0, "Mpc thread running slower than real time: "
+                                        << elapsed << " > " << 1. / mpcFrequency_);
     }
 
     if (mpcFrequency_ > 0 && 1. / elapsed < mpcFrequency_)
