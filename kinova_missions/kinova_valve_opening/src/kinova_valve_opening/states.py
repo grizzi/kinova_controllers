@@ -141,14 +141,18 @@ class LateralGraspState(RosControlPoseReaching):
         RosControlPoseReaching.__init__(self, ns=ns)
         path_topic_name = self.get_scoped_param("path_topic_name")
         self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
+        self.candidate_poses_publisher = rospy.Publisher("/candidate_poses", Path, queue_size=1)
 
     def execute(self, ud):
         controller_switched = self.do_switch()
         if not controller_switched:
             return 'Failure'
 
+        candidates = compute_candidate_lateral_grasps()
+        self.candidate_poses_publisher.publish(candidates)
+
         # Goal 1: get close to the grasping pose, not yet around the valve
-        target_pose = compute_pre_lateral_grasp()
+        target_pose = compute_pre_lateral_grasp2()
         path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
         self.path_publisher.publish(path)
 
@@ -156,7 +160,7 @@ class LateralGraspState(RosControlPoseReaching):
             return 'Failure'
 
         # Goal 2: move forward to surround the valve
-        target_pose = compute_lateral_grasp()
+        target_pose = compute_lateral_grasp2()
         path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
         self.path_publisher.publish(path)
         if not wait_until_reached(target_pose):
@@ -273,8 +277,8 @@ class PostLateralGraspState(RosControlPoseReaching):
     def __init__(self, ns):
         RosControlPoseReaching.__init__(self, ns=ns,
                                         outcomes=['Completed', 'Failure', 'FullRotationDone'])
-        pose_topic_name = self.get_scoped_param("pose_topic_name")
-        self.pose_goal_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
+        path_topic_name = self.get_scoped_param("path_topic_name")
+        self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
 
     def execute(self, ud):
         controller_switched = self.do_switch()
@@ -284,7 +288,8 @@ class PostLateralGraspState(RosControlPoseReaching):
         # Goal 1: move away from the valve in the radial direction
         # Assumption is that we are in a grasp state
         target_pose = compute_post_lateral_grasp()
-        self.pose_goal_publisher.publish(target_pose)
+        path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
+        self.path_publisher.publish(path)
         if not wait_until_reached(target_pose):
             return 'Failure'
 

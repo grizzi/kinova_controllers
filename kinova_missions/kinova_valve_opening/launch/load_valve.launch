@@ -7,7 +7,7 @@
   <arg name="pitch"   default="0.0"/>
   <arg name="yaw"     default="0.0"/>
   
-  <param name="valve_description" command="$(find xacro)/xacro --inorder $(find kinova_valve_opening)/urdf/fake_valve.urdf.xacro x:=0.6 y:=0.0 z:=0.2 roll:=0.0 pitch:=0.0 yaw:=0.0"/>
+  <param name="valve_description" command="$(find xacro)/xacro --inorder $(find kinova_valve_opening)/urdf/fake_valve.urdf.xacro x:=0.6 y:=0.0 z:=0.2 roll:=0.0 pitch:=1.57 yaw:=0.0"/>
 
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
     args="-param valve_description -urdf -model fake_valve"  output="screen"/> 

@@ -90,6 +90,7 @@ void KinovaMpcVelocityController::stopping(const ros::Time& time) {
   if (is_real_robot_) {
     for (auto& handle : robot_command_handles_) handle.setCommand(0.0);
   }
+  ROS_INFO("Stopping KinovaMpcVelocityController has been stopped!");
 }
 
 bool KinovaMpcVelocityController::addStateHandles(hardware_interface::RobotHW* hw) {

@@ -7,7 +7,7 @@ import tf2_geometry_msgs
 import pinocchio as pin
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 from nav_msgs.msg import Path
-
+import copy
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from mpl_toolkits.mplot3d import Axes3D
@@ -31,6 +31,7 @@ class valve_traj_data:
 
     # relative transformation from grasp to point on valve perimeter
     rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_matrix()
+    quaternion_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_quat()
     rotation_valve_frontgrasp = R.from_euler('xyz', [0.0, 0.0, 180.0], degrees=True).as_matrix()
     translation_valve_latgrasp = np.array([valve_radius, 0.0, 0.0])
     translation_valve_frontgrasp = np.array([valve_radius, 0.0, 0.0])
@@ -51,6 +52,18 @@ def get_end_effector_pose():
 
     transform = tf_buffer.lookup_transform(valve_traj_data.base_frame,  # target frame
                                            valve_traj_data.tool_frame,  # source frame
+                                           rospy.Time(0),  # tf at first available time
+                                           rospy.Duration(3))
+    return tf_to_se3(transform)
+
+
+def get_valve_pose():
+    """ Retrieve the end effector pose. Let it fail if unable to get the transform """
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+
+    transform = tf_buffer.lookup_transform(valve_traj_data.base_frame,  # target frame
+                                           valve_traj_data.valve_frame,  # source frame
                                            rospy.Time(0),  # tf at first available time
                                            rospy.Duration(3))
     return tf_to_se3(transform)
@@ -146,6 +159,70 @@ def pose_to_se3(pose):
 #  Grasp computation utility functions
 #########################################
 
+def compute_candidate_grasps(radius=valve_traj_data.valve_radius, offset=0, rotation=None):
+    path = Path()
+    path.header.frame_id = valve_traj_data.base_frame
+    angles = np.linspace(start=0, stop=2 * np.pi, num=10)
+    t_base_valve = get_valve_pose()
+
+    for angle in angles:
+        t = np.array([(offset + radius) * np.cos(angle), (offset + radius) * np.sin(angle), 0.0])
+        orientation = np.ndarray(shape=(3, 3))
+        orientation[:, 2] = np.array([0.0, 0.0, 1.0])
+        orientation[:, 0] = t / np.linalg.norm(t)
+        orientation[:, 1] = np.cross(orientation[:, 2], orientation[:, 0])
+        print("Applied orientation: ")
+        print(orientation)
+        r = R.from_matrix(orientation).as_quat()
+        print("As quaternion")
+        print(r)
+        q = pin.Quaternion(r[3], r[0], r[1], r[2])
+        print("Corresponding pinocchio quaternion: {}".format(q))
+
+        t_valve_grasp = pin.SE3(q, t)
+        t_base_grasp = t_base_valve.act(t_valve_grasp)
+
+        if (rotation is not None):
+            t_rel = np.array([0.0, 0.0, 0.0])
+            q_rel = pin.Quaternion(rotation[3], rotation[0], rotation[1], rotation[2])
+            t_grasp_tool = pin.SE3(q_rel, t_rel)
+            t_base_grasp = t_base_grasp.act(t_grasp_tool)  # should be t_base_tool but to keep one variable later on
+
+        pose_stamped = PoseStamped()
+        pose_stamped.header.frame_id = valve_traj_data.base_frame
+        pose_stamped.pose = se3_to_pose_ros(t_base_grasp)
+        path.poses.append(pose_stamped)
+    path.header.frame_id = valve_traj_data.base_frame
+    return path
+
+
+def compute_candidate_lateral_grasps():
+    return compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp)
+
+def filter_grasps(poses):
+    ee_pose = get_end_effector_pose()
+    min_dist = np.inf
+    best_grasp = poses[0]
+    for candidate in poses:
+        grasp_pose = pose_to_se3(candidate.pose)
+        dist = np.linalg.norm(grasp_pose.translation - ee_pose.translation)
+        if dist < min_dist:
+            min_dist = dist
+            best_grasp = copy.deepcopy(candidate)
+    return best_grasp
+
+def compute_pre_lateral_grasp2():
+    candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
+                                          offset=abs(valve_traj_data.lateral_grasp_offset)).poses
+    return filter_grasps(candidates)
+
+
+def compute_lateral_grasp2():
+    candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
+                                          offset=0).poses
+    return filter_grasps(candidates)
+
+
 def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset, relative_grasp_rotation):
     """
     Computes the grasp pose when the adopted strategy is a lateral grasp 
@@ -175,7 +252,7 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
     normal = rotation[:, 2]
 
     # get the point on the plane which intersects with the perimeter
-    base_point = [0, 0, 0]  # the base point is the origin in the base frame
+    base_point = [0, 0, 0]  # the base point is the point to project, in this case the tool frame
     plane_vector = project_to_plane(origin, normal, base_point, in_plane=True)
     plane_vector = plane_vector / np.linalg.norm(plane_vector) * valve_radius
 
@@ -487,8 +564,9 @@ class ValveTrajectoryGenerator(object):
         return True
 
     def get_path(self, angle_start_deg, angle_end_deg, speed_deg=5.0, angle_delta_deg=1.0):
-        rospy.loginfo("Computing trajectory: angle start: {}, angle end: {}, speed: {}".format(angle_start_deg, angle_end_deg,
-                                                                                       speed_deg))
+        rospy.loginfo(
+            "Computing trajectory: angle start: {}, angle end: {}, speed: {}".format(angle_start_deg, angle_end_deg,
+                                                                                     speed_deg))
         angle_start = np.deg2rad(angle_start_deg)
         angle_end = np.deg2rad(angle_end_deg)
         speed = np.deg2rad(speed_deg)
@@ -503,7 +581,7 @@ class ValveTrajectoryGenerator(object):
             return None
 
         speed = abs(speed)
-        dt = abs(angle_delta/speed)
+        dt = abs(angle_delta / speed)
         angle_delta = speed * dt
         direction = (angle_end - angle_start) / abs(angle_end - angle_start)
         rospy.loginfo("angle delta is: {}, direction is: {}".format(angle_delta, direction))
