@@ -56,6 +56,7 @@ class MPC_Controller{
   static bool sanityCheck(const nav_msgs::Path& path);
 
  protected:
+  std::string base_link_;
   std::string robot_description_;
   joint_vector_t jointInitialState_;
   joint_vector_t positionCommand_;

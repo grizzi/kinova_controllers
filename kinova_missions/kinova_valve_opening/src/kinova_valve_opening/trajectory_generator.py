@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from mpl_toolkits.mplot3d import Axes3D
 
+
 class valve_traj_data:
     """
     Contains all the info necessary for grasp and trajectory generation
@@ -24,7 +25,7 @@ class valve_traj_data:
     tool_frame = "arm_tool_frame"
     base_frame = "arm_base_link"
     valve_haptic_frame = "valve_est_frame"
-    
+
     # geometry
     valve_radius = 0.07
 
@@ -38,6 +39,7 @@ class valve_traj_data:
     frontal_grasp_offset = -0.05
     lateral_grasp_offset = -0.05
 
+
 #####################################
 #  Generic utility functions
 #####################################
@@ -47,9 +49,9 @@ def get_end_effector_pose():
     tf_buffer = tf2_ros.Buffer()
     tf_listener = tf2_ros.TransformListener(tf_buffer)
 
-    transform = tf_buffer.lookup_transform(valve_traj_data.base_frame,      # target frame
-                                           valve_traj_data.tool_frame,      # source frame
-                                           rospy.Time(0),                   # tf at first available time
+    transform = tf_buffer.lookup_transform(valve_traj_data.base_frame,  # target frame
+                                           valve_traj_data.tool_frame,  # source frame
+                                           rospy.Time(0),  # tf at first available time
                                            rospy.Duration(3))
     return tf_to_se3(transform)
 
@@ -74,9 +76,9 @@ def get_timed_path_to_target(target_pose: PoseStamped, linear_velocity: float, a
     end = pose_to_se3(target_pose.pose)
     vel = pin.log6(end.actInv(start))
     max_lin = max(abs(vel.linear))  # linear velocity to get there in 1 sec
-    max_ang = max(abs(vel.angular)) # angular velocity to get there in 1 sec
+    max_ang = max(abs(vel.angular))  # angular velocity to get there in 1 sec
 
-    reach_time = 1.0 * max(1.0, max(max_lin/linear_velocity, max_ang/angular_velocity))
+    reach_time = 1.0 * max(1.0, max(max_lin / linear_velocity, max_ang / angular_velocity))
     pose_stamped_end.header.stamp = rospy.Time.from_sec(reach_time)
 
     path.poses.append(pose_stamped_start)
@@ -139,6 +141,7 @@ def pose_to_se3(pose):
                   pose.position.z])
     return pin.SE3(q, t)
 
+
 #########################################
 #  Grasp computation utility functions
 #########################################
@@ -155,9 +158,9 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
     tf_buffer = tf2_ros.Buffer()
     tf_listener = tf2_ros.TransformListener(tf_buffer)
     transform = TransformStamped()
-    t_tool_valve = tf_buffer.lookup_transform(tool_frame,            # target frame
-                                              valve_frame,                # source frame
-                                              rospy.Time(0),              # tf at first available time
+    t_tool_valve = tf_buffer.lookup_transform(tool_frame,  # target frame
+                                              valve_frame,  # source frame
+                                              rospy.Time(0),  # tf at first available time
                                               rospy.Duration(3))
 
     origin = [t_tool_valve.transform.translation.x,
@@ -172,7 +175,7 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
     normal = rotation[:, 2]
 
     # get the point on the plane which intersects with the perimeter
-    base_point = [0, 0, 0]      # the base point is the origin in the base frame
+    base_point = [0, 0, 0]  # the base point is the origin in the base frame
     plane_vector = project_to_plane(origin, normal, base_point, in_plane=True)
     plane_vector = plane_vector / np.linalg.norm(plane_vector) * valve_radius
 
@@ -186,8 +189,8 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
     grasp_orientation = np.ndarray(shape=(3, 3))
     grasp_orientation[:, 2] = normal
     grasp_orientation[:, 0] = plane_vector / np.linalg.norm(plane_vector)
-    grasp_orientation[:, 1] =  np.cross(grasp_orientation[:, 2], grasp_orientation[:, 0])
-    
+    grasp_orientation[:, 1] = np.cross(grasp_orientation[:, 2], grasp_orientation[:, 0])
+
     grasp_orientation = np.dot(grasp_orientation, relative_grasp_rotation)
     grasp_quat = R.from_matrix(grasp_orientation).as_quat()
 
@@ -208,12 +211,12 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
         t_grasp_ee_des = pin.SE3(pin.Quaternion(1, 0, 0, 0), np.array([0.0, 0.0, offset]))
         t_tool_ee_des = t_tool_grasp.act(t_grasp_ee_des)
         pose.pose = se3_to_pose_ros(t_tool_ee_des)
-        
+
     # Transform in reference frame (optional)
     if reference_frame != tool_frame:
-        t_ref_tool = tf_buffer.lookup_transform(reference_frame,            #    target frame
-                                                tool_frame,                # source frame
-                                                rospy.Time(0),              # tf at first available time
+        t_ref_tool = tf_buffer.lookup_transform(reference_frame,  # target frame
+                                                tool_frame,  # source frame
+                                                rospy.Time(0),  # tf at first available time
                                                 rospy.Duration(3))
         pose = tf2_geometry_msgs.do_transform_pose(pose, t_ref_tool)
 
@@ -226,39 +229,47 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
 def _compute_lateral_grasp(tool_frame, offset):
     return compute_grasp(tool_frame=tool_frame,
                          offset=offset,
-                         reference_frame=valve_traj_data.base_frame, 
-                         valve_frame=valve_traj_data.valve_frame, 
-                         valve_radius=valve_traj_data.valve_radius,  
+                         reference_frame=valve_traj_data.base_frame,
+                         valve_frame=valve_traj_data.valve_frame,
+                         valve_radius=valve_traj_data.valve_radius,
                          relative_grasp_rotation=valve_traj_data.rotation_valve_latgrasp)
+
 
 def compute_pre_lateral_grasp():
     return _compute_lateral_grasp(valve_traj_data.base_frame, valve_traj_data.lateral_grasp_offset)
-    
+
+
 def compute_lateral_grasp():
     return _compute_lateral_grasp(valve_traj_data.base_frame, 0.0)
-    
+
+
 def compute_post_lateral_grasp():
     return _compute_lateral_grasp(valve_traj_data.tool_frame, valve_traj_data.lateral_grasp_offset)
-    
+
+
 #######################################################
 # Frontal grasps utility functions
 #######################################################
-def _compute_frontal_grasp(tool_frame, offset):    
+def _compute_frontal_grasp(tool_frame, offset):
     return compute_grasp(tool_frame=tool_frame,
                          offset=offset,
-                         reference_frame=valve_traj_data.base_frame, 
-                         valve_frame=valve_traj_data.valve_frame, 
-                         valve_radius=valve_traj_data.valve_radius, 
+                         reference_frame=valve_traj_data.base_frame,
+                         valve_frame=valve_traj_data.valve_frame,
+                         valve_radius=valve_traj_data.valve_radius,
                          relative_grasp_rotation=valve_traj_data.rotation_valve_frontgrasp)
+
 
 def compute_pre_frontal_grasp():
     return _compute_frontal_grasp(valve_traj_data.base_frame, valve_traj_data.frontal_grasp_offset)
 
-def compute_frontal_grasp(): 
+
+def compute_frontal_grasp():
     return _compute_frontal_grasp(valve_traj_data.base_frame, 0.0)
 
-def compute_post_frontal_grasp(): 
+
+def compute_post_frontal_grasp():
     return _compute_frontal_grasp(valve_traj_data.tool_frame, valve_traj_data.frontal_grasp_offset)
+
 
 #######################################################
 # Timing
@@ -266,22 +277,23 @@ def compute_post_frontal_grasp():
 def compute_execution_time(target_pose, max_linear_speed, max_angular_speed):
     tf_buffer = tf2_ros.Buffer()
     tf_listener = tf2_ros.TransformListener(tf_buffer)
-    transform = tf_buffer.lookup_transform(target_pose.header.frame_id,     # target frame
-                                           valve_traj_data.tool_frame,      # source frame
-                                           rospy.Time(0),                   # tf at first available time
+    transform = tf_buffer.lookup_transform(target_pose.header.frame_id,  # target frame
+                                           valve_traj_data.tool_frame,  # source frame
+                                           rospy.Time(0),  # tf at first available time
                                            rospy.Duration(3))
     t_ee = tf_to_se3(transform)
     t_target = pose_to_se3(target_pose.pose)
-    m = pin.log6(t_ee.actInv(t_target)) # motion that brings in 1 sec ee to target
+    m = pin.log6(t_ee.actInv(t_target))  # motion that brings in 1 sec ee to target
 
     # find the max speed and scale
-    linear_scale = max(abs(m.linear))/max_linear_speed
-    angular_scale = max(abs(m.angular))/max_angular_speed
+    linear_scale = max(abs(m.linear)) / max_linear_speed
+    angular_scale = max(abs(m.angular)) / max_angular_speed
     scale = max(linear_scale, angular_scale)
 
-    return scale * 1.0 # s
+    return scale * 1.0  # s
 
-def wait_until_reached(target_pose, linear_tolerance=0.005, angular_tolerance=0.01, timeout=0):
+
+def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1, timeout=0):
     """
     Returns once the target pose has been reached
     """
@@ -298,13 +310,13 @@ def wait_until_reached(target_pose, linear_tolerance=0.005, angular_tolerance=0.
             rospy.logerror("Timeout elapsed while reaching a pose")
             return False
 
-        transform = tf_buffer.lookup_transform(target_pose.header.frame_id,     # target frame
-                                               valve_traj_data.tool_frame,      # source frame
-                                               rospy.Time(0),                   # tf at first available time
+        transform = tf_buffer.lookup_transform(target_pose.header.frame_id,  # target frame
+                                               valve_traj_data.tool_frame,  # source frame
+                                               rospy.Time(0),  # tf at first available time
                                                rospy.Duration(3))
         t_ee = tf_to_se3(transform)
         t_target = pose_to_se3(target_pose.pose)
-        error = pin.log6(t_ee.actInv(t_target)) # motion that brings in 1 sec ee to target
+        error = pin.log6(t_ee.actInv(t_target))  # motion that brings in 1 sec ee to target
         linear_error = max(abs(error.linear))
         angular_error = max(abs(error.angular))
         if linear_error < linear_tolerance and angular_error < angular_tolerance:
@@ -324,6 +336,7 @@ class ValveTrajectoryGenerator(object):
     the axis of rotation of the valve, and the x axis pointing inward, towards the valve
     center
     """
+
     def __init__(self):
 
         self.valve_origin = None
@@ -333,13 +346,13 @@ class ValveTrajectoryGenerator(object):
         self.theta_dot = 0.1  # rad/s
         self.theta_dot_max = 1.0
         self.theta_desired = 0.0
-        
+
         # tf_ee_valve is the relative offset valve to end effector when grasped. This will be different
         # for lateral and frontal grasp
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_ref_valve = None
-        self.tf_grasp_valve = None  
+        self.tf_grasp_valve = None
         self.tf_ref_valve_bc = tf2_ros.StaticTransformBroadcaster()
 
         self.prev_ee_pose = self.get_end_effector_pose()
@@ -352,8 +365,8 @@ class ValveTrajectoryGenerator(object):
         frame
         """
         tf_ref_ee = self.get_end_effector_pose()
-        tf_valve_grasp = pin.SE3(valve_traj_data.rotation_valve_latgrasp, 
-                                      valve_traj_data.translation_valve_latgrasp)
+        tf_valve_grasp = pin.SE3(valve_traj_data.rotation_valve_latgrasp,
+                                 valve_traj_data.translation_valve_latgrasp)
         self.tf_grasp_valve = tf_valve_grasp.inverse()
         # grasp == ee
         self.tf_ref_valve = tf_ref_ee.act(self.tf_grasp_valve)
@@ -366,7 +379,7 @@ class ValveTrajectoryGenerator(object):
         frame
         """
         tf_ref_ee = self.get_end_effector_pose()
-        self.tf_grasp_valve = pin.SE3(valve_traj_data.rotation_valve_frontgrasp, 
+        self.tf_grasp_valve = pin.SE3(valve_traj_data.rotation_valve_frontgrasp,
                                       valve_traj_data.translation_valve_frontgrasp).inverse()
         # grasp == ee
         self.tf_ref_valve = tf_ref_ee.act(self.tf_grasp_valve)
@@ -375,7 +388,7 @@ class ValveTrajectoryGenerator(object):
     def reset_valve_tf(self):
         self.valve_origin = self.tf_ref_valve.translation
         self.valve_axis = self.tf_ref_valve.rotation[:, 2]
-        
+
         tf_ref_valve_ros = TransformStamped()
         tf_ref_valve_ros.header.stamp = rospy.Time.now()
         tf_ref_valve_ros.header.frame_id = valve_traj_data.base_frame
@@ -426,7 +439,7 @@ class ValveTrajectoryGenerator(object):
                       valve_traj_data.valve_radius * np.sin(theta),
                       0.0])
         tf_valve_grasp = pin.SE3(pin.Quaternion(q[3], q[0], q[1], q[2]), t)
-        
+
         # Apply rotation offset and project to ref frame
         tf_grasp_eedes = pin.SE3(self.tf_grasp_valve.rotation, np.array([0, 0, 0]))
         tf_ref_eedes = self.tf_ref_valve.act(tf_valve_grasp.act(tf_grasp_eedes))
@@ -459,21 +472,23 @@ class ValveTrajectoryGenerator(object):
 
     def get_end_effector_pose(self):
         """ Retrieve the end effector pose. Let it fail if unable to get the transform """
-        transform = self.tf_buffer.lookup_transform(valve_traj_data.base_frame,      # target frame
-                                                    valve_traj_data.tool_frame,      # source frame
-                                                    rospy.Time(0),                   # tf at first available time
+        transform = self.tf_buffer.lookup_transform(valve_traj_data.base_frame,  # target frame
+                                                    valve_traj_data.tool_frame,  # source frame
+                                                    rospy.Time(0),  # tf at first available time
                                                     rospy.Duration(3))
         return tf_to_se3(transform)
 
     def run(self, dt, theta_target):
-        rate = rospy.Rate(1/dt)
+        rate = rospy.Rate(1 / dt)
         while self.theta_desired < theta_target and not rospy.is_shutdown():
             self.adapt_velocity()
             self.advance(dt)
             rate.sleep()
         return True
 
-    def get_path(self, angle_start_deg, angle_end_deg, speed_deg=5.0, angle_delta_deg=5):
+    def get_path(self, angle_start_deg, angle_end_deg, speed_deg=5.0, angle_delta_deg=1.0):
+        rospy.loginfo("Computing trajectory: angle start: {}, angle end: {}, speed: {}".format(angle_start_deg, angle_end_deg,
+                                                                                       speed_deg))
         angle_start = np.deg2rad(angle_start_deg)
         angle_end = np.deg2rad(angle_end_deg)
         speed = np.deg2rad(speed_deg)
@@ -487,28 +502,27 @@ class ValveTrajectoryGenerator(object):
             rospy.logwarn("Trajectory generator: start and end angles are the same.")
             return None
 
-        angle = angle_end
         speed = abs(speed)
-        dt = angle_delta/speed
+        dt = abs(angle_delta/speed)
+        angle_delta = speed * dt
         direction = (angle_end - angle_start) / abs(angle_end - angle_start)
+        rospy.loginfo("angle delta is: {}, direction is: {}".format(angle_delta, direction))
 
-        time = 0
+        time = 0.0
         path = Path()
+        angle = angle_start
         while True:
-            # Manage last point on path
-            if (angle - angle_end) * direction > 0:
-                pose = self.compute_target(angle_end)
-                pose.header.stamp = time - dt + (angle - angle_end) * direction / speed
-                path.poses.append(pose)
-                break
-
             pose = self.compute_target(angle)
-            pose.header.stamp = time
+            pose.header.stamp = rospy.Time.from_sec(time)
             angle += direction * angle_delta
             time += dt
             path.poses.append(pose)
 
-        path.header = path.poses[0].header.stamp
+            if (angle - angle_end) * direction > 0:
+                break
+
+        path.header = path.poses[0].header
+        rospy.loginfo("Generated trajectory with {} poses.".format(len(path.poses)))
         return path
 
 
@@ -529,5 +543,3 @@ if __name__ == "__main__":
     path = generator.get_path(10, 0)
     path_publisher.publish(path)
     rospy.sleep(10)
-
-

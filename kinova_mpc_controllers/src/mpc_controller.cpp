@@ -17,6 +17,7 @@ bool MPC_Controller::init() {
   nh_.param<std::string>("/robot_description_mpc", robot_description_, "");
   nh_.param<std::string>("/task_file", taskFile_, "");
 
+  nh_.param<std::string>("base_link", base_link_, "base_link");
   nh_.param<double>("mpc_frequency", mpcFrequency_, -1);
 
   std::string commandTopic;
@@ -209,22 +210,22 @@ bool MPC_Controller::sanityCheck(const nav_msgs::Path& path) {
 }
 
 void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) const {
-  ROS_INFO("Transforming path in base_link");
+  ROS_INFO_STREAM("Transforming path from " << desiredPath.header.frame_id << " to " << base_link_);
   geometry_msgs::TransformStamped transformStamped;
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
   try {
     // target_frame, source_frame ...
-    transformStamped = tfBuffer.lookupTransform(
-        "base_link", desiredPath.header.frame_id, ros::Time(0), ros::Duration(3.0));
+    transformStamped = tfBuffer.lookupTransform(base_link_, desiredPath.header.frame_id,
+                                                ros::Time(0), ros::Duration(3.0));
   } catch (tf2::TransformException& ex) {
     ROS_WARN("%s", ex.what());
     ros::Duration(1.0).sleep();
   }
 
   ros::Time stamp;
-  desiredPath.header.frame_id = "base_link";
-  for (auto& pose : desiredPath.poses){
+  desiredPath.header.frame_id = base_link_;
+  for (auto& pose : desiredPath.poses) {
     stamp = pose.header.stamp;
     tf2::doTransform(pose, pose, transformStamped);  // doTransform overwrites the stamp;
     pose.header.stamp = stamp;

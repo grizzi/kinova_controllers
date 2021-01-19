@@ -63,7 +63,10 @@ close_gripper:
 manipulate_valve:
   controller_name: mpc_velocity_controller
   manager_namespace: /my_gen3
-  whitelist: [arm_joint_state_controller, aGripperPositionControlrm_robotiq_2f_85_gripper_controller]
-  theta_step: 0.5
-  theta_desired: 1.0
-  dt: 0.05
+  whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
+
+  angle_start_deg: 0.0
+  angle_end_deg: 90.0
+  angle_delta_deg: 5.0    # controls trajectory discretization
+  speed_deg: 2.0
+  path_topic_name: /desired_path
