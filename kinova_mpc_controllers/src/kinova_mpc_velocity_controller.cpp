@@ -166,7 +166,7 @@ void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
     position_error_ = position_command - position_current_.head<7>();
     velocity_error_ = velocity_command - velocity_current_.head<7>();
 
-    ROS_INFO_STREAM_THROTTLE(1.0, std::endl
+    ROS_DEBUG_STREAM_THROTTLE(1.0, std::endl
                                       << "Pos cmd: " << position_command.transpose() << std::endl
                                       << "Pos mes: " << position_current_.transpose() << std::endl
                                       << "Vel cmd: " << velocity_command.transpose() << std::endl

@@ -161,8 +161,8 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
   }
 
   nav_msgs::Path adaptedPath = *desiredPath;
-  adjustPathTime(adaptedPath);
   transformPath(adaptedPath);
+  adjustPathTime(adaptedPath);
 
   ROS_INFO_STREAM("Received new path with " << adaptedPath.poses.size() << " poses.");
   ocs2::CostDesiredTrajectories costDesiredTrajectories(adaptedPath.poses.size());
@@ -222,9 +222,12 @@ void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) const {
     ros::Duration(1.0).sleep();
   }
 
+  ros::Time stamp;
   desiredPath.header.frame_id = "base_link";
   for (auto& pose : desiredPath.poses){
-    tf2::doTransform(pose, pose, transformStamped);
+    stamp = pose.header.stamp;
+    tf2::doTransform(pose, pose, transformStamped);  // doTransform overwrites the stamp;
+    pose.header.stamp = stamp;
   }
 }
 
