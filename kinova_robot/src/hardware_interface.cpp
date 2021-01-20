@@ -740,21 +740,17 @@ bool KinovaHardwareInterface::send_lowlevel_command() {
 
 bool KinovaHardwareInterface::send_joint_velocity_command() {
   bool success = true;
-  auto action = Action();
-  action.set_name("regular velocity write");
-  action.set_application_data("");
-
-  auto jointSpeeds = action.mutable_send_joint_speeds();
+  Kinova::Api::Base::JointSpeeds joint_speeds;
 
   for (size_t i = 0; i < 7; ++i) {
-    auto jointSpeed = jointSpeeds->add_joint_speeds();
-    jointSpeed->set_joint_identifier(i);
-    jointSpeed->set_value(vel_cmd_copy[i] * 180.0 / M_PI);
-    jointSpeed->set_duration(0.0);
+    auto joint_speed = joint_speeds.add_joint_speeds();
+    joint_speed->set_joint_identifier(i);
+    joint_speed->set_value(vel_cmd_copy[i] * 180.0 / M_PI);
+    joint_speed->set_duration(0.0);
   }
 
   try {
-    m_base->SendJointSpeedsCommand(*jointSpeeds);
+    m_base->SendJointSpeedsCommand(joint_speeds);
   } catch (KDetailedException& ex) {
     ROS_WARN_THROTTLE(1, "Kortex exception");
     ROS_WARN_THROTTLE(1, "KINOVA exception error code: %d\n",

@@ -6,7 +6,7 @@
     <param name="task_file" value="$(arg task_file)"/>
 
     <!-- Load controllers -->
-    <arg name="namespace" default=""/>
+    <arg name="namespace" default="my_gen3"/>
     <arg name="simulation" default="true"/>
     <arg name="prefix" default=""/>
     <group ns="$(arg namespace)">
