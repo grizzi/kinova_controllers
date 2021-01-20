@@ -1,8 +1,16 @@
 joint_zeros:
-  $(arg prefix)joint_1: 0.0
-  $(arg prefix)joint_2: 0.0
-  $(arg prefix)joint_3: 0.0
-  $(arg prefix)joint_4: 0.0
-  $(arg prefix)joint_5: 0.0
-  $(arg prefix)joint_6: 0.0
-  $(arg prefix)joint_7: 0.0
+  $(arg prefix)joint_1: -0.0235029
+  $(arg prefix)joint_2: 0.0150466
+  $(arg prefix)joint_3: 0.018885
+  $(arg prefix)joint_4: -0.110301
+  $(arg prefix)joint_5: -0.0151811
+  $(arg prefix)joint_6: 0.00997999
+  $(arg prefix)joint_7: -0.070986
+
+# Zeroing position for joint 0 -> current is: 6.25968, zero is: -0.0235029 rad.
+# [ INFO] [1611159805.009368725]: Zeroing position for joint 1 -> current is: 0.0150466, zero is: 0.0150466 rad.
+# [ INFO] [1611159805.009493836]: Zeroing position for joint 2 -> current is: 0.018885, zero is: 0.018885 rad.
+# [ INFO] [1611159805.009605516]: Zeroing position for joint 3 -> current is: 6.17288, zero is: -0.110301 rad.
+# [ INFO] [1611159805.009701413]: Zeroing position for joint 4 -> current is: 6.268, zero is: -0.0151811 rad.
+# [ INFO] [1611159805.009785946]: Zeroing position for joint 5 -> current is: 0.00997999, zero is: 0.00997999 rad.
+# [ INFO] [1611159805.009876397]: Zeroing position for joint 6 -> current is: 6.2122, zero is: -0.070986 rad.

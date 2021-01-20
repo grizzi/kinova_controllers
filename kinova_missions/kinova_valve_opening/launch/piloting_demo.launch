@@ -33,8 +33,6 @@
 
         <!-- Load valve model in simulation -->
         <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
-        <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz"
-              unless="$(arg test)"/>
     </group>
 
     <group unless="$(arg simulation)">
@@ -48,7 +46,7 @@
         </group>
         <group unless="$(arg use_apriltag)">
             <node name="valve_broadcaster" type="static_transform_publisher" pkg="tf2_ros"
-                  args="-0.179 0.751 0.390 0.7071068 -0.7071068 0 0 arm_base_link valve_base"/>
+                  args="-0.11287 0.57018 0.26281 0.7071068 0.0 0.0 0.7071068 arm_base_link valve_base"/>
         </group>
     </group>
 
@@ -61,4 +59,6 @@
         <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen"/>
     </group>
 
+        <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz"
+              unless="$(arg test)"/>
 </launch>

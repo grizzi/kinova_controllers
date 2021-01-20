@@ -36,7 +36,7 @@ viewpoint_visitor:
 open_gripper:
   controller_name: ''
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [mpc_velocity_controller]
   position: 0.0
   max_effort: 100
   tolerance: 0.01
@@ -53,7 +53,7 @@ grasp:
 close_gripper:
   controller_name: ''
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [mpc_velocity_controller]
   position: 0.0 # 0.5
   max_effort: 100
   tolerance: 0.01

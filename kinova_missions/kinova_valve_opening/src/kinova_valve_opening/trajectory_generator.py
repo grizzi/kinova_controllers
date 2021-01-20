@@ -76,13 +76,13 @@ def get_timed_path_to_target(target_pose: PoseStamped, linear_velocity: float, a
         raise NameError("Target pose is not in the same frame as the current ee pose.")
 
     path = Path()
-    path.header.stamp = rospy.Time.from_sec(0)
+    path.header.stamp = rospy.get_rostime()
     path.header.frame_id = valve_traj_data.base_frame
 
     pose_stamped_start = PoseStamped()
     pose_stamped_start.pose = se3_to_pose_ros(start)
     pose_stamped_start.header.frame_id = valve_traj_data.base_frame
-    pose_stamped_start.header.stamp = rospy.Time.from_sec(0)
+    pose_stamped_start.header.stamp = rospy.get_rostime()
 
     pose_stamped_end = target_pose
 
@@ -92,7 +92,7 @@ def get_timed_path_to_target(target_pose: PoseStamped, linear_velocity: float, a
     max_ang = max(abs(vel.angular))  # angular velocity to get there in 1 sec
 
     reach_time = 1.0 * max(1.0, max(max_lin / linear_velocity, max_ang / angular_velocity))
-    pose_stamped_end.header.stamp = rospy.Time.from_sec(reach_time)
+    pose_stamped_end.header.stamp = rospy.Duration.from_sec(reach_time) + pose_stamped_start.header.stamp 
 
     path.poses.append(pose_stamped_start)
     path.poses.append(pose_stamped_end)
@@ -162,7 +162,7 @@ def pose_to_se3(pose):
 def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=0.0, normal_offset=0.0, rotation=None):
     path = Path()
     path.header.frame_id = valve_traj_data.base_frame
-    angles = np.linspace(start=0, stop=2 * np.pi, num=10)
+    angles = np.linspace(start=0, stop=2 * np.pi, num=25)
     t_base_valve = get_valve_pose()
 
     for angle in angles:
@@ -589,10 +589,11 @@ class ValveTrajectoryGenerator(object):
 
         time = 0.0
         path = Path()
+        start_time = rospy.get_rostime()
         angle = angle_start
         while True:
             pose = self.compute_target(angle)
-            pose.header.stamp = rospy.Time.from_sec(time)
+            pose.header.stamp = rospy.Duration.from_sec(time) + start_time
             angle += direction * angle_delta
             time += dt
             path.poses.append(pose)

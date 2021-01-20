@@ -38,17 +38,20 @@ bool MPC_Controller::init() {
   mpcPtr_ = mm_interface_->getMpc();
   mpc_mrt_interface_.reset(new ocs2::MPC_MRT_Interface(*mpcPtr_));
 
+  observation_.time = 0.0;
   observation_.state.setZero(mm_interface_->stateDim_);
   observation_.input.setZero(mm_interface_->inputDim_);
   positionCommand_.setZero();
   velocityCommand_.setZero();
+  stopped_ = true;
   ROS_INFO("MPC Controller successfully initialized.");
   return true;
 }
 
 void MPC_Controller::start(const joint_vector_t& initial_observation) {
   // initial observation
-  stop_ = false;
+  if (!stopped_) return;
+
   jointInitialState_ = initial_observation;
   setObservation(initial_observation);
 
@@ -56,8 +59,11 @@ void MPC_Controller::start(const joint_vector_t& initial_observation) {
   referenceEverReceived_ = false;
 
   // mpc solution update thread
+  start_time_ = ros::Time::now().toSec();
   mpc_mrt_interface_->reset();
   mpcTimer_.reset();
+  
+  stopped_ = false;
   mpcThread_ = std::thread(&MPC_Controller::advanceMpc, this);
   ROS_INFO("MPC Controller Successfully started.");
 }
@@ -65,7 +71,7 @@ void MPC_Controller::start(const joint_vector_t& initial_observation) {
 void MPC_Controller::advanceMpc() {
   static double elapsed;
 
-  while (ros::ok() && !stop_) {
+  while (ros::ok() && !stopped_) {
     if (!referenceEverReceived_) {
       ROS_WARN_THROTTLE(3.0, "Reference never received. Skipping MPC update.");
       continue;
@@ -108,8 +114,9 @@ void MPC_Controller::update(const ros::Time& time, const joint_vector_t& observa
 
 void MPC_Controller::setObservation(const joint_vector_t& observation) {
   std::lock_guard<std::mutex> lock(observationMutex_);
-  observation_.time = ros::Time::now().toSec();
+  observation_.time = ros::Time::now().toSec() - start_time_;
   observation_.state.tail(7) = observation;
+  ROS_INFO_STREAM_THROTTLE(1.0, "MPC observation time is: " << observation_.time);
 }
 
 void MPC_Controller::updateCommand() {
@@ -141,12 +148,17 @@ void MPC_Controller::publishObservation() {
 }
 
 void MPC_Controller::adjustPathTime(nav_msgs::Path& desiredPath) const {
-  auto time_offset = ros::Time::now().toSec() - desiredPath.poses[0].header.stamp.toSec();
-  if (time_offset < 0) return;
+  if (desiredPath.poses.empty()) return;
 
-  ROS_INFO_STREAM("Adapting path with a time offset of: " << time_offset << "s.");
-  for (auto& pose : desiredPath.poses) {
-    pose.header.stamp += ros::Duration(time_offset);
+  // take only relative timing from path
+  double current_mpc_time = ros::Time::now().toSec() - start_time_;
+  std::cout << "Current mpc time: " << current_mpc_time;
+
+  double time_offset = desiredPath.poses[0].header.stamp.toSec() - current_mpc_time;
+  std::cout << "Time offset is: " << time_offset;
+
+  for (size_t idx=0; idx<desiredPath.poses.size(); idx++) {
+    desiredPath.poses[idx].header.stamp = desiredPath.poses[idx].header.stamp - ros::Duration(time_offset);
   }
 }
 
@@ -235,7 +247,7 @@ void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) const {
 
 void MPC_Controller::stop() {
   ROS_INFO("Stopping MPC update thread");
-  stop_ = true;
+  stopped_ = true;
   mpcThread_.join();
   ROS_INFO("Stopped MPC update thread");
 }

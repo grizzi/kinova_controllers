@@ -56,6 +56,7 @@ class MPC_Controller{
   static bool sanityCheck(const nav_msgs::Path& path);
 
  protected:
+  double start_time_;
   std::string base_link_;
   std::string robot_description_;
   joint_vector_t jointInitialState_;
@@ -69,7 +70,7 @@ class MPC_Controller{
   ros::Subscriber targetPathSubscriber_;
 
  private:
-  std::atomic_bool stop_;
+  std::atomic_bool stopped_;
   std::unique_ptr<ocs2::MPC_DDP> mpcPtr_;
   double mpcFrequency_;
   std::string taskFile_;
