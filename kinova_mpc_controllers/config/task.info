@@ -115,13 +115,13 @@ endEffectorCost
   ; control weight matrix
   R
   {
-    scaling 1e+0
+    scaling 1e+1
 
     (0,0)  1.0  ; forward velocity
     (1,1)  1.0  ; turning velocity
-    (2,2)  5.0  ; SH_ROT velocity
-    (3,3)  5.0  ; SH_FLE velocity
-    (4,4)  5.0  ; EL_FLE velocity
+    (2,2)  1.0  ; SH_ROT velocity
+    (3,3)  1.0  ; SH_FLE velocity
+    (4,4)  1.0  ; EL_FLE velocity
     (5,5)  1.0  ; EL_ROT velocity
     (6,6)  1.0  ; WR_FLE velocity
     (7,7)  1.0  ; WR_ROT velocity

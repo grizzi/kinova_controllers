@@ -227,6 +227,8 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
   bool estopped_ = false;
   ros::ServiceClient estop_client_;
 
+  Kinova::Api::Base::JointSpeeds kortex_joint_speeds_cmd_;
+
   // kdl
 //  KDL::Tree kdlTree;
 //  KDL::Chain kdlChain;

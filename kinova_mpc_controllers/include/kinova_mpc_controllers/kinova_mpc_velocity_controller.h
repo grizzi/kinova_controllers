@@ -47,7 +47,7 @@ class KinovaMpcVelocityController
   void readState();
 
  private:
-  std::string ee_frame_;
+  std::string tool_frame_;
   bool is_real_robot_;
   std::string robot_description_;
   std::vector<std::string> joint_names_;

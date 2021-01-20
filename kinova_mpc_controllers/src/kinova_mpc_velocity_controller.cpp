@@ -18,6 +18,8 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
     return false;
   }
 
+  controller_nh.param<std::string>("tool_link", tool_frame_, "tool_frame");
+  
   bool simulation;
   controller_nh.param<bool>("simulation", simulation, {});
   is_real_robot_ = !simulation;
@@ -58,24 +60,26 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
 void KinovaMpcVelocityController::starting(const ros::Time& time) {
   ROS_INFO("Starting KinovaMpcVelocityController!");
   readState();
+
+  ROS_INFO_STREAM("Starting with current joint position: " << position_current_.transpose());
   mpc_controller_->start(position_current_.head<7>());
 
-  if (!is_real_robot_) {
-    model_->updateState(position_current_, velocity_current_);
-    std::string tool_frame_id = "tool_frame";
-    pinocchio::SE3 tool_pose = model_->getFramePlacement(tool_frame_id);
-    // Reset interactive marker pose (if running)
-    geometry_msgs::Pose marker_pose;
-    marker_pose.position.x = tool_pose.translation()(0);
-    marker_pose.position.y = tool_pose.translation()(1);
-    marker_pose.position.z = tool_pose.translation()(2);
-    Eigen::Quaterniond orientation(tool_pose.rotation());
-    marker_pose.orientation.x = orientation.x();
-    marker_pose.orientation.y = orientation.y();
-    marker_pose.orientation.z = orientation.z();
-    marker_pose.orientation.w = orientation.w();
-    reset_imarker_pose_pub_.publish(marker_pose);
-  }
+  // Reset interactive marker pose (if running)
+  ROS_INFO_STREAM("Resetting marker pose to current tool pose. Tool frame id: " << tool_frame_);
+  model_->updateState(position_current_, velocity_current_);
+  pinocchio::SE3 tool_pose = model_->getFramePlacement(tool_frame_);
+  geometry_msgs::Pose marker_pose;
+  marker_pose.position.x = tool_pose.translation()(0);
+  marker_pose.position.y = tool_pose.translation()(1);
+  marker_pose.position.z = tool_pose.translation()(2);
+  Eigen::Quaterniond orientation(tool_pose.rotation());
+  marker_pose.orientation.x = orientation.x();
+  marker_pose.orientation.y = orientation.y();
+  marker_pose.orientation.z = orientation.z();
+  marker_pose.orientation.w = orientation.w();
+  std::cout << "Marker pose.position = " << tool_pose.translation().transpose() << std::endl;
+  std::cout << "Marker pose.rotation = " << orientation.coeffs().transpose() << std::endl;
+  reset_imarker_pose_pub_.publish(marker_pose);
 }
 
 void KinovaMpcVelocityController::update(const ros::Time& time, const ros::Duration& period) {
@@ -156,9 +160,6 @@ void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
     Eigen::VectorXd position_command = mpc_controller_->get_position_command();
     Eigen::VectorXd velocity_command = mpc_controller_->get_velocity_command();
 
-    // update current state
-    readState();
-
     model_->updateState(position_current_, Eigen::VectorXd::Zero(model_->getDof()));
     model_->computeAllTerms();
     gravity_and_coriolis_ = model_->getNonLinearTerms().head<7>();
@@ -182,9 +183,9 @@ void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
       joint_state_des_.velocity[i] = velocity_command(i);
       joint_state_des_.effort[i] = tau;
     }
-    joint_state_cur_pub_.publish(joint_state_cur_);
-    joint_state_des_pub_.publish(joint_state_des_);
   }
+  joint_state_cur_pub_.publish(joint_state_cur_);
+  joint_state_des_pub_.publish(joint_state_des_);
 }
 
 }  // namespace kinova_controllers

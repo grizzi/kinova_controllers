@@ -16,4 +16,8 @@
         <node name="mpc_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
               output="screen" args="--stopped mpc_velocity_controller"/>
     </group>
+
+    <!-- Interactive reference -->
+    <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"
+          output="screen" args="$(arg task_file)"/>
 </launch>

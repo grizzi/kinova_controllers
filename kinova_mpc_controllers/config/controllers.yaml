@@ -13,6 +13,7 @@ mpc_velocity_controller:
   type: kinova_controllers/KinovaMpcVelocityController
   robot_name: "mobile_manipulator"
   base_link: $(arg prefix)base_link
+  tool_link: $(arg prefix)tool_frame
   simulation: $(arg simulation)
   joint_names:
     - $(arg prefix)joint_1

@@ -16,6 +16,15 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
     joint_names[i] = m_arm_joint_names[i];
   }
 
+  // init command data
+  for (size_t i = 0; i < 7; ++i) {
+    auto joint_speed = kortex_joint_speeds_cmd_.add_joint_speeds();
+    joint_speed->set_joint_identifier(i);
+    joint_speed->set_value(0.0);
+    joint_speed->set_duration(0.0);
+  }
+
+
   ROS_INFO_STREAM("Starting Kinova Robot interface in namespace: " << nh.getNamespace());
   for (std::size_t i = 0; i < 7; ++i) {
     // connect and register the joint state interface
@@ -229,6 +238,7 @@ void KinovaHardwareInterface::update() { cm->update(this->get_time(), this->get_
 void KinovaHardwareInterface::enforce_limits() {
   for (size_t i = 0; i < 7; i++) {
     pos_cmd[i] = std::max(std::min(pos_cmd[i], limits[i].max_position), limits[i].min_position);
+    // remove this hack and replace with soft limits
     vel_cmd[i] = std::max(std::min(vel_cmd[i], limits[i].max_velocity), -limits[i].max_velocity);
     eff_cmd[i] = std::max(std::min(eff_cmd[i], limits[i].max_effort), -limits[i].max_effort);
   }
@@ -247,8 +257,9 @@ void KinovaHardwareInterface::check_state() {
       break;
     }
 
+    // remove this hack and replace with soft limits
     ok &= !limits[i].has_velocity_limits ||
-          ((vel[i] < limits[i].max_velocity) && (vel[i] > -limits[i].max_velocity));
+          ((vel[i] < (limits[i].max_velocity + 0.1)) && (vel[i] > -(limits[i].max_velocity + 0.1)));
     if (!ok) {
       ROS_ERROR_STREAM_THROTTLE(3.0, "Joint " << i << " violated velocity limits: " << vel[i]);
       break;
@@ -281,6 +292,7 @@ void KinovaHardwareInterface::switch_mode() {
 
 void KinovaHardwareInterface::copy_commands() {
   std::lock_guard<std::mutex> lock(cmd_mutex);
+  
   mode_copy = current_mode;
   for (size_t i = 0; i < 7; i++) {
     pos_cmd_copy[i] = pos[i];  // avoid following error
@@ -485,7 +497,7 @@ int KinovaHardwareInterface::estimate_external_wrench(const double dt) {
 }
 
 void KinovaHardwareInterface::read_loop(const double f /* 1/sec */) {
-  std::chrono::time_point<std::chrono::steady_clock> start, end;
+  std::chrono::time_point<std::chrono::steady_clock> start, end, end_partial, end_partial_2, end_partial_3, end_partial_4, end_partial_5;
   double dt_ms = 1000. / f;
   double elapsed_ms = dt_ms;
   while (ros::ok()) {
@@ -497,27 +509,25 @@ void KinovaHardwareInterface::read_loop(const double f /* 1/sec */) {
     // read the latest state
     read();
 
-    // estimate_external_wrench(elapsed_ms/1000.0); // TODO(giuseppe) this is bad timing at the
-    // first tick
-
     // update the control commands
     update();
-
+    
     // commands in the limits
     enforce_limits();
 
     // switch mode if required
     switch_mode();
-
+    
     // copy ros commands to hardware commands
     copy_commands();
-
+    
     // publish commands
     publish_commands();
 
     // publish state
     publish_state();
 
+    
     end = std::chrono::steady_clock::now();
     elapsed_ms = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / 1e6;
     if (elapsed_ms > dt_ms)
@@ -533,7 +543,7 @@ void KinovaHardwareInterface::read_loop(const double f /* 1/sec */) {
 void KinovaHardwareInterface::write_loop() {
   std::chrono::time_point<std::chrono::steady_clock> prev_start, start, end;
   double elapsed_ms;
-  double dt_ms = 1.0;
+  double dt_ms = 10.0;
   double dt = 0.0;
   prev_start = std::chrono::steady_clock::now();
   while (ros::ok()) {
@@ -543,12 +553,10 @@ void KinovaHardwareInterface::write_loop() {
 
     end = std::chrono::steady_clock::now();
     elapsed_ms = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / 1e6;
-    if (elapsed_ms > dt_ms)
-      ROS_WARN_STREAM_THROTTLE(1.0, "Write took too long: " << elapsed_ms << " > 1.0 ms.");
-    else {
+    if (elapsed_ms < dt_ms)
     std:
       this_thread::sleep_for(std::chrono::nanoseconds((int)((dt_ms - elapsed_ms) * 1e6)));
-    }
+      
     prev_start = start;
   }
 }
@@ -556,14 +564,29 @@ void KinovaHardwareInterface::write_loop() {
 void KinovaHardwareInterface::write(const double dt) {
   if (stop_writing) return;
 
-  std::lock_guard<std::mutex> lock(cmd_mutex);
-  if (mode_copy == KinovaControlMode::POSITION || mode_copy == KinovaControlMode::EFFORT) {
+  if (mode_copy == KinovaControlMode::POSITION || mode_copy == KinovaControlMode::EFFORT) 
+  {
+    std::lock_guard<std::mutex> lock(cmd_mutex);
     set_hardware_command(dt);
     send_lowlevel_command();
-  } else if (mode_copy == KinovaControlMode::VELOCITY) {
-    send_joint_velocity_command();
-  } else if (mode_copy == KinovaControlMode::NO_MODE) {
-  } else {
+  } 
+  else if (mode_copy == KinovaControlMode::VELOCITY) 
+  {
+    {
+        std::lock_guard<std::mutex> lock(cmd_mutex);
+        for (size_t i = 0; i < 7; ++i) {
+          kortex_joint_speeds_cmd_.mutable_joint_speeds(i)->set_value(vel_cmd_copy[i] * 180.0 / M_PI);
+        }
+    }
+
+    // Do not lock when sending the command
+    m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
+
+  } 
+  else if (mode_copy == KinovaControlMode::NO_MODE) 
+  {} 
+  else 
+  {
     ROS_WARN_STREAM("Unknown mode: " << mode_copy);
   }
 }
@@ -739,31 +762,26 @@ bool KinovaHardwareInterface::send_lowlevel_command() {
 }
 
 bool KinovaHardwareInterface::send_joint_velocity_command() {
-  bool success = true;
-  Kinova::Api::Base::JointSpeeds joint_speeds;
-
   for (size_t i = 0; i < 7; ++i) {
-    auto joint_speed = joint_speeds.add_joint_speeds();
-    joint_speed->set_joint_identifier(i);
-    joint_speed->set_value(vel_cmd_copy[i] * 180.0 / M_PI);
-    joint_speed->set_duration(0.0);
+    kortex_joint_speeds_cmd_.mutable_joint_speeds(i)->set_value(vel_cmd_copy[i] * 180.0 / M_PI);
   }
 
-  try {
-    m_base->SendJointSpeedsCommand(joint_speeds);
-  } catch (KDetailedException& ex) {
-    ROS_WARN_THROTTLE(1, "Kortex exception");
-    ROS_WARN_THROTTLE(1, "KINOVA exception error code: %d\n",
-                      ex.getErrorInfo().getError().error_code());
-    ROS_WARN_THROTTLE(1, "KINOVA exception error sub code: %d\n",
-                      ex.getErrorInfo().getError().error_sub_code());
-    ROS_WARN_THROTTLE(1, "KINOVA exception description: %s\n", ex.what());
-    success = false;
-  } catch (std::runtime_error& ex2) {
-    ROS_INFO("Other Kortex exception");
-    success = false;
-  }
-  return success;
+  m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
+  
+  // try {
+  // } catch (KDetailedException& ex) {
+  //   ROS_WARN_THROTTLE(1, "Kortex exception");
+  //   ROS_WARN_THROTTLE(1, "KINOVA exception error code: %d\n",
+  //                     ex.getErrorInfo().getError().error_code());
+  //   ROS_WARN_THROTTLE(1, "KINOVA exception error sub code: %d\n",
+  //                     ex.getErrorInfo().getError().error_sub_code());
+  //   ROS_WARN_THROTTLE(1, "KINOVA exception description: %s\n", ex.what());
+  //   return false;
+  // } catch (std::runtime_error& ex2) {
+  //   ROS_INFO("Other Kortex exception");
+  //   return false;
+  // }
+  return true;
 }
 
 double KinovaHardwareInterface::wrap_angle(const double a_prev, const double a_next) const {
