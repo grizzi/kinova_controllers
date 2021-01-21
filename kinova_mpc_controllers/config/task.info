@@ -24,7 +24,7 @@ ddp
   maxNumStepsPerSecond          50000
   backwardPassIntegratorType    ODE45
 
-  inequalityConstraintMu        1e-2
+  inequalityConstraintMu        1e-4
   inequalityConstraintDelta     1e-3
   constraintPenaltyInitialValue 0
   constraintPenaltyIncreaseRate 0.001
@@ -83,7 +83,7 @@ initialState
   (3,0)  1.57  ; SH_ROT
   (4,0)  0.35  ; SH_FLE
   (5,0)  3.14  ; EL_FLE
-  (6,0)  -2.00  ; EL_ROT
+  (6,0)  -1.90  ; EL_ROT
   (7,0)  0.0  ; WR_FLE
   (8,0)  -1.0  ; WR_ROT
   (9,0)  1.57  ; TOOL_ROT
@@ -144,45 +144,44 @@ endEffectorCost
 
 joint_limits
 {
-  active false
+  active true
   lower
   {
     scaling 1e+0
 
-    (0,0) -6.14  ; SH_ROT
-    (1,0) -2.14  ; SH_FLE
-    (2,0) -6.14  ; EL_FLE
-    (3,0) -2.14  ; EL_ROT
-    (4,0) -6.14  ; WR_FLE
-    (5,0) -2.14  ; WR_ROT
-    (6,0) -6.14
+    (0,0) -10  ; SH_ROT
+    (1,0) -2.41  ; SH_FLE
+    (2,0) -10  ; EL_FLE
+    (3,0) -2.66  ; EL_ROT
+    (4,0) -10  ; WR_FLE
+    (5,0) -2.23  ; WR_ROT
+    (6,0) -10
   }
   upper
   {
     scaling 1e+0
 
-    (0,0)  6.14  ; SH_ROT
-    (1,0)  2.14  ; SH_FLE
-    (2,0)  6.14  ; EL_FLE
-    (3,0)  2.14  ; EL_ROT
-    (4,0)  6.14  ; WR_FLE
-    (5,0)  2.14  ; WR_ROT
-    (6,0)  6.14
+    (0,0)  10  ; SH_ROT
+    (1,0)  2.41  ; SH_FLE
+    (2,0)  10  ; EL_FLE
+    (3,0)  2.66  ; EL_ROT
+    (4,0)  10  ; WR_FLE
+    (5,0)  2.23  ; WR_ROT
+    (6,0)  10
   }
   velocity
   {
     scaling 1e+0
 
-    (0,0)  1.0  ; position x
-    (1,0)  1.0  ; position y
-    (2,0)  1.0  ; heading
-    (3,0)  1.0  ; SH_ROT
-    (4,0)  1.0  ; SH_FLE
-    (5,0)  1.0  ; EL_FLE
-    (6,0)  1.0  ; EL_ROT
-    (7,0)  1.0  ; WR_FLE
-    (8,0)  1.0  ; WR_ROT
-    (9,0)  1.0
+    (0,0)  1.0  ; forward velocity
+    (1,0)  1.0  ; turning velocity
+    (2,0)  0.37  ; SH_ROT 20 deg/s
+    (3,0)  0.37  ; SH_FLE
+    (4,0)  0.37  ; EL_FLE
+    (5,0)  0.37  ; EL_ROT
+    (6,0)  0.37  ; WR_FLE
+    (7,0)  0.37  ; WR_ROT
+    (8,0)  0.37
   }
 }
 selfCollisionCost

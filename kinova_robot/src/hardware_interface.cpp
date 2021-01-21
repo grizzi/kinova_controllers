@@ -21,9 +21,8 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
     auto joint_speed = kortex_joint_speeds_cmd_.add_joint_speeds();
     joint_speed->set_joint_identifier(i);
     joint_speed->set_value(0.0);
-    joint_speed->set_duration(0.0);
+    joint_speed->set_duration(1.0); // avoid last command is kept forever
   }
-
 
   ROS_INFO_STREAM("Starting Kinova Robot interface in namespace: " << nh.getNamespace());
   for (std::size_t i = 0; i < 7; ++i) {
@@ -238,7 +237,7 @@ void KinovaHardwareInterface::update() { cm->update(this->get_time(), this->get_
 void KinovaHardwareInterface::enforce_limits() {
   for (size_t i = 0; i < 7; i++) {
     pos_cmd[i] = std::max(std::min(pos_cmd[i], limits[i].max_position), limits[i].min_position);
-    // remove this hack and replace with soft limits
+    // TODO(giuseppe) remove this hack and replace with soft limits
     vel_cmd[i] = std::max(std::min(vel_cmd[i], limits[i].max_velocity), -limits[i].max_velocity);
     eff_cmd[i] = std::max(std::min(eff_cmd[i], limits[i].max_effort), -limits[i].max_effort);
   }
