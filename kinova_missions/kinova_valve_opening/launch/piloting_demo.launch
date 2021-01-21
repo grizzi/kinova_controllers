@@ -19,7 +19,7 @@
     </group>
 
     <!--    State dependent parameters -->
-    <arg name="valve_radius" default="0.07"/>
+    <arg name="valve_radius" default="0.065"/>
 
     <!-- MPC controller stuff -->
     <include file="$(find kinova_mpc_controllers)/launch/controller.launch">
@@ -46,7 +46,7 @@
         </group>
         <group unless="$(arg use_apriltag)">
             <node name="valve_broadcaster" type="static_transform_publisher" pkg="tf2_ros"
-                  args="-0.11287 0.57018 0.26281 0.7071068 0.0 0.0 0.7071068 arm_base_link valve_base"/>
+                  args="-0.14509 0.55719 0.18251 0.707 0 0 0.707 arm_base_link valve_base"/>
         </group>
     </group>
 

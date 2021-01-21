@@ -23,6 +23,7 @@ with state_machine:
     
     homing_sequence = smach.StateMachine(outcomes=['Success', 'Failure'])
     with homing_sequence:
+
         smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
                                 transitions={'Completed': 'HOME_ROBOT',
                                              'Failure': 'Failure'})
@@ -31,7 +32,13 @@ with state_machine:
         #                transitions={'Completed': 'HOME_ROBOT',
         #                             'Failure': 'Failure'})
 
-        smach.StateMachine.add('HOME_ROBOT', HomeKinova(ns="home_robot"),
+
+        # This is the one using moveit
+        # smach.StateMachine.add('HOME_ROBOT', HomeKinova(ns="home_robot"),
+        #                         transitions={'Completed': 'Success',
+        #                                      'Failure': 'Failure'})
+
+        smach.StateMachine.add('HOME_ROBOT', HomePose(ns="home_pose"),
                                 transitions={'Completed': 'Success',
                                              'Failure': 'Failure'})
 

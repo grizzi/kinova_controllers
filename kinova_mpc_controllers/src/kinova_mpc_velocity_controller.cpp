@@ -19,7 +19,7 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   }
 
   controller_nh.param<std::string>("tool_link", tool_frame_, "tool_frame");
-  
+
   bool simulation;
   controller_nh.param<bool>("simulation", simulation, {});
   is_real_robot_ = !simulation;
@@ -94,7 +94,6 @@ void KinovaMpcVelocityController::stopping(const ros::Time& time) {
   if (is_real_robot_) {
     for (auto& handle : robot_command_handles_) {
       handle.setMode(KinovaControlMode::NO_MODE);
-      handle.setCommand(0.0);
     }
   }
   ROS_INFO("Stopping KinovaMpcVelocityController has been stopped!");
@@ -153,6 +152,31 @@ void KinovaMpcVelocityController::readState() {
     joint_state_cur_.velocity[i] = velocity_current_(i);
   }
 }
+
+void KinovaMpcVelocityController::computeTorqueCommands(joint_vector_t& tau,
+                                                        const ros::Duration& period) {
+  position_command_ = mpc_controller_->get_position_command();
+  velocity_command_ = mpc_controller_->get_velocity_command();
+
+  model_->updateState(position_current_, Eigen::VectorXd::Zero(model_->getDof()));
+  model_->computeAllTerms();
+  gravity_and_coriolis_ = model_->getNonLinearTerms().head<7>();
+
+  // tau = ff + pd
+  position_error_ = position_command_ - position_current_.head<7>();
+  velocity_error_ = velocity_command_ - velocity_current_.head<7>();
+
+  ROS_DEBUG_STREAM_THROTTLE(1.0, std::endl
+                                     << "Pos cmd: " << position_command_.transpose() << std::endl
+                                     << "Pos mes: " << position_current_.transpose() << std::endl
+                                     << "Vel cmd: " << velocity_command_.transpose() << std::endl
+                                     << "Vel mes: " << velocity_current_.transpose());
+
+  for (size_t i = 0; i < 7; i++)
+    tau(i) = pid_controllers_[i].computeCommand(position_error_(i), velocity_error_(i), period) +
+             gravity_and_coriolis_(i);
+}
+
 void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
   if (is_real_robot_) {
     for (size_t i = 0; i < 7; i++) {
@@ -160,31 +184,14 @@ void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
       robot_command_handles_[i].setVelocityCommand(mpc_controller_->get_velocity_command()(i));
     }
   } else {
-    Eigen::VectorXd position_command = mpc_controller_->get_position_command();
-    Eigen::VectorXd velocity_command = mpc_controller_->get_velocity_command();
-
-    model_->updateState(position_current_, Eigen::VectorXd::Zero(model_->getDof()));
-    model_->computeAllTerms();
-    gravity_and_coriolis_ = model_->getNonLinearTerms().head<7>();
-
-    // tau = ff + pd
-    position_error_ = position_command - position_current_.head<7>();
-    velocity_error_ = velocity_command - velocity_current_.head<7>();
-
-    ROS_DEBUG_STREAM_THROTTLE(1.0, std::endl
-                                      << "Pos cmd: " << position_command.transpose() << std::endl
-                                      << "Pos mes: " << position_current_.transpose() << std::endl
-                                      << "Vel cmd: " << velocity_command.transpose() << std::endl
-                                      << "Vel mes: " << velocity_current_.transpose());
+    joint_vector_t tau;
+    computeTorqueCommands(tau, period);
 
     for (size_t i = 0; i < 7; i++) {
-      double tau =
-          pid_controllers_[i].computeCommand(position_error_(i), velocity_error_(i), period) +
-          gravity_and_coriolis_(i);
-      sim_command_handles_[i].setCommand(tau);
-      joint_state_des_.position[i] = position_command(i);
-      joint_state_des_.velocity[i] = velocity_command(i);
-      joint_state_des_.effort[i] = tau;
+      sim_command_handles_[i].setCommand(tau(i));
+      joint_state_des_.position[i] = position_command_(i);
+      joint_state_des_.velocity[i] = velocity_command_(i);
+      joint_state_des_.effort[i] = tau(i);
     }
   }
   joint_state_cur_pub_.publish(joint_state_cur_);

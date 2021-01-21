@@ -632,6 +632,16 @@ bool KinovaHardwareInterface::set_actuators_control_mode(const KinovaControlMode
     // SINGLE LEVEL SERVOING (aka high level position/velocity control)
     // switch happens in reverse mode: first actuator, then servoing mode
     if (mode == KinovaControlMode::NO_MODE || mode == KinovaControlMode::VELOCITY) {
+      
+      if (current_mode == KinovaControlMode::VELOCITY && mode == KinovaControlMode::NO_MODE){
+        current_mode = mode;
+        ROS_INFO("Sending zero joint velocities when switching from VELOCITY to NO_MODE");
+        for (size_t i = 0; i < 7; ++i) 
+          kortex_joint_speeds_cmd_.mutable_joint_speeds(i)->set_value(0.0);
+        m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
+        return true;
+      }
+      
       if (current_servoing_mode == Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING){
         current_mode = mode;
         ROS_INFO("Already in high servoing mode.");

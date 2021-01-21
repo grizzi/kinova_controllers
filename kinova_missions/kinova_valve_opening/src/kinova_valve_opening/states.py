@@ -14,6 +14,31 @@ from smb_mission_planner.utils.moveit_utils import MoveItPlanner
 from kinova_valve_opening.trajectory_generator import *
 
 
+class HomePose(RosControlPoseReaching):
+    """
+    Go to some home pose
+    """
+
+    def __init__(self, ns):
+        RosControlPoseReaching.__init__(self, ns=ns)
+        path_topic_name = self.get_scoped_param("path_topic_name")
+        self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
+      
+    def execute(self, ud):
+        controller_switched = self.do_switch()
+        if not controller_switched:
+            return 'Failure'
+
+        
+        home_pose = get_home_pose()
+        path = get_timed_path_to_target(home_pose, linear_velocity=0.25, angular_velocity=0.25)
+        self.path_publisher.publish(path)
+        if not wait_until_reached(home_pose):
+            return 'Failure'
+        else:
+            return 'Completed'
+
+
 class HomeKinova(RosControlPoseReaching):
     """
     Switct to the trajectory controller and homes the robot
@@ -27,6 +52,12 @@ class HomeKinova(RosControlPoseReaching):
         controller_switched = self.do_switch()
         if not controller_switched:
             return 'Failure'
+
+        # There might be sporadic motions due to the previously running controller
+        # Wait some time after the switching to not trigger a following error at
+        # the moveit side
+        rospy.loginfo("Sleeping 5.0 sec before homing robot.")
+        rospy.sleep(5.0)
 
         rospy.loginfo("Reaching named position: home")
         success = self.moveit_planner.reach_named_position("home")

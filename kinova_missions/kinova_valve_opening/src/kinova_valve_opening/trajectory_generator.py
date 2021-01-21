@@ -27,7 +27,7 @@ class valve_traj_data:
     valve_haptic_frame = "valve_est_frame"
 
     # geometry
-    valve_radius = 0.07
+    valve_radius = 0.065
 
     # relative transformation from grasp to point on valve perimeter
     rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_matrix()
@@ -40,10 +40,27 @@ class valve_traj_data:
     frontal_grasp_offset = -0.05
     lateral_grasp_offset = -0.05
 
+    # home pose
+    home_pose_position = np.array([0.0, 0.57, 0.42])
+    home_pose_orientation = np.array([0.011943, 0.71421, 0.69981, -0.0043791])
 
 #####################################
 #  Generic utility functions
 #####################################
+
+def get_home_pose():
+    pose = PoseStamped()
+    pose.pose.position.x = valve_traj_data.home_pose_position[0]
+    pose.pose.position.y = valve_traj_data.home_pose_position[1]
+    pose.pose.position.z = valve_traj_data.home_pose_position[2]
+    pose.pose.orientation.x = valve_traj_data.home_pose_orientation[0]
+    pose.pose.orientation.y = valve_traj_data.home_pose_orientation[1]
+    pose.pose.orientation.z = valve_traj_data.home_pose_orientation[2]
+    pose.pose.orientation.w = valve_traj_data.home_pose_orientation[3]
+    pose.header.stamp = rospy.get_rostime()
+    pose.header.frame_id = valve_traj_data.base_frame
+    return pose
+    
 
 def get_end_effector_pose():
     """ Retrieve the end effector pose. Let it fail if unable to get the transform """

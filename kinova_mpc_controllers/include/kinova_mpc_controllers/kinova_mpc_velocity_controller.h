@@ -44,6 +44,7 @@ class KinovaMpcVelocityController
   bool addStateHandles(hardware_interface::RobotHW* hw);
   bool addCommandHandles(hardware_interface::RobotHW* hw);
   void writeCommand(const ros::Duration& period);
+  void computeTorqueCommands(joint_vector_t& tau, const ros::Duration& period);
   void readState();
 
  private:
@@ -61,6 +62,8 @@ class KinovaMpcVelocityController
   // model for the simulation
   std::unique_ptr<rc::RobotWrapper> model_;
   std::array<control_toolbox::Pid, 7> pid_controllers_;
+  joint_vector_t position_command_;
+  joint_vector_t velocity_command_;
   joint_vector_t position_error_;
   joint_vector_t velocity_error_;
   joint_vector_t gravity_and_coriolis_;

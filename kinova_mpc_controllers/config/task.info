@@ -8,7 +8,7 @@ ddp
 {
   algorithm                     SLQ
 
-  nThreads                      1
+  nThreads                      3
 
   maxNumIterations              10
   minRelCost                    0.1
@@ -62,7 +62,7 @@ mpc
   numPartitions                  4
   runtimeMaxNumIterations        1
   initMaxNumIterations           10
-  runtimeMinStepLength           1.0
+  runtimeMinStepLength           1e-2 ; 1.0
   runtimeMaxStepLength           1.0
   initMaxStepLength              1.0
   initMinStepLength              0.1
