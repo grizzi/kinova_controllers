@@ -3,6 +3,7 @@
 //
 
 #include "kinova_mpc_controllers/kinova_mpc_velocity_controller.h"
+#include "kinova_mpc_controllers/mpc_admittance_controller.h"
 #include <angles/angles.h>
 #include <pluginlib/class_list_macros.h>
 
@@ -45,7 +46,15 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
       pid_controllers_[i].printValues();
     }
   }
-  mpc_controller_ = std::unique_ptr<MPC_Controller>(new MPC_Controller(controller_nh));
+  bool admittance;
+  controller_nh.param<bool>("admittance", admittance, false);
+  if (admittance){
+    ROS_INFO("Selected admittance mpc controller.");
+    mpc_controller_ = std::unique_ptr<MPC_AdmittanceController>(new MPC_AdmittanceController(controller_nh));
+  }
+  else{
+    mpc_controller_ = std::unique_ptr<MPC_Controller>(new MPC_Controller(controller_nh));
+  }
   mpc_controller_->init();
 
   addStateHandles(hw);

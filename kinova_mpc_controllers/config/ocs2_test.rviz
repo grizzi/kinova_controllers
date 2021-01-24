@@ -5,10 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /RobotModel1
         - /TF1/Frames1
-        - /RobotModel2
-        - /MPC Demo Path1
       Splitter Ratio: 0.5
     Tree Height: 455
   - Class: rviz/Selection
@@ -55,22 +52,6 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 0.699999988079071
-      Class: rviz/RobotModel
-      Collision Enabled: false
-      Enabled: true
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-      Name: RobotModel
-      Robot Description: robot_description
-      TF Prefix: ""
-      Update Interval: 0
-      Value: true
-      Visual Enabled: true
     - Class: rviz/TF
       Enabled: true
       Frame Timeout: 15
@@ -92,31 +73,11 @@ Visualization Manager:
           Value: false
         forearm_link:
           Value: false
+        ft_sensor0:
+          Value: true
         half_arm_1_link:
           Value: false
         half_arm_2_link:
-          Value: false
-        left_inner_finger:
-          Value: false
-        left_inner_finger_pad:
-          Value: false
-        left_inner_knuckle:
-          Value: false
-        left_outer_finger:
-          Value: false
-        left_outer_knuckle:
-          Value: false
-        right_inner_finger:
-          Value: false
-        right_inner_finger_pad:
-          Value: false
-        right_inner_knuckle:
-          Value: false
-        right_outer_finger:
-          Value: false
-        right_outer_knuckle:
-          Value: false
-        robotiq_arg2f_base_link:
           Value: false
         shoulder_link:
           Value: false
@@ -153,23 +114,9 @@ Visualization Manager:
                               {}
                             camera_link:
                               {}
-                            robotiq_arg2f_base_link:
-                              left_inner_knuckle:
-                                {}
-                              left_outer_knuckle:
-                                left_outer_finger:
-                                  left_inner_finger:
-                                    left_inner_finger_pad:
-                                      {}
-                              right_inner_knuckle:
-                                {}
-                              right_outer_knuckle:
-                                right_outer_finger:
-                                  right_inner_finger:
-                                    right_inner_finger_pad:
-                                      {}
                             tool_frame:
-                              {}
+                              ft_sensor0:
+                                {}
       Update Interval: 0
       Value: true
     - Class: rviz/MarkerArray
@@ -269,61 +216,6 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        left_inner_finger:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        left_inner_finger_pad:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        left_inner_knuckle:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        left_outer_finger:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        left_outer_knuckle:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        right_inner_finger:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        right_inner_finger_pad:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        right_inner_knuckle:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        right_outer_finger:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        right_outer_knuckle:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        robotiq_arg2f_base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         shoulder_link:
           Alpha: 1
           Show Axes: false
@@ -377,6 +269,30 @@ Visualization Manager:
       Topic: /demo_path
       Unreliable: false
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.10000000149011612
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: MPC Command Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: Axes
+      Queue Size: 10
+      Radius: 0.009999999776482582
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /command_path
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 186; 189; 182
@@ -405,7 +321,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.678359866142273
+      Distance: 2.3579745292663574
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -421,9 +337,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7703985571861267
+      Pitch: 0.4553988575935364
       Target Frame: <Fixed Frame>
-      Yaw: 0.8753861784934998
+      Yaw: 0.7203863263130188
     Saved: ~
 Window Geometry:
   Displays:

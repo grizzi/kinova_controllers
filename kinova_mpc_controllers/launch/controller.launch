@@ -20,4 +20,5 @@
     <!-- Interactive reference -->
     <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"
           output="screen" args="$(arg task_file)"/>
+
 </launch>

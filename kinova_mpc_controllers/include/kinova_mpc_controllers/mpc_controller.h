@@ -14,6 +14,7 @@
 #include <ros/ros.h>
 
 #include <std_msgs/Float64MultiArray.h>
+#include <realtime_tools/realtime_publisher.h>
 
 namespace kinova_controllers {
 
@@ -45,15 +46,21 @@ class MPC_Controller{
    * Optional preprocessing step for the tracked path.
    * @param desiredPath
    */
-  void transformPath(nav_msgs::Path& desiredPath) const;
-  void adjustPathTime(nav_msgs::Path& desiredPath) const;
+  virtual void adjustPath(nav_msgs::Path& desiredPath) const {};
 
  private:
   void advanceMpc();
   void setObservation(const joint_vector_t& q);
   void updateCommand();
   void publishObservation();
+
+  void writeDesiredPath(const nav_msgs::Path& path);
+
+  // path processing
   static bool sanityCheck(const nav_msgs::Path& path);
+  void transformPath(nav_msgs::Path& desiredPath) const;
+  void adjustPathTime(nav_msgs::Path& desiredPath) const;
+
 
  protected:
   double start_time_;
@@ -75,18 +82,22 @@ class MPC_Controller{
   double mpcFrequency_;
   std::string taskFile_;
 
+  std::atomic_bool policyReady_;
   std::atomic_bool referenceEverReceived_;
+  std::atomic_bool observationEverReceived_;
 
   std::thread mpcThread_;
   ocs2::benchmark::RepeatedTimer mpcTimer_;
 
-  std::mutex trajectoryMutex_;
-  ocs2::CostDesiredTrajectories desiredTrajectory_;
-
   std::mutex observationMutex_;
   ocs2::SystemObservation observation_;
 
+  std::mutex desiredPathMutex_;
+  nav_msgs::Path desiredPath_;
+
   std::unique_ptr<mobile_manipulator::MobileManipulatorInterface> mm_interface_;
   std::unique_ptr<ocs2::MPC_MRT_Interface> mpc_mrt_interface_;
+
+  realtime_tools::RealtimePublisher<nav_msgs::Path> command_path_publisher_;
 };
 }  // namespace mobile_manipulator

@@ -38,6 +38,8 @@ bool MPC_Controller::init() {
   mpcPtr_ = mm_interface_->getMpc();
   mpc_mrt_interface_.reset(new ocs2::MPC_MRT_Interface(*mpcPtr_));
 
+  command_path_publisher_.init(nh_, "/command_path", 10);
+
   observation_.time = 0.0;
   observation_.state.setZero(mm_interface_->stateDim_);
   observation_.input.setZero(mm_interface_->inputDim_);
@@ -52,17 +54,19 @@ void MPC_Controller::start(const joint_vector_t& initial_observation) {
   // initial observation
   if (!stopped_) return;
 
+  // flags
+  policyReady_ = false;
+  referenceEverReceived_ = false;
+  observationEverReceived_ = false;
+
   jointInitialState_ = initial_observation;
   setObservation(initial_observation);
-
-  // reference
-  referenceEverReceived_ = false;
 
   // mpc solution update thread
   start_time_ = ros::Time::now().toSec();
   mpc_mrt_interface_->reset();
   mpcTimer_.reset();
-  
+
   stopped_ = false;
   mpcThread_ = std::thread(&MPC_Controller::advanceMpc, this);
   ROS_INFO("MPC Controller Successfully started.");
@@ -77,6 +81,30 @@ void MPC_Controller::advanceMpc() {
       continue;
     }
 
+    if (!observationEverReceived_) {
+      ROS_WARN_THROTTLE(3.0, "Observation never received. Skipping MPC update.");
+      continue;
+    }
+
+    nav_msgs::Path pathTarget;
+    {
+      std::lock_guard<std::mutex> lock(desiredPathMutex_);
+      pathTarget = desiredPath_;
+    }
+
+    adjustPath(pathTarget);
+    writeDesiredPath(pathTarget);
+
+    if (command_path_publisher_.trylock()){
+      command_path_publisher_.msg_ = pathTarget;
+      command_path_publisher_.unlockAndPublish();
+    }
+
+    {
+      std::lock_guard<std::mutex> lock(observationMutex_);
+      mpc_mrt_interface_->setCurrentObservation(observation_);
+    }
+
     mpcTimer_.startTimer();
     try {
       mpc_mrt_interface_->advanceMpc();
@@ -86,13 +114,15 @@ void MPC_Controller::advanceMpc() {
     mpcTimer_.endTimer();
     elapsed = mpcTimer_.getLastIntervalInMilliseconds() / 1e3;
     if (1. / elapsed < mpcFrequency_) {
-      ROS_WARN_STREAM_THROTTLE(5.0, "[MPC_Controller::advanceMpc] Mpc thread running slower than real time: "
-                                        << elapsed << " > " << 1. / mpcFrequency_);
+      ROS_WARN_STREAM_THROTTLE(
+          5.0, "[MPC_Controller::advanceMpc] Mpc thread running slower than real time: "
+                   << elapsed << " > " << 1. / mpcFrequency_);
     }
 
     if (mpcFrequency_ > 0 && 1. / elapsed < mpcFrequency_)
       std::this_thread::sleep_for(
           std::chrono::microseconds(int(1e6 * (1.0 / mpcFrequency_ - elapsed))));
+    policyReady_ = true;
   }
 }
 
@@ -103,9 +133,10 @@ void MPC_Controller::update(const ros::Time& time, const joint_vector_t& observa
 }
 
 void MPC_Controller::setObservation(const joint_vector_t& observation) {
+  std::lock_guard<std::mutex> lock(observationMutex_);
   observation_.time = ros::Time::now().toSec() - start_time_;
   observation_.state.tail(7) = observation;
-  mpc_mrt_interface_->setCurrentObservation(observation_);
+  observationEverReceived_ = true;
 }
 
 void MPC_Controller::updateCommand() {
@@ -113,7 +144,7 @@ void MPC_Controller::updateCommand() {
   static Eigen::VectorXd mpcInput;
   static size_t mode;
 
-  if (!referenceEverReceived_ || !mpc_mrt_interface_->initialPolicyReceived()) {
+  if (!referenceEverReceived_ || !policyReady_) {
     positionCommand_ = jointInitialState_;
     velocityCommand_.setZero();
     return;
@@ -145,8 +176,8 @@ void MPC_Controller::adjustPathTime(nav_msgs::Path& desiredPath) const {
   double time_offset = desiredPath.poses[0].header.stamp.toSec() - current_mpc_time;
   ROS_INFO_STREAM("[MPC_Controller::adjustPathTime] Time offset is: " << time_offset);
 
-  for (size_t idx=0; idx<desiredPath.poses.size(); idx++) {
-    desiredPath.poses[idx].header.stamp = desiredPath.poses[idx].header.stamp - ros::Duration(time_offset);
+  for (auto& pose : desiredPath.poses) {
+    pose.header.stamp = pose.header.stamp - ros::Duration(time_offset);
   }
 }
 
@@ -162,14 +193,22 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
     return;
   }
 
-  nav_msgs::Path adaptedPath = *desiredPath;
-  transformPath(adaptedPath);
-  adjustPathTime(adaptedPath);
+  ROS_INFO_STREAM("[MPC_Controller::pathCallback] Received new path with "
+                      << desiredPath->poses.size() << " poses.");
 
-  ROS_INFO_STREAM("[MPC_Controller::pathCallback] Received new path with " << adaptedPath.poses.size() << " poses.");
-  ocs2::CostDesiredTrajectories costDesiredTrajectories(adaptedPath.poses.size());
+  {
+    std::lock_guard<std::mutex> lock(desiredPathMutex_);
+    desiredPath_ = *desiredPath;
+    transformPath(desiredPath_);   // transform to the correct base frame
+    adjustPathTime(desiredPath_);  // adjust time stamps keeping relative time-distance
+  }
+  referenceEverReceived_ = true;
+}
+
+void MPC_Controller::writeDesiredPath(const nav_msgs::Path& desiredPath) {
+  ocs2::CostDesiredTrajectories costDesiredTrajectories(desiredPath.poses.size());
   size_t idx = 0;
-  for (const auto& waypoint : adaptedPath.poses) {
+  for (const auto& waypoint : desiredPath.poses) {
     // Desired state trajectory
     ocs2::scalar_array_t& tDesiredTrajectory = costDesiredTrajectories.desiredTimeTrajectory();
     tDesiredTrajectory[idx] = waypoint.header.stamp.toSec();
@@ -190,15 +229,7 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
     idx++;
   }
 
-  {
-    //std::lock_guard<std::mutex> lock(trajectoryMutex_);
-    desiredTrajectory_ = costDesiredTrajectories;
-    mpc_mrt_interface_->setTargetTrajectories(desiredTrajectory_);
-    ROS_INFO_STREAM("[MPC_Controller::pathCallback] New target trajectory: \n" << desiredTrajectory_);
-  }
-
-  if (!referenceEverReceived_) std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  referenceEverReceived_ = true;
+  mpc_mrt_interface_->setTargetTrajectories(costDesiredTrajectories);
 }
 
 bool MPC_Controller::sanityCheck(const nav_msgs::Path& path) {
@@ -212,7 +243,8 @@ bool MPC_Controller::sanityCheck(const nav_msgs::Path& path) {
 }
 
 void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) const {
-  ROS_INFO_STREAM("[MPC_Controller::transformPath] Transforming path from " << desiredPath.header.frame_id << " to " << base_link_);
+  ROS_INFO_STREAM("[MPC_Controller::transformPath] Transforming path from "
+                  << desiredPath.header.frame_id << " to " << base_link_);
   geometry_msgs::TransformStamped transformStamped;
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
