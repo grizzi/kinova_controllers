@@ -76,4 +76,7 @@ mpc_admittance_controller:
   force_integral_max: [1.0, 1.0, 1.0]
   torque_integral_max: [1.0, 1.0, 1.0]
 
+  payload_mass: 0.0
+  payload_offset: [0.0, 0.0, 0.0]
+
 

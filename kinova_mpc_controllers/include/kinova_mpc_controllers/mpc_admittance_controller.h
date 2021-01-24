@@ -12,6 +12,7 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <realtime_tools/realtime_publisher.h>
+#include "kinova_mpc_controllers/ft_sensor_utils.h"
 
 #pragma once
 
@@ -42,6 +43,8 @@ class MPC_AdmittanceController : public MPC_Controller {
                     Eigen::Matrix<double, N, 1>& gains);
 
  private:
+  bool active_;
+
   // ROS
   std::unique_ptr<ros::CallbackQueue> wrench_callback_queue_;
   ros::Subscriber wrench_subscriber_;
@@ -49,7 +52,6 @@ class MPC_AdmittanceController : public MPC_Controller {
   ros::ServiceServer desired_wrench_service_;
 
   std::mutex wrench_mutex_;
-  Eigen::Matrix<double, 6, 1> wrench_offset_;
   geometry_msgs::WrenchStamped wrench_;
 
   // Gains
@@ -72,7 +74,10 @@ class MPC_AdmittanceController : public MPC_Controller {
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::Buffer tf_buffer_;
 
-  bool active_;
+  // Bias
+  double payload_mass_;
+  Eigen::Vector3d payload_offset_;
+  mutable ft_sensor_utils::Wrench bias_;
 };
 
 }  // namespace kinova_controllers

@@ -3,6 +3,7 @@
 //
 
 #include "kinova_mpc_controllers/mpc_admittance_controller.h"
+
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -27,6 +28,11 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
   parse_vector<3>(nh_, "force_integral_max", force_integral_max_);
   parse_vector<3>(nh_, "torque_integral_max", torque_integral_max_);
 
+  if (!nh.param<double>("payload_mass", payload_mass_, 0.0)) {
+    ROS_WARN_STREAM("Failed to parse payload_mass, defaulting to 0");
+  }
+  parse_vector<3>(nh_, "payload_offset", payload_offset_);
+
   wrench_callback_queue_ = std::unique_ptr<ros::CallbackQueue>(new ros::CallbackQueue());
   ros::SubscribeOptions so;
   so.init<geometry_msgs::WrenchStamped>(
@@ -34,7 +40,6 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
   so.callback_queue = wrench_callback_queue_.get();
   wrench_subscriber_ = nh_.subscribe(so);
 
-  wrench_offset_.setZero();
   reset_wrench_offset_service_ = nh_.advertiseService(
       "/reset_wrench_offset", &MPC_AdmittanceController::reset_wrench_offset_callback, this);
 
@@ -47,25 +52,17 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
 }
 
 void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
+  // Update time interval for integral computation
   double dt;
-  if (last_time_ < 0){
+  if (last_time_ < 0) {
     dt = 0;
     last_time_ = ros::Time::now().toSec();
-  }
-  else{
+  } else {
     dt = ros::Time::now().toSec() - last_time_;
     last_time_ = ros::Time::now().toSec();
   }
 
-  wrench_callback_queue_->callAvailable();
-  force_error_ = -(Eigen::Vector3d(wrench_.wrench.force.x, wrench_.wrench.force.y,
-                              wrench_.wrench.force.z) - wrench_offset_.head(3));
-  force_integral_ += force_error_ * dt;
-  force_integral_ = force_integral_.cwiseMax(-force_integral_max_);
-  force_integral_ = force_integral_.cwiseMin(force_integral_max_);
-  Eigen::Vector3d delta_position = Kp_linear_.cwiseProduct(force_error_) + Ki_linear_.cwiseProduct(force_integral_);
-
-  // Transform delta in poses frame
+  // Update sensor pose in a base frame
   geometry_msgs::TransformStamped transform;
   try {
     // target_frame, source_frame ...
@@ -75,18 +72,34 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
     ROS_WARN_STREAM_THROTTLE(2.0, ex.what());
     return;
   }
-
   Eigen::Quaterniond q(transform.transform.rotation.w, transform.transform.rotation.x,
                        transform.transform.rotation.y, transform.transform.rotation.z);
   Eigen::Matrix3d R(q);
+  Eigen::Vector3d gravity_sensor_frame = R.transpose() * Eigen::Vector3d::UnitX() * -9.81;
+
+  // Update bias
+  bias_ = ft_sensor_utils::get_bias(payload_mass_, payload_offset_, gravity_sensor_frame);
+
+  // Update measured wrench and tracking errors
+  wrench_callback_queue_->callAvailable();
+  force_error_ =
+      -(Eigen::Vector3d(wrench_.wrench.force.x, wrench_.wrench.force.y, wrench_.wrench.force.z) -
+        bias_.get_force());
+  force_integral_ += force_error_ * dt;
+  force_integral_ = force_integral_.cwiseMax(-force_integral_max_);
+  force_integral_ = force_integral_.cwiseMin(force_integral_max_);
+  Eigen::Vector3d delta_position =
+      Kp_linear_.cwiseProduct(force_error_) + Ki_linear_.cwiseProduct(force_integral_);
   Eigen::Vector3d delta_position_transformed = R * delta_position;
 
-  torque_error_ = -(Eigen::Vector3d(wrench_.wrench.torque.x, wrench_.wrench.torque.y,
-                               wrench_.wrench.torque.z) - wrench_offset_.tail(3));
+  torque_error_ =
+      -(Eigen::Vector3d(wrench_.wrench.torque.x, wrench_.wrench.torque.y, wrench_.wrench.torque.z) -
+        bias_.get_torque());
   torque_integral_ += torque_error_ * dt;
   torque_integral_ = torque_integral_.cwiseMax(-torque_integral_max_);
   torque_integral_ = torque_integral_.cwiseMin(torque_integral_max_);
-  Eigen::Vector3d rotationImg = Kp_angular_.cwiseProduct(torque_error_) + Ki_angular_.cwiseProduct(torque_integral_);
+  Eigen::Vector3d rotationImg =
+      Kp_angular_.cwiseProduct(torque_error_) + Ki_angular_.cwiseProduct(torque_integral_);
   Eigen::Quaterniond delta_rotation;
   double r = rotationImg.norm();
   if (r > 0) {
@@ -128,14 +141,14 @@ void MPC_AdmittanceController::wrench_callback(const geometry_msgs::WrenchStampe
 bool MPC_AdmittanceController::reset_wrench_offset_callback(std_srvs::EmptyRequest&,
                                                             std_srvs::EmptyResponse&) {
   wrench_callback_queue_->callAvailable();
-  wrench_offset_(0) = wrench_.wrench.force.x;
-  wrench_offset_(1) = wrench_.wrench.force.y;
-  wrench_offset_(2) = wrench_.wrench.force.z;
-  wrench_offset_(3) = wrench_.wrench.torque.x;
-  wrench_offset_(4) = wrench_.wrench.torque.y;
-  wrench_offset_(5) = wrench_.wrench.torque.z;
+  bias_.get_force().x() = wrench_.wrench.force.x;
+  bias_.get_force().y() = wrench_.wrench.force.y;
+  bias_.get_force().z() = wrench_.wrench.force.z;
+  bias_.get_torque().x() = wrench_.wrench.torque.x;
+  bias_.get_torque().y() = wrench_.wrench.torque.y;
+  bias_.get_torque().z() = wrench_.wrench.torque.z;
 
-  ROS_INFO_STREAM("Wrench offset reset to: " << wrench_offset_.transpose());
+  ROS_INFO_STREAM("Wrench offset reset to: " << bias_);
   return true;
 }
 
@@ -143,20 +156,21 @@ bool MPC_AdmittanceController::set_desired_wrench(std_srvs::EmptyRequest&,
                                                   std_srvs::EmptyResponse&) {
   ROS_WARN("This service is just triggering admittance mode with 0 reference wrench.");
   wrench_callback_queue_->callAvailable();
-  wrench_offset_(0) = wrench_.wrench.force.x;
-  wrench_offset_(1) = wrench_.wrench.force.y;
-  wrench_offset_(2) = wrench_.wrench.force.z;
-  wrench_offset_(3) = wrench_.wrench.torque.x;
-  wrench_offset_(4) = wrench_.wrench.torque.y;
-  wrench_offset_(5) = wrench_.wrench.torque.z;
+  bias_.get_force().x() = wrench_.wrench.force.x;
+  bias_.get_force().y() = wrench_.wrench.force.y;
+  bias_.get_force().z() = wrench_.wrench.force.z;
+  bias_.get_torque().x() = wrench_.wrench.torque.x;
+  bias_.get_torque().y() = wrench_.wrench.torque.y;
+  bias_.get_torque().z() = wrench_.wrench.torque.z;
 
-  ROS_INFO_STREAM("Wrench offset reset to: " << wrench_offset_.transpose());
+  ROS_INFO_STREAM("Wrench offset reset to: " << bias_);
   active_ = true;
   return true;
 }
 
-template<int N>
-void MPC_AdmittanceController::parse_vector(ros::NodeHandle& nh, const std::string& name, Eigen::Matrix<double, N, 1>& gains) {
+template <int N>
+void MPC_AdmittanceController::parse_vector(ros::NodeHandle& nh, const std::string& name,
+                                            Eigen::Matrix<double, N, 1>& gains) {
   std::vector<double> gains_vector;
   if (!nh.param<std::vector<double>>(name, gains_vector, {})) {
     ROS_WARN_STREAM("Failed to parse " << name << ", defaulting to zero vector");
@@ -167,5 +181,5 @@ void MPC_AdmittanceController::parse_vector(ros::NodeHandle& nh, const std::stri
     gains_vector.resize(N, 0.0);
   }
 
-  for (size_t i=0; i<N; i++) gains(i) = gains_vector[i];
+  for (size_t i = 0; i < N; i++) gains(i) = gains_vector[i];
 }
