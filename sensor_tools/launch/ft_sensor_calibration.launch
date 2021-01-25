@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="force_torque_sensor_calib" type="ft_calib_node" name="ft_calib"  output="screen" >
+        <rosparam command="load" file="$(find sensor_tools)/config/ft_calibration_kinova.yaml"/>
+        <remap from="/ft_calib/ft_raw" to="/rokubimini/ft_sensor0/ft_sensor_readings/wrench"/>
+        <remap from="/ft_calib/imu" to="/kinova_ros_control/imu" />
+    </node>
+</launch>

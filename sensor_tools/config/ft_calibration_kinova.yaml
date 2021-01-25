@@ -1,0 +1,40 @@
+# main loop frequency [Hz] (should be as fast as F/T sensor publish frequency)
+loop_rate: 650.0
+
+# waiting time after moving to each pose before taking F/T measurements
+wait_time: 4.0
+
+# Name of the moveit group
+moveit_group_name: 'arm'
+
+# Name of the calib file
+calib_file_name: 'ft_calib_data_kinova.yaml'
+
+# Name of the directory
+calib_file_dir: '~/.ros/ft_calib'
+
+# Name of file to store measurements
+meas_file_name: 'ft_calib_meas_kinova.txt'
+
+# Name of the directory
+meas_file_dir: '~/.ros/ft_calib'
+
+# don't execute random poses
+random_poses: false
+
+# number of random poses
+number_random_poses: 0
+
+# the poses to which to move the arm in order to calibrate the F/T sensor
+# format: [x y z r p y]  in meters, radians
+# poses_frame_id sets the frame at which the poses are expressed
+poses_frame_id: 'arm_base_link'
+
+# TODO(giuseppe) set to the right ones
+pose0: [-0.486, 0.367, -0.000, 1.571, 1.571, 3.130]
+pose1: [-0.486, 0.367, -0.000, 1.571, 0.8, 3.140]
+pose2: [-0.486, 0.367, -0.000, 1.571, 0.4, 3.140]
+pose3: [-0.486, 0.367, -0.000, 1.571, 0.0, 3.140]
+pose4: [-0.486, 0.367, -0.000, 1.571, -0.4, 3.140]
+pose5: [-0.486, 0.367, -0.000, 1.571, -0.8, 3.140]
+pose6: [-0.486, 0.367, -0.000, 1.571, -1.571, 3.140]
