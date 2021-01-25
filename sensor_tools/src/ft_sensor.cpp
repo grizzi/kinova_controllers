@@ -97,8 +97,9 @@ void ForceTorqueSensor::update() {
   Eigen::Quaterniond q(transform.transform.rotation.w, transform.transform.rotation.x,
                        transform.transform.rotation.y, transform.transform.rotation.z);
   Eigen::Matrix3d R(q);
-  tool_wrench_.get_force() = R.transpose() * Eigen::Vector3d::UnitZ() * -9.81 * calibration_data_.mass;
+  tool_wrench_.get_force() = R * Eigen::Vector3d::UnitZ() * -9.81 * calibration_data_.mass;
   tool_wrench_.get_torque() = calibration_data_.com.cross(tool_wrench_.get_force());
+  ROS_INFO_STREAM_THROTTLE(1.0, "Wrench tool" << tool_wrench_);
 
 
   /* alternative using IMU
@@ -125,6 +126,7 @@ void ForceTorqueSensor::update() {
   tf::wrenchMsgToEigen(wrench_raw_.wrench, raw_wrench);
 
   Eigen::Matrix<double, 6, 1> compensated_wrench(raw_wrench - calibration_data_.get_bias());
+  compensated_wrench -= tool_wrench_.to_vector();
   tf::wrenchEigenToMsg(compensated_wrench, wrench_compensated_.wrench);
   wrench_compensated_.header = wrench_raw_.header;
 

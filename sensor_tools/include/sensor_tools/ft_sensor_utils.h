@@ -33,8 +33,6 @@ struct Wrench {
   inline Eigen::Vector3d& get_force() { return force; }
   inline Eigen::Vector3d& get_torque() { return torque; }
 
-  friend std::ostream& operator<<(std::ostream& os, const Wrench&);
-
  private:
   Eigen::Matrix<double, 6, 1> vec;
 };
@@ -61,5 +59,7 @@ struct FTSensorCalibrationData {
 bool get_ft_calibration_from_file(const std::string& file_path, FTSensorCalibrationData&);
 
 }  // namespace sensor_tools::ft
+
+std::ostream& operator<<(std::ostream& os, const sensor_tools::ft::Wrench&);
 
 std::ostream& operator<<(std::ostream& os, const sensor_tools::ft::FTSensorCalibrationData& data);
