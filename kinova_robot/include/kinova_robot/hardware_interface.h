@@ -37,12 +37,7 @@
 #include <sensor_msgs/JointState.h>
 #include <control_toolbox/pid.h>
 #include "geometry_msgs/WrenchStamped.h"
-
-// KDL
-//#include <kdl_parser/kdl_parser.hpp>
-//#include <kdl/chaindynparam.hpp>
-//#include <kdl/chainjnttojacsolver.hpp>
-//#include <kdl/chainfksolverpos_recursive.hpp>
+#include <sensor_msgs/Imu.h>
 
 using namespace Kinova::Api;
 using namespace Kinova::Api::BaseCyclic;
@@ -154,9 +149,6 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
    */
   bool init_pid();
 
-  void init_wrench_estimator();
-  int estimate_external_wrench(const double dt);
-
  private:
   ros::Time last_time;
   controller_manager::ControllerManager* cm;
@@ -217,8 +209,12 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
   Kinova::Api::Base::ServoingMode current_servoing_mode;
 
   // publish state and command
-  std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState> > realtime_state_pub_;
-  std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState> > realtime_command_pub_;
+  realtime_tools::RealtimePublisher<sensor_msgs::JointState> realtime_state_pub_;
+  realtime_tools::RealtimePublisher<sensor_msgs::JointState> realtime_command_pub_;
+
+  // IMU
+  sensor_msgs::Imu imu_;
+  realtime_tools::RealtimePublisher<sensor_msgs::Imu> realtime_imu_pub_;
 
   ros::Time last_publish_time_;
   double publish_rate_;
@@ -229,30 +225,6 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
 
   Kinova::Api::Base::JointSpeeds kortex_joint_speeds_cmd_;
 
-  // kdl
-//  KDL::Tree kdlTree;
-//  KDL::Chain kdlChain;
-//  KDL::JntSpaceInertiaMatrix jnt_mass_matrix_;
-//  KDL::JntSpaceInertiaMatrix previous_jnt_mass_matrix_;
-//  KDL::JntSpaceInertiaMatrix jnt_mass_matrix_dot_;
-//  KDL::JntArray total_torque_estimation_;
-//  KDL::JntArray coriolis_torque_;
-//  KDL::JntArray gravity_torque_;
-//  KDL::JntArray estimated_momentum_integral_;
-//  KDL::JntArray model_based_jnt_momentum_;
-//  KDL::JntArray estimated_ext_torque_;
-//  KDL::JntArray initial_jnt_momentum_;
-//  KDL::JntArray filtered_estimated_ext_torque_;
-//  std::unique_ptr<KDL::ChainDynParam> dynamic_parameter_solver_;
-//  std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_;
-//  std::unique_ptr<KDL::ChainJntToJacSolver> jacobian_solver_;
-//  KDL::Jacobian jacobian_end_eff_;
-//  KDL::Frame tool_tip_frame_full_model_;
-//  Eigen::MatrixXd jacobian_end_eff_inv_;
-
-  //std::mutex wrench_mutex_;
-  //Eigen::VectorXd external_wrench_;
-  //std::shared_ptr<realtime_tools::RealtimePublisher<geometry_msgs::WrenchStamped> > realtime_wrench_pub_;
 
 };
 }

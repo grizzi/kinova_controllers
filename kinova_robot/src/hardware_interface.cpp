@@ -80,31 +80,27 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
   }
   copy_commands();
 
-  realtime_state_pub_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(
-      m_node_handle, "/kinova_ros_control/joint_state", 4));
-  realtime_command_pub_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(
-      m_node_handle, "/kinova_ros_control/joint_command", 4));
-  // realtime_wrench_pub_.reset(new
-  // realtime_tools::RealtimePublisher<geometry_msgs::WrenchStamped>(m_node_handle,
-  // "/kinova_ros_control/external_wrench", 4));
+  realtime_state_pub_.init(m_node_handle, "/kinova_ros_control/joint_state", 4);
+  realtime_command_pub_.init(m_node_handle, "/kinova_ros_control/joint_command", 4);
+  realtime_imu_pub_.init(m_node_handle, "/kinova_ros_control/imu", 1);
 
   for (unsigned i = 0; i < 7; i++) {
-    realtime_state_pub_->msg_.name.push_back(joint_names[i]);
-    realtime_state_pub_->msg_.position.push_back(pos_wrapped[i]);
-    realtime_state_pub_->msg_.velocity.push_back(vel[i]);
-    realtime_state_pub_->msg_.effort.push_back(eff[i]);
+    realtime_state_pub_.msg_.name.push_back(joint_names[i]);
+    realtime_state_pub_.msg_.position.push_back(pos_wrapped[i]);
+    realtime_state_pub_.msg_.velocity.push_back(vel[i]);
+    realtime_state_pub_.msg_.effort.push_back(eff[i]);
 
-    realtime_command_pub_->msg_.name.push_back(joint_names[i]);
-    realtime_command_pub_->msg_.position.push_back(pos_cmd[i]);
-    realtime_command_pub_->msg_.velocity.push_back(vel_cmd[i]);
-    realtime_command_pub_->msg_.effort.push_back(eff_cmd[i]);
+    realtime_command_pub_.msg_.name.push_back(joint_names[i]);
+    realtime_command_pub_.msg_.position.push_back(pos_cmd[i]);
+    realtime_command_pub_.msg_.velocity.push_back(vel_cmd[i]);
+    realtime_command_pub_.msg_.effort.push_back(eff_cmd[i]);
   }
 
   if (isGripperPresent()) {
-    realtime_state_pub_->msg_.name.push_back("gripper");
-    realtime_state_pub_->msg_.position.push_back(gripper_position);
-    realtime_state_pub_->msg_.velocity.push_back(gripper_velocity);
-    realtime_state_pub_->msg_.effort.push_back(gripper_force);
+    realtime_state_pub_.msg_.name.push_back("gripper");
+    realtime_state_pub_.msg_.position.push_back(gripper_position);
+    realtime_state_pub_.msg_.velocity.push_back(gripper_velocity);
+    realtime_state_pub_.msg_.effort.push_back(gripper_force);
 
     gripper_position_error = 0.0;
     gripper_position_command = gripper_position;
@@ -116,10 +112,10 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
     kortex_gripper_cmd->set_velocity(gripper_velocity_command);
     kortex_gripper_cmd->set_force(gripper_force_command);
 
-    realtime_command_pub_->msg_.name.push_back("gripper");
-    realtime_command_pub_->msg_.position.push_back(gripper_position_command);
-    realtime_command_pub_->msg_.velocity.push_back(gripper_velocity_command);
-    realtime_command_pub_->msg_.effort.push_back(gripper_force_command);
+    realtime_command_pub_.msg_.name.push_back("gripper");
+    realtime_command_pub_.msg_.position.push_back(gripper_position_command);
+    realtime_command_pub_.msg_.velocity.push_back(gripper_velocity_command);
+    realtime_command_pub_.msg_.effort.push_back(gripper_force_command);
   }
 
   // set_actuators_control_mode(current_mode);
@@ -132,31 +128,6 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
     ROS_ERROR_STREAM("Could not contact service: " << emergency_stop_service_name);
     initialized_ = false;
   }
-
-  // KDL
-  //  std::string robot_description;
-  //  if (!m_node_handle.param<std::string>("robot_description", robot_description, "")){
-  //    ROS_ERROR("Failed to get robot description");
-  //    initialized_ = false;
-  //  }
-
-  //  if (!kdl_parser::treeFromString(robot_description, kdlTree)){
-  //    ROS_ERROR_STREAM("Failed to initialized the dynamic parameter solver.");
-  //    initialized_ = false;
-  //  }
-  //
-  //  std::string root_link = m_prefix + "base_link";
-  //  std::string tip_link = m_prefix + "tool_frame";
-  //  if (!kdlTree.getChain(root_link, tip_link, kdlChain))
-  //  {
-  //    ROS_ERROR("Failed to extract chain");
-  //    initialized_ = false;
-  //  }
-  //  KDL::Vector grav(0.0,0.0,-9.81);
-  //  dynamic_parameter_solver_ = std::make_unique<KDL::ChainDynParam>(kdlChain, grav);
-  //  fk_pos_solver_ = std::make_unique<KDL::ChainFkSolverPos_recursive>(kdlChain);
-  //  jacobian_solver_ = std::make_unique<KDL::ChainJntToJacSolver>(kdlChain);
-  //  init_wrench_estimator();
 
   // FT sensor interface
   hardware_interface::ForceTorqueSensorHandle ft_handle("ft_sensor", "ee", force_, torque_);
@@ -225,6 +196,15 @@ void KinovaHardwareInterface::read() {
     vel[i] = static_cast<double>(angles::from_degrees(current_state.actuators(i).velocity()));
     eff[i] = static_cast<double>(-current_state.actuators(i).torque());
   }
+
+  imu_.header.frame_id = m_prefix + "base_link";
+  imu_.header.stamp = ros::Time::now();
+  imu_.linear_acceleration.x = current_state.base().imu_acceleration_x();
+  imu_.linear_acceleration.y = current_state.base().imu_acceleration_y();
+  imu_.linear_acceleration.z = current_state.base().imu_acceleration_z();
+  imu_.angular_velocity.x = current_state.base().imu_angular_velocity_x();
+  imu_.angular_velocity.y = current_state.base().imu_angular_velocity_y();
+  imu_.angular_velocity.z = current_state.base().imu_angular_velocity_z();
 
   if (isGripperPresent()) {
     gripper_position = current_state.interconnect().gripper_feedback().motor()[0].position();
@@ -308,192 +288,47 @@ void KinovaHardwareInterface::copy_commands() {
 }
 
 void KinovaHardwareInterface::publish_state() {
-  if (realtime_state_pub_->trylock()) {
-    realtime_state_pub_->msg_.header.stamp = ros::Time::now();
+  if (realtime_state_pub_.trylock()) {
+    realtime_state_pub_.msg_.header.stamp = ros::Time::now();
     for (unsigned i = 0; i < 7; i++) {
-      realtime_state_pub_->msg_.position[i] = pos_wrapped[i];
-      realtime_state_pub_->msg_.velocity[i] = vel[i];
-      realtime_state_pub_->msg_.effort[i] = eff[i];
+      realtime_state_pub_.msg_.position[i] = pos_wrapped[i];
+      realtime_state_pub_.msg_.velocity[i] = vel[i];
+      realtime_state_pub_.msg_.effort[i] = eff[i];
     }
 
     if (isGripperPresent()) {
-      realtime_state_pub_->msg_.position[7] = gripper_position;
-      realtime_state_pub_->msg_.velocity[7] = gripper_velocity;
-      realtime_state_pub_->msg_.effort[7] = gripper_force;
+      realtime_state_pub_.msg_.position[7] = gripper_position;
+      realtime_state_pub_.msg_.velocity[7] = gripper_velocity;
+      realtime_state_pub_.msg_.effort[7] = gripper_force;
     }
-
-    realtime_state_pub_->unlockAndPublish();
+    realtime_state_pub_.unlockAndPublish();
   }
 
-  //  if (realtime_wrench_pub_->trylock()){
-  //    realtime_wrench_pub_->msg_.header.stamp = ros::Time::now();
-  //    realtime_wrench_pub_->msg_.header.frame_id = "arm_frame_tool"; // TODO(giuseppe) change to
-  //    the right one programmtically realtime_wrench_pub_->msg_.wrench.force.x =
-  //    external_wrench_(0); realtime_wrench_pub_->msg_.wrench.force.y = external_wrench_(1);
-  //    realtime_wrench_pub_->msg_.wrench.force.z = external_wrench_(2);
-  //    realtime_wrench_pub_->msg_.wrench.torque.x = external_wrench_(3);
-  //    realtime_wrench_pub_->msg_.wrench.torque.y = external_wrench_(4);
-  //    realtime_wrench_pub_->msg_.wrench.torque.z = external_wrench_(5);
-  //    realtime_wrench_pub_->unlockAndPublish();
-  //  }
+  if (realtime_imu_pub_.trylock()){
+    realtime_imu_pub_.msg_ = imu_;
+    realtime_imu_pub_.unlockAndPublish();
+  }
 }
 
 void KinovaHardwareInterface::publish_commands() {
-  if (realtime_command_pub_->trylock()) {
-    realtime_command_pub_->msg_.header.stamp = ros::Time::now();
+  if (realtime_command_pub_.trylock()) {
+    realtime_command_pub_.msg_.header.stamp = ros::Time::now();
     for (unsigned i = 0; i < 7; i++) {
-      realtime_command_pub_->msg_.position[i] = pos_cmd[i];
-      realtime_command_pub_->msg_.velocity[i] = vel_cmd[i];
-      realtime_command_pub_->msg_.effort[i] = eff_cmd[i];
+      realtime_command_pub_.msg_.position[i] = pos_cmd[i];
+      realtime_command_pub_.msg_.velocity[i] = vel_cmd[i];
+      realtime_command_pub_.msg_.effort[i] = eff_cmd[i];
     }
 
     if (isGripperPresent()) {
-      realtime_command_pub_->msg_.position[7] = gripper_position_command;
-      realtime_command_pub_->msg_.velocity[7] = gripper_velocity_command;
-      realtime_command_pub_->msg_.effort[7] = gripper_force_command;
+      realtime_command_pub_.msg_.position[7] = gripper_position_command;
+      realtime_command_pub_.msg_.velocity[7] = gripper_velocity_command;
+      realtime_command_pub_.msg_.effort[7] = gripper_force_command;
     }
 
-    realtime_command_pub_->unlockAndPublish();
+    realtime_command_pub_.unlockAndPublish();
   }
 }
 
-void KinovaHardwareInterface::init_wrench_estimator() {
-  //  KDL::JntArray control_torque(7), joint_position_measured(7), joint_velocity_measured(7);
-  //  for(size_t i=0; i<7; i++){
-  //    joint_position_measured(i) = pos_wrapped[i];
-  //    joint_velocity_measured(i) = vel[i];
-  //    control_torque(i) = eff[i];
-  //  }
-  //
-  //  previous_jnt_mass_matrix_.resize(7);
-  //  jnt_mass_matrix_.resize(7);
-  //  jnt_mass_matrix_dot_.resize(7);
-  //  coriolis_torque_.resize(7);
-  //  gravity_torque_.resize(7);
-  //  estimated_ext_torque_.resize(7);
-  //  filtered_estimated_ext_torque_.resize(7);
-  //  model_based_jnt_momentum_.resize(7);
-  //  estimated_momentum_integral_.resize(7);
-  //  initial_jnt_momentum_.resize(7);
-  //  jacobian_end_eff_.resize(7);
-  //
-  //  int solver_result = this->dynamic_parameter_solver_->JntToMass(joint_position_measured,
-  //  previous_jnt_mass_matrix_); initial_jnt_momentum_.data = previous_jnt_mass_matrix_.data *
-  //  joint_velocity_measured.data; std::cout << "Initial joint momentum is: " <<
-  //  initial_jnt_momentum_.data.transpose() << std::endl; external_wrench_.setZero(6);
-}
-
-int KinovaHardwareInterface::estimate_external_wrench(const double dt) {
-  /**
-   * ==========================================================================
-   * Momentum observer, implementation based on:
-   * S. Haddadin, A. De Luca and A. Albu-Schäffer,
-   * "Robot Collisions: A Survey on Detection, Isolation, and Identification,"
-   * in IEEE Transactions on Robotics, vol. 33(6), pp. 1292-1312, 2017.
-   * ==========================================================================
-   */
-
-  //  KDL::JntArray control_torque(7), joint_position_measured(7), joint_velocity_measured(7);
-  //  for(size_t i=0; i<7; i++){
-  //    joint_position_measured(i) = pos_wrapped[i];
-  //    joint_velocity_measured(i) = vel[i];
-  //    control_torque(i) = eff[i];
-  //  }
-  //
-  //  Eigen::VectorXd wrench_estimation_gain_(7);
-  //  wrench_estimation_gain_.setConstant(100.0);
-  //
-  //
-  //  int solver_result = this->dynamic_parameter_solver_->JntToMass(joint_position_measured,
-  //  jnt_mass_matrix_); if (solver_result != 0){
-  //    std::cout << "JntToMass failed: " << jacobian_solver_->strError(solver_result) << std::endl;
-  //    return solver_result;
-  //  }
-  //
-  //  solver_result = this->dynamic_parameter_solver_->JntToCoriolis(joint_position_measured,
-  //  joint_velocity_measured, coriolis_torque_); if (solver_result != 0){
-  //    std::cout << "JntToCoriolis failed: " << jacobian_solver_->strError(solver_result)  <<
-  //    std::endl; return solver_result;
-  //  }
-  //
-  //  solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured,
-  //  gravity_torque_); if (solver_result != 0){
-  //    std::cout << "JntToGravity failed: " << jacobian_solver_->strError(solver_result)  <<
-  //    std::endl; return solver_result;
-  //  }
-  //
-  //  jnt_mass_matrix_dot_.data = (jnt_mass_matrix_.data - previous_jnt_mass_matrix_.data) / dt;
-  //  previous_jnt_mass_matrix_.data = jnt_mass_matrix_.data;
-  //
-  //  std::cout << "jnt mass matrix dot is: " << jnt_mass_matrix_dot_.data.transpose() << std::endl;
-  //  std::cout << "jnt position: " << joint_position_measured.data.transpose() << std::endl;
-  //  std::cout << "jnt velocity: " << joint_velocity_measured.data.transpose() << std::endl;
-  //  std::cout << "jnt torques: " << control_torque.data.transpose() << std::endl;
-  //  total_torque_estimation_.data = control_torque.data - gravity_torque_.data -
-  //  coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data; std::cout <<
-  //  "total torque estimation is: " << total_torque_estimation_.data.transpose() << std::endl;
-  //  // total_torque_estimation_.data = -joint_torque_measured.data - gravity_torque_.data -
-  //  coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
-  //  estimated_momentum_integral_.data += (total_torque_estimation_.data +
-  //  estimated_ext_torque_.data) * dt; std::cout << "Estimated momentum integral is :" <<
-  //  estimated_momentum_integral_.data.transpose() << std::endl;
-  //
-  //  model_based_jnt_momentum_.data = jnt_mass_matrix_.data * joint_velocity_measured.data;
-  //  std::cout << "Model based momentum is :" << model_based_jnt_momentum_.data.transpose() <<
-  //  std::endl;
-  //
-  //  estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() *
-  //  (model_based_jnt_momentum_.data -
-  //                                                                       estimated_momentum_integral_.data
-  //                                                                       -
-  //                                                                       initial_jnt_momentum_.data);
-  //  std::cout << "estimated ext torque: " << estimated_ext_torque_.data.transpose() << std::endl;
-  //
-  //  // First order low-pass filter
-  //  double alpha = 0.5;
-  //  for (int i = 0; i < 7; i++)
-  //    filtered_estimated_ext_torque_(i) = alpha * filtered_estimated_ext_torque_(i) + (1.0 -
-  //    alpha) * estimated_ext_torque_(i);
-  //  std::cout << "estimated ext torque filtered: " <<
-  //  filtered_estimated_ext_torque_.data.transpose() << std::endl;
-  //
-  //  /**
-  //  * ========================================================================================
-  //  * Propagate joint torques to Cartesian wrench using a pseudo inverse of Jacobian-Transpose
-  //  * ========================================================================================
-  //  */
-  //  solver_result = jacobian_solver_->JntToJac(joint_position_measured, jacobian_end_eff_);
-  //  if (solver_result != 0){
-  //    std::cout << "JntToJac failed: " << jacobian_solver_->strError(solver_result) << std::endl;
-  //    return solver_result;
-  //  }
-  //
-  //  solver_result = fk_pos_solver_->JntToCart(joint_position_measured,
-  //  tool_tip_frame_full_model_); if (solver_result != 0){
-  //    std::cout << "JntToCart failed: " << fk_pos_solver_->strError(solver_result) << std::endl;
-  //    return solver_result;
-  //  }
-  //
-  //  // Transform the jacobian from the base to the tool-tip frame
-  //  jacobian_end_eff_.changeBase(tool_tip_frame_full_model_.M.Inverse());
-  //
-  //  // Compute SVD of the jacobian using Eigen functions
-  //  Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian_end_eff_.data.transpose(), Eigen::ComputeThinU
-  //  | Eigen::ComputeThinV); Eigen::VectorXd singular_inv(svd.singularValues()); for (int j = 0; j
-  //  < singular_inv.size(); ++j) singular_inv(j) = (singular_inv(j) < 1e-6) ? 0.0 : 1.0 /
-  //  singular_inv(j); jacobian_end_eff_inv_.noalias() = svd.matrixV() *
-  //  singular_inv.matrix().asDiagonal() * svd.matrixU().adjoint();
-  //
-  //  // Compute End-Effector Cartesian forces from joint external torques
-  //  external_wrench_ = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_.data;
-  //  force_[0] = external_wrench_(0);
-  //  force_[1] = external_wrench_(1);
-  //  force_[2] = external_wrench_(2);
-  //  torque_[0] = external_wrench_(3);
-  //  torque_[1] = external_wrench_(4);
-  //  torque_[2] = external_wrench_(5);
-  //  return 0;
-}
 
 void KinovaHardwareInterface::read_loop(const double f /* 1/sec */) {
   std::chrono::time_point<std::chrono::steady_clock> start, end, end_partial, end_partial_2, end_partial_3, end_partial_4, end_partial_5;
@@ -776,20 +611,6 @@ bool KinovaHardwareInterface::send_joint_velocity_command() {
   }
 
   m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
-  
-  // try {
-  // } catch (KDetailedException& ex) {
-  //   ROS_WARN_THROTTLE(1, "Kortex exception");
-  //   ROS_WARN_THROTTLE(1, "KINOVA exception error code: %d\n",
-  //                     ex.getErrorInfo().getError().error_code());
-  //   ROS_WARN_THROTTLE(1, "KINOVA exception error sub code: %d\n",
-  //                     ex.getErrorInfo().getError().error_sub_code());
-  //   ROS_WARN_THROTTLE(1, "KINOVA exception description: %s\n", ex.what());
-  //   return false;
-  // } catch (std::runtime_error& ex2) {
-  //   ROS_INFO("Other Kortex exception");
-  //   return false;
-  // }
   return true;
 }
 
