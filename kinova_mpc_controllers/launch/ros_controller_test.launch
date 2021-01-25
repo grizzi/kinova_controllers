@@ -42,4 +42,10 @@
 
     <node pkg="rqt_multiplot" name="rqt_multiplot" type="rqt_multiplot"
           args="--multiplot-config $(find kinova_controllers)/config/rqt_bota.xml"/>
+
+    <arg name="test_admittance" default="false"/>
+    <group if="$(arg test_admittance)">
+        <include file="$(find sensor_tools)/launch/ft_sensor_standalone.launch"/>
+    </group>
+
 </launch>

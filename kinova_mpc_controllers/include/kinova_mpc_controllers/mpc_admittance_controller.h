@@ -12,7 +12,6 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <realtime_tools/realtime_publisher.h>
-#include "kinova_mpc_controllers/ft_sensor_utils.h"
 
 #pragma once
 
@@ -27,10 +26,6 @@ class MPC_AdmittanceController : public MPC_Controller {
  private:
   void adjustPath(nav_msgs::Path& desiredPath) const override;
   void wrench_callback(const geometry_msgs::WrenchStampedConstPtr& msg);
-  bool reset_wrench_offset_callback(std_srvs::EmptyRequest&, std_srvs::EmptyResponse&);
-
-  // TODO(giuseppe) for now this just trigger 0 desired wrench
-  bool set_desired_wrench(std_srvs::EmptyRequest&, std_srvs::EmptyResponse&);
 
   /**
    * Utility function to parse a vector of 3 gains
@@ -43,13 +38,11 @@ class MPC_AdmittanceController : public MPC_Controller {
                     Eigen::Matrix<double, N, 1>& gains);
 
  private:
-  bool active_;
+  std::atomic_bool wrench_received_;
 
   // ROS
   std::unique_ptr<ros::CallbackQueue> wrench_callback_queue_;
   ros::Subscriber wrench_subscriber_;
-  ros::ServiceServer reset_wrench_offset_service_;
-  ros::ServiceServer desired_wrench_service_;
 
   std::mutex wrench_mutex_;
   geometry_msgs::WrenchStamped wrench_;
@@ -73,11 +66,6 @@ class MPC_AdmittanceController : public MPC_Controller {
   std::string sensor_frame_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::Buffer tf_buffer_;
-
-  // Bias
-  double payload_mass_;
-  Eigen::Vector3d payload_offset_;
-  mutable ft_sensor_utils::Wrench bias_;
 };
 
 }  // namespace kinova_controllers

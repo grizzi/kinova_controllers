@@ -28,11 +28,6 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
   parse_vector<3>(nh_, "force_integral_max", force_integral_max_);
   parse_vector<3>(nh_, "torque_integral_max", torque_integral_max_);
 
-  if (!nh.param<double>("payload_mass", payload_mass_, 0.0)) {
-    ROS_WARN_STREAM("Failed to parse payload_mass, defaulting to 0");
-  }
-  parse_vector<3>(nh_, "payload_offset", payload_offset_);
-
   wrench_callback_queue_ = std::unique_ptr<ros::CallbackQueue>(new ros::CallbackQueue());
   ros::SubscribeOptions so;
   so.init<geometry_msgs::WrenchStamped>(
@@ -40,18 +35,19 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
   so.callback_queue = wrench_callback_queue_.get();
   wrench_subscriber_ = nh_.subscribe(so);
 
-  reset_wrench_offset_service_ = nh_.advertiseService(
-      "/reset_wrench_offset", &MPC_AdmittanceController::reset_wrench_offset_callback, this);
-
-  desired_wrench_service_ = nh_.advertiseService(
-      "/set_desired_wrench", &MPC_AdmittanceController::set_desired_wrench, this);
-  active_ = false;
   force_integral_.setZero();
   torque_integral_.setZero();
   last_time_ = -1;
+  wrench_received_ = false;
 }
 
 void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
+  wrench_callback_queue_->callAvailable();
+  if (!wrench_received_) {
+    ROS_WARN_STREAM_THROTTLE(2.0, "No wrench received. Not modifying the path.");
+    return;
+  }
+
   // Update time interval for integral computation
   double dt;
   if (last_time_ < 0) {
@@ -75,16 +71,10 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
   Eigen::Quaterniond q(transform.transform.rotation.w, transform.transform.rotation.x,
                        transform.transform.rotation.y, transform.transform.rotation.z);
   Eigen::Matrix3d R(q);
-  Eigen::Vector3d gravity_sensor_frame = R.transpose() * Eigen::Vector3d::UnitX() * -9.81;
-
-  // Update bias
-  bias_ = ft_sensor_utils::get_bias(payload_mass_, payload_offset_, gravity_sensor_frame);
 
   // Update measured wrench and tracking errors
-  wrench_callback_queue_->callAvailable();
   force_error_ =
-      -(Eigen::Vector3d(wrench_.wrench.force.x, wrench_.wrench.force.y, wrench_.wrench.force.z) -
-        bias_.get_force());
+      -Eigen::Vector3d(wrench_.wrench.force.x, wrench_.wrench.force.y, wrench_.wrench.force.z);
   force_integral_ += force_error_ * dt;
   force_integral_ = force_integral_.cwiseMax(-force_integral_max_);
   force_integral_ = force_integral_.cwiseMin(force_integral_max_);
@@ -93,8 +83,7 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
   Eigen::Vector3d delta_position_transformed = R * delta_position;
 
   torque_error_ =
-      -(Eigen::Vector3d(wrench_.wrench.torque.x, wrench_.wrench.torque.y, wrench_.wrench.torque.z) -
-        bias_.get_torque());
+      -Eigen::Vector3d(wrench_.wrench.torque.x, wrench_.wrench.torque.y, wrench_.wrench.torque.z);
   torque_integral_ += torque_error_ * dt;
   torque_integral_ = torque_integral_.cwiseMax(-torque_integral_max_);
   torque_integral_ = torque_integral_.cwiseMin(torque_integral_max_);
@@ -110,62 +99,31 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
     delta_rotation.z() = quatImg[2];
   }
 
-  if (active_) {
-    ROS_INFO_STREAM_THROTTLE(
-        2.0, "Adjusting path: " << std::endl
-                                << "delta position (sensor frame) = " << delta_position.transpose()
-                                << std::endl
-                                << "delta position (base frame) = "
-                                << delta_position_transformed.transpose()
-                                << "delta rotation norm (deg): = " << r * 180.0 / M_PI);
-    for (auto& pose : desiredPath.poses) {
-      pose.pose.position.x += delta_position_transformed.x();
-      pose.pose.position.y += delta_position_transformed.y();
-      pose.pose.position.z += delta_position_transformed.z();
-      Eigen::Quaterniond new_orientation(pose.pose.orientation.w, pose.pose.orientation.x,
-                                         pose.pose.orientation.y, pose.pose.orientation.z);
-      new_orientation = new_orientation * delta_rotation;
-      pose.pose.orientation.x = new_orientation.x();
-      pose.pose.orientation.y = new_orientation.y();
-      pose.pose.orientation.z = new_orientation.z();
-      pose.pose.orientation.w = new_orientation.w();
-    }
+  ROS_INFO_STREAM_THROTTLE(
+      2.0, "Adjusting path: " << std::endl
+                              << "delta position (sensor frame) = " << delta_position.transpose()
+                              << std::endl
+                              << "delta position (base frame) = "
+                              << delta_position_transformed.transpose()
+                              << "delta rotation norm (deg): = " << r * 180.0 / M_PI);
+  for (auto& pose : desiredPath.poses) {
+    pose.pose.position.x += delta_position_transformed.x();
+    pose.pose.position.y += delta_position_transformed.y();
+    pose.pose.position.z += delta_position_transformed.z();
+    Eigen::Quaterniond new_orientation(pose.pose.orientation.w, pose.pose.orientation.x,
+                                       pose.pose.orientation.y, pose.pose.orientation.z);
+    new_orientation = new_orientation * delta_rotation;
+    pose.pose.orientation.x = new_orientation.x();
+    pose.pose.orientation.y = new_orientation.y();
+    pose.pose.orientation.z = new_orientation.z();
+    pose.pose.orientation.w = new_orientation.w();
   }
 }
 
 void MPC_AdmittanceController::wrench_callback(const geometry_msgs::WrenchStampedConstPtr& msg) {
   std::lock_guard<std::mutex> lock(wrench_mutex_);
   wrench_ = *msg;
-}
-
-bool MPC_AdmittanceController::reset_wrench_offset_callback(std_srvs::EmptyRequest&,
-                                                            std_srvs::EmptyResponse&) {
-  wrench_callback_queue_->callAvailable();
-  bias_.get_force().x() = wrench_.wrench.force.x;
-  bias_.get_force().y() = wrench_.wrench.force.y;
-  bias_.get_force().z() = wrench_.wrench.force.z;
-  bias_.get_torque().x() = wrench_.wrench.torque.x;
-  bias_.get_torque().y() = wrench_.wrench.torque.y;
-  bias_.get_torque().z() = wrench_.wrench.torque.z;
-
-  ROS_INFO_STREAM("Wrench offset reset to: " << bias_);
-  return true;
-}
-
-bool MPC_AdmittanceController::set_desired_wrench(std_srvs::EmptyRequest&,
-                                                  std_srvs::EmptyResponse&) {
-  ROS_WARN("This service is just triggering admittance mode with 0 reference wrench.");
-  wrench_callback_queue_->callAvailable();
-  bias_.get_force().x() = wrench_.wrench.force.x;
-  bias_.get_force().y() = wrench_.wrench.force.y;
-  bias_.get_force().z() = wrench_.wrench.force.z;
-  bias_.get_torque().x() = wrench_.wrench.torque.x;
-  bias_.get_torque().y() = wrench_.wrench.torque.y;
-  bias_.get_torque().z() = wrench_.wrench.torque.z;
-
-  ROS_INFO_STREAM("Wrench offset reset to: " << bias_);
-  active_ = true;
-  return true;
+  wrench_received_ = true;
 }
 
 template <int N>

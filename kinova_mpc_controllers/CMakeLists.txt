@@ -33,15 +33,10 @@ set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES})
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
-add_library(ft_sensor_utils src/ft_sensor_utils.cpp)
-target_link_libraries(ft_sensor_utils ${COMMON_LIBRARIES})
-
-
 add_library(${PROJECT_NAME} src/mpc_controller.cpp
         src/kinova_mpc_velocity_controller.cpp
         src/mpc_admittance_controller.cpp)
-target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES} ft_sensor_utils)
-add_dependencies(${PROJECT_NAME} ft_sensor_utils)
+target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 
 install(DIRECTORY launch config
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
