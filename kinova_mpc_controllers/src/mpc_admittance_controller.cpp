@@ -89,11 +89,12 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
   double r = rotationImg.norm();
   if (r > 0) {
     delta_rotation.w() = std::cos(r);
-    Eigen::Vector3d quatImg = std::sin(r) / r * rotationImg;
+    Eigen::Vector3d quatImg = R * (std::sin(r) / r * rotationImg);
     delta_rotation.x() = quatImg[0];
     delta_rotation.y() = quatImg[1];
     delta_rotation.z() = quatImg[2];
   }
+
 
   ROS_INFO_STREAM_THROTTLE(
       2.0, "Adjusting path: " << std::endl
@@ -108,7 +109,7 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
     pose.pose.position.z += delta_position_transformed.z();
     Eigen::Quaterniond new_orientation(pose.pose.orientation.w, pose.pose.orientation.x,
                                        pose.pose.orientation.y, pose.pose.orientation.z);
-    new_orientation = new_orientation * delta_rotation;
+    new_orientation =  delta_rotation * new_orientation;
     pose.pose.orientation.x = new_orientation.x();
     pose.pose.orientation.y = new_orientation.y();
     pose.pose.orientation.z = new_orientation.z();

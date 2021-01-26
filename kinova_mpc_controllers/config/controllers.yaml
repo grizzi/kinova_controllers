@@ -69,7 +69,7 @@ mpc_admittance_controller:
   wrench_topic: "/ft_compensated"
   
   kp_linear_gains: [0.01, 0.01, 0.01]
-  kp_angular_gains: [0.0, 0.0, 0.0]
+  kp_angular_gains: [0.05, 0.05, 0.05]
   ki_linear_gains: [ 0.0, 0.0, 0.0 ]
   ki_angular_gains: [ 0.0, 0.0, 0.0 ]
   force_integral_max: [1.0, 1.0, 1.0]
