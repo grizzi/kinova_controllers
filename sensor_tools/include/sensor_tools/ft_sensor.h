@@ -69,6 +69,9 @@ class ForceTorqueSensor {
 
   bool wrench_received_;
 
+  double alpha_;
+  Eigen::Matrix<double, 6, 1> wrench_compensated_filtered_;
+
   sensor_msgs::Imu imu_;
   bool imu_received_;
   ros::Subscriber imu_subscriber_;

@@ -71,6 +71,12 @@ bool ForceTorqueSensor::init() {
   
   imu_received_ = false;
   imu_subscriber_ = nh_.subscribe(imu_topic, 1, &ForceTorqueSensor::imu_callback, this);
+
+  nh_.param<double>("filter_constant", alpha_, 1.0);
+  if (alpha_ < 0 || alpha_ > 1){
+    ROS_WARN("filter_constant must be between 0 and 1. No filtering (filter_constant = 1)");
+  }
+  wrench_compensated_filtered_.setZero();
   
   return true;
 }
@@ -163,7 +169,8 @@ void ForceTorqueSensor::update() {
   }
 
   compensated_wrench -= calibration_data_.get_bias();
-  tf::wrenchEigenToMsg(compensated_wrench, wrench_compensated_.wrench);
+  wrench_compensated_filtered_ = (1-alpha_) * wrench_compensated_filtered_ +  alpha_ * compensated_wrench;
+  tf::wrenchEigenToMsg(wrench_compensated_filtered_, wrench_compensated_.wrench);
   wrench_compensated_.header = wrench_raw_.header;
 
   if (wrench_publisher_.trylock()){

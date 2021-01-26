@@ -68,7 +68,7 @@ mpc_admittance_controller:
   admittance: true
   wrench_topic: "/ft_compensated"
   
-  kp_linear_gains: [0.005, 0.005, 0.005]
+  kp_linear_gains: [0.01, 0.01, 0.01]
   kp_angular_gains: [0.0, 0.0, 0.0]
   ki_linear_gains: [ 0.0, 0.0, 0.0 ]
   ki_angular_gains: [ 0.0, 0.0, 0.0 ]
