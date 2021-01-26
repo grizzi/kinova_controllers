@@ -1,4 +1,0 @@
-<launch>
-  <include file="$(find bota_device_driver)/launch/rokubimini.launch">
-  </include>
-</launch>

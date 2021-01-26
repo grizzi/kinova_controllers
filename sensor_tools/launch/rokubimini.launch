@@ -1,0 +1,7 @@
+<launch>
+  <include file="$(find bota_device_driver)/launch/rokubimini.launch">
+  	<arg name="time_step"	value="0.001"/>
+  	<arg name="launch_prefix" value=""/>
+  	<arg name="rokubimini_setup_file" value="$(find sensor_tools)/config/rokubimini.yaml"/>
+  </include>
+</launch>
