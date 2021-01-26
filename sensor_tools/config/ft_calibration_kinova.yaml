@@ -28,13 +28,12 @@ number_random_poses: 0
 # the poses to which to move the arm in order to calibrate the F/T sensor
 # format: [x y z r p y]  in meters, radians
 # poses_frame_id sets the frame at which the poses are expressed
-poses_frame_id: 'arm_base_link'
+poses_frame_id: 'base_link'
 
 # TODO(giuseppe) set to the right ones
-pose0: [-0.486, 0.367, -0.000, 1.571, 1.571, 3.130]
-pose1: [-0.486, 0.367, -0.000, 1.571, 0.8, 3.140]
-pose2: [-0.486, 0.367, -0.000, 1.571, 0.4, 3.140]
-pose3: [-0.486, 0.367, -0.000, 1.571, 0.0, 3.140]
-pose4: [-0.486, 0.367, -0.000, 1.571, -0.4, 3.140]
-pose5: [-0.486, 0.367, -0.000, 1.571, -0.8, 3.140]
-pose6: [-0.486, 0.367, -0.000, 1.571, -1.571, 3.140]
+pose0: [0.456, 0.002, 0.434, 1.570, -0.001, 1.572]
+pose1: [0.579, 0.002, 0.413, 2.995, -0.001, 1.572]
+pose2: [0.586, -0.089, 0.371, 2.917, -0.858, 1.744]
+pose3: [0.584, 0.087, 0.378, 2.937, 0.773, 1.428]
+pose4: [0.456, 0.002, 0.434, 1.570, -0.001, 1.572]
+pose5: [0.472, 0.002, 0.397, 2.995, -0.002, 1.573]

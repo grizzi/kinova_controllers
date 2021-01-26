@@ -14,7 +14,7 @@
 
         <!-- Load only MPC Controller -->
         <node name="mpc_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-              output="screen" args="--stopped mpc_velocity_controller"/>
+              output="screen" args="--stopped mpc_velocity_controller mpc_admittance_controller"/>
     </group>
 
     <!-- Interactive reference -->

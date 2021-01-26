@@ -63,7 +63,6 @@ class MPC_AdmittanceController : public MPC_Controller {
   Eigen::Vector3d torque_integral_max_;
 
   // TF
-  std::string sensor_frame_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::Buffer tf_buffer_;
 };

@@ -10,6 +10,7 @@
 #include <std_srvs/Empty.h>
 #include <sensor_tools/ft_sensor_utils.h>
 
+#include <sensor_msgs/Imu.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
@@ -37,6 +38,7 @@ class ForceTorqueSensor {
   bool estimate_bias_callback(std_srvs::EmptyRequest&, std_srvs::EmptyResponse& );
 
  private:
+  void imu_callback(const sensor_msgs::ImuConstPtr& msg);
   void raw_wrench_callback(const geometry_msgs::WrenchStampedConstPtr& msg);
 
  private:
@@ -66,6 +68,10 @@ class ForceTorqueSensor {
   std::string sensor_frame_;
 
   bool wrench_received_;
+
+  sensor_msgs::Imu imu_;
+  bool imu_received_;
+  ros::Subscriber imu_subscriber_;
 };
 
 }  // namespace sensor_tools::ft

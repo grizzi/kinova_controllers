@@ -17,10 +17,6 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
     ROS_WARN_STREAM("Failed to parse wrench topic, defaulting to /wrench");
   }
 
-  if (!nh.param<std::string>("sensor_frame", sensor_frame_, "/sensor_frame")) {
-    ROS_WARN_STREAM("Failed to parse sensor_frame, defaulting to /ft_sensor0");
-  }
-
   parse_vector<3>(nh_, "kp_linear_gains", Kp_linear_);
   parse_vector<3>(nh_, "kp_angular_gains", Kp_angular_);
   parse_vector<3>(nh_, "ki_linear_gains", Ki_linear_);
@@ -63,7 +59,7 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
   try {
     // target_frame, source_frame ...
     transform =
-        tf_buffer_.lookupTransform(desiredPath.header.frame_id, sensor_frame_, ros::Time(0));
+        tf_buffer_.lookupTransform(desiredPath.header.frame_id, wrench_.header.frame_id, ros::Time(0));
   } catch (tf2::TransformException& ex) {
     ROS_WARN_STREAM_THROTTLE(2.0, ex.what());
     return;
@@ -74,7 +70,7 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
 
   // Update measured wrench and tracking errors
   force_error_ =
-      -Eigen::Vector3d(wrench_.wrench.force.x, wrench_.wrench.force.y, wrench_.wrench.force.z);
+      Eigen::Vector3d(wrench_.wrench.force.x, wrench_.wrench.force.y, wrench_.wrench.force.z);
   force_integral_ += force_error_ * dt;
   force_integral_ = force_integral_.cwiseMax(-force_integral_max_);
   force_integral_ = force_integral_.cwiseMin(force_integral_max_);
@@ -83,13 +79,13 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
   Eigen::Vector3d delta_position_transformed = R * delta_position;
 
   torque_error_ =
-      -Eigen::Vector3d(wrench_.wrench.torque.x, wrench_.wrench.torque.y, wrench_.wrench.torque.z);
+      Eigen::Vector3d(wrench_.wrench.torque.x, wrench_.wrench.torque.y, wrench_.wrench.torque.z);
   torque_integral_ += torque_error_ * dt;
   torque_integral_ = torque_integral_.cwiseMax(-torque_integral_max_);
   torque_integral_ = torque_integral_.cwiseMin(torque_integral_max_);
   Eigen::Vector3d rotationImg =
       Kp_angular_.cwiseProduct(torque_error_) + Ki_angular_.cwiseProduct(torque_integral_);
-  Eigen::Quaterniond delta_rotation;
+  Eigen::Quaterniond delta_rotation(1, 0, 0, 0);
   double r = rotationImg.norm();
   if (r > 0) {
     delta_rotation.w() = std::cos(r);

@@ -9,6 +9,7 @@
 
     <arg name="raw_wrench_topic" default="/rokubimini/ft_sensor0/ft_sensor_readings/wrench"/>
     <arg name="out_wrench_topic" default="/ft_compensated"/>
+    <arg name="imu_topic" default="/kinova_ros_control/imu"/>
 
     <arg name="launch_prefix" default="" unless="$(arg debug)"/>
     <arg name="launch_prefix" default="gdb -ex run --args" if="$(arg debug)"/>
@@ -16,10 +17,11 @@
     <node pkg="sensor_tools" name="ft_sensor_node" type="ft_sensor_node" output="screen"
           launch-prefix="$(arg launch_prefix)">
         <param name="sensor_frame" value="$(arg sensor_frame)"/>
-        <param name="gravity_aligned_frame" value="$(arg gravity_aligned_frame)"/>
         <param name="calibration_file" value="$(arg calibration_file)"/>
         <param name="raw_wrench_topic" value="$(arg raw_wrench_topic)"/>
         <param name="out_wrench_topic" value="$(arg out_wrench_topic)"/>
+        <param name="imu_topic" value="$(arg imu_topic)"/>
+        <param name="estimate_bias_at_startup" value="true"/>
     </node>
 
     <group if="$(arg test)">

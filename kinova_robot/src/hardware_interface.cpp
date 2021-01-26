@@ -197,14 +197,15 @@ void KinovaHardwareInterface::read() {
     eff[i] = static_cast<double>(-current_state.actuators(i).torque());
   }
 
-  imu_.header.frame_id = m_prefix + "base_link";
+  imu_.header.frame_id = m_prefix + "interconnect_link";
   imu_.header.stamp = ros::Time::now();
-  imu_.linear_acceleration.x = current_state.base().imu_acceleration_x();
-  imu_.linear_acceleration.y = current_state.base().imu_acceleration_y();
-  imu_.linear_acceleration.z = current_state.base().imu_acceleration_z();
-  imu_.angular_velocity.x = current_state.base().imu_angular_velocity_x();
-  imu_.angular_velocity.y = current_state.base().imu_angular_velocity_y();
-  imu_.angular_velocity.z = current_state.base().imu_angular_velocity_z();
+
+  imu_.linear_acceleration.x = -current_state.interconnect().imu_acceleration_x();  // IMu output not compliant with the RHR convention
+  imu_.linear_acceleration.y = current_state.interconnect().imu_acceleration_y();
+  imu_.linear_acceleration.z = current_state.interconnect().imu_acceleration_z();
+  imu_.angular_velocity.x = current_state.interconnect().imu_angular_velocity_x();
+  imu_.angular_velocity.y = current_state.interconnect().imu_angular_velocity_y();
+  imu_.angular_velocity.z = current_state.interconnect().imu_angular_velocity_z();
 
   if (isGripperPresent()) {
     gripper_position = current_state.interconnect().gripper_feedback().motor()[0].position();
