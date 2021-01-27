@@ -168,12 +168,16 @@ void ForceTorqueSensor::update() {
     }
   }
 
+  // remove bias
   compensated_wrench -= calibration_data_.get_bias();
+
+  // filter
   wrench_compensated_filtered_ = (1-alpha_) * wrench_compensated_filtered_ +  alpha_ * compensated_wrench;
   tf::wrenchEigenToMsg(wrench_compensated_filtered_, wrench_compensated_.wrench);
   wrench_compensated_.header = wrench_raw_.header;
 
-  if (wrench_publisher_.trylock()){
+  // publish only once bias estimate is done
+  if (wrench_publisher_.trylock() && !estimate_bias_){
     wrench_publisher_.msg_ = wrench_compensated_;
     wrench_publisher_.unlockAndPublish();
   }
