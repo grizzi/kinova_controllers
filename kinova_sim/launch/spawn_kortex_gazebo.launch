@@ -16,6 +16,7 @@
     <arg name="dof" default="7" if="$(eval arg('arm') == 'gen3')"/> <!-- Number of degrees of freedom of the arm -->
     <arg name="dof" default="6" if="$(eval arg('arm') == 'gen3_lite')"/> <!-- Number of degrees of freedom of the arm -->
     <arg name="vision" default="true"/> <!-- True if the arm has a Vision module -->
+    <arg name="tool_frame_offset" default="0.2"/>
 
     <!-- Default gripper for Gen3 is none, default gripper for Gen3 lite is gen3_lite_2f -->
     <arg name="gripper" default="" if="$(eval arg('arm') == 'gen3')"/>
@@ -39,13 +40,13 @@
     </include>
 
     <!-- Delay before homing the arm -->
-    <arg name="start_delay_seconds" default="10"/>
+    <arg name="start_delay_seconds" default="15"/>
 
     <group ns="$(arg robot_name)">
 
         <!-- Load the description for the robot -->
         <!-- Without gripper -->
-        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=true prefix:=$(arg prefix)"
+        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=true prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)"
                if="$(eval not arg('gripper'))"/>
         <!-- With gripper -->
         <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=true prefix:=$(arg prefix)"

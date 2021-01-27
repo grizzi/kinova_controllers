@@ -12,6 +12,7 @@
     <!-- Default gripper for Gen3 is none, default gripper for Gen3 lite is gen3_lite_2f -->
     <arg name="gripper" default="" if="$(eval arg('arm') == 'gen3')"/>
     <arg name="gripper" default="gen3_lite_2f" if="$(eval arg('arm') == 'gen3_lite')"/>
+    <arg name="tool_frame_offset" default="0.12"/>
 
     <!-- Namespace -->
     <arg name="robot_name" default="my_$(arg arm)"/>
@@ -40,7 +41,7 @@
             <!-- Load the description for the robot -->
             <!-- Without gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false"
-                   if="$(eval not arg('gripper'))"/>
+                   if="$(eval not arg('gripper')) tool_frame_offset:=$(arg tool_frame_offset)"/>
             <!-- With gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false"
                    unless="$(eval not arg('gripper'))"/>
