@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="enable_viewer" default="false"/>
     <arg name="description_for_moveit" default="/my_gen3/robot_description"/>
-    <arg name="launch_apriltag" default="false"/>
-    <arg name="launch_gripper" default="false"/>
-    <arg name="launch_ft_sensor" default="false"/>
+    <arg name="launch_apriltag" default="true"/>
+    <arg name="launch_gripper" default="true"/>
+    <arg name="launch_ft_sensor" default="true"/>
 
     <!-- Remap description for moveit commander -->
     <param name="/moveit_planner/description_name" value="$(arg description_for_moveit)"/>
