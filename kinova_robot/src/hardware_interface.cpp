@@ -184,6 +184,7 @@ bool KinovaHardwareInterface::set_joint_limits() {
 /// read loop functions
 /// keep consistency with simulation: angle in range [-PI, PI] and unlimited continuous joints
 void KinovaHardwareInterface::read() {
+
   // in low-level mode sending the command also returns the current state
   if (current_mode == KinovaControlMode::VELOCITY || current_mode == KinovaControlMode::NO_MODE)
     current_state = m_base_cyclic->RefreshFeedback();
@@ -255,6 +256,13 @@ void KinovaHardwareInterface::check_state() {
       ROS_ERROR_STREAM_THROTTLE(3.0, "Joint " << i << " violated effort limits: " << eff[i]);
       break;
     }
+  }
+
+  if (current_state.base().active_state() == Kinova::Api::Common::ArmState::ARMSTATE_IN_FAULT){
+    ROS_ERROR_ONCE("Arm is in fault state");
+    stop_writing = true;
+    estopped_ = true;
+    return;
   }
 
   if (!ok && !estopped_) {
