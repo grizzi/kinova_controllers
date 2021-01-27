@@ -7,9 +7,9 @@ home_robot:
   whitelist: []
   
 home_pose:
-  controller_name: mpc_velocity_controller
+  controller_name: mpc_admittance_controller
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [reflex_controller]
   path_topic_name: /desired_path
 
 reach_detection_hotspot:
@@ -41,7 +41,7 @@ viewpoint_visitor:
 open_gripper:
   controller_name: ''
   manager_namespace: /my_gen3
-  whitelist: [mpc_velocity_controller]
+  whitelist: [mpc_admittance_controller, reflex_controller]
   position: 0.0
   max_effort: 100
   tolerance: 0.01
@@ -49,16 +49,16 @@ open_gripper:
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
 grasp:
-  controller_name: mpc_velocity_controller
+  controller_name: mpc_admittance_controller
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [reflex_controller]
   pose_topic_name: /target_pose
   path_topic_name: /desired_path
   
 close_gripper:
   controller_name: ''
   manager_namespace: /my_gen3
-  whitelist: [mpc_velocity_controller]
+  whitelist: [mpc_admittance_controller, reflex_controller]
   position: 0.4
   max_effort: 100
   tolerance: 0.01
@@ -66,9 +66,9 @@ close_gripper:
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
 manipulate_valve:
-  controller_name: mpc_velocity_controller
+  controller_name: mpc_admittance_controller
   manager_namespace: /my_gen3
-  whitelist: []
+  whitelist: [reflex_controller]
 
   angle_step_deg: 60.0
   angle_end_deg: 120.0

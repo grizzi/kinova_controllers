@@ -5,6 +5,7 @@
     <arg name="test" default="false"/>
     <arg name="simulation" default="false"/>
     <arg name="use_apriltag" default="false"/>
+    <arg name="launch_gripper" default="false"/>
 
     <!-- Remap description for moveit commander -->
     <param name="/moveit_planner/description_name" value="$(arg description_for_moveit)"/>
@@ -21,12 +22,31 @@
     <!--    State dependent parameters -->
     <arg name="valve_radius" default="0.065"/>
 
-    <!-- MPC controller stuff -->
+    <!-- MPC controllers -->
     <include file="$(find kinova_mpc_controllers)/launch/controller.launch">
         <arg name="prefix" value="arm_"/>
         <arg name="simulation" value="$(arg simulation)"/>
-        <arg name="namespace"  value="my_gen3"/>
+        <arg name="namespace" value="my_gen3"/>
     </include>
+    
+    <!--    Force sensor and filtering/compensation relay node-->
+    <group if="$(arg launch_ft_sensor)">
+      <include file="$(sensor_tools)/launch/ft_sensor_standalone.launch"/>
+      <node name="reflex_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+              output="screen" args="reflex_controller"/>
+    </group>
+    
+    <!-- Reflex controller -->
+    <include file="$(find kinova_reflex_controller)/launch/load_params.launch">
+        <arg name="namespace" value="my_gen3"/>
+    </include>
+
+    <!--    Gripper control-->
+    <group if="$(arg launch_gripper)">
+        <include file="$(find robotiq_2f_gripper_action_server)/launch/robotiq_2f_gripper_action_server.launch">
+            <arg name="gripper_name" value="/my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd"/>
+        </include>
+    </group>
 
     <group if="$(arg simulation)">
         <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
@@ -59,6 +79,6 @@
         <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen"/>
     </group>
 
-        <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz"
-              unless="$(arg test)"/>
+    <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz"
+          unless="$(arg test)"/>
 </launch>
