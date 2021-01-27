@@ -97,7 +97,7 @@ options
 endEffectorCost
 {
   weight  1.0
-  frame_id tool_frame
+  frame_id end_effector_link
   
   ; End effector cost weight matrix
   Q

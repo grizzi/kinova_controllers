@@ -3,21 +3,20 @@
 //
 
 #include "kinova_mpc_controllers/mpc_controller.h"
+#include <eigen_conversions/eigen_msg.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <ocs2_ros_interfaces/common/RosMsgConversions.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_listener.h>
 
 namespace kinova_controllers {
 
-MPC_Controller::MPC_Controller(const ros::NodeHandle& nh) : nh_(nh) {}
+MPC_Controller::MPC_Controller(const ros::NodeHandle& nh) : nh_(nh), tf_listener_(tf_buffer_) {}
 
 bool MPC_Controller::init() {
   nh_.param<std::string>("/robot_description_mpc", robot_description_, "");
   nh_.param<std::string>("/task_file", taskFile_, "");
 
   nh_.param<std::string>("base_link", base_link_, "base_link");
+  nh_.param<std::string>("tool_link", tool_link_, "tool_frame");
   nh_.param<double>("mpc_frequency", mpcFrequency_, -1);
 
   std::string commandTopic;
@@ -46,6 +45,22 @@ bool MPC_Controller::init() {
   positionCommand_.setZero();
   velocityCommand_.setZero();
   stopped_ = true;
+
+  // get static transform from tool to tracked MPC frame
+  geometry_msgs::TransformStamped transform;
+  try {
+    // target_frame, source_frame ...
+    transform = tf_buffer_.lookupTransform(tool_link_, mm_interface_->eeFrame_, ros::Time(0),
+                                           ros::Duration(3.0));
+  } catch (tf2::TransformException& ex) {
+    ROS_WARN("%s", ex.what());
+    return false;
+  }
+  tf::transformMsgToEigen(transform.transform, T_tool_ee_);
+  ROS_INFO_STREAM("Transform from " << mm_interface_->eeFrame_ << " to " << tool_link_ << " is"
+                                    << std::endl
+                                    << T_tool_ee_.matrix());
+
   ROS_INFO("MPC Controller successfully initialized.");
   return true;
 }
@@ -95,7 +110,7 @@ void MPC_Controller::advanceMpc() {
     adjustPath(pathTarget);
     writeDesiredPath(pathTarget);
 
-    if (command_path_publisher_.trylock()){
+    if (command_path_publisher_.trylock()) {
       command_path_publisher_.msg_ = pathTarget;
       command_path_publisher_.unlockAndPublish();
     }
@@ -194,7 +209,7 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
   }
 
   ROS_INFO_STREAM("[MPC_Controller::pathCallback] Received new path with "
-                      << desiredPath->poses.size() << " poses.");
+                  << desiredPath->poses.size() << " poses.");
 
   {
     std::lock_guard<std::mutex> lock(desiredPathMutex_);
@@ -242,27 +257,25 @@ bool MPC_Controller::sanityCheck(const nav_msgs::Path& path) {
   return true;
 }
 
-void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) const {
+void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) {
   ROS_INFO_STREAM("[MPC_Controller::transformPath] Transforming path from "
                   << desiredPath.header.frame_id << " to " << base_link_);
   geometry_msgs::TransformStamped transformStamped;
-  tf2_ros::Buffer tfBuffer;
-  tf2_ros::TransformListener tfListener(tfBuffer);
   try {
     // target_frame, source_frame ...
-    transformStamped = tfBuffer.lookupTransform(base_link_, desiredPath.header.frame_id,
-                                                ros::Time(0), ros::Duration(3.0));
+    transformStamped = tf_buffer_.lookupTransform(base_link_, desiredPath.header.frame_id,
+                                                  ros::Time(0), ros::Duration(3.0));
   } catch (tf2::TransformException& ex) {
     ROS_WARN("%s", ex.what());
-    ros::Duration(1.0).sleep();
   }
+  tf::transformMsgToEigen(transformStamped.transform, T_base_x_);
 
   ros::Time stamp;
   desiredPath.header.frame_id = base_link_;
   for (auto& pose : desiredPath.poses) {
-    stamp = pose.header.stamp;
-    tf2::doTransform(pose, pose, transformStamped);  // doTransform overwrites the stamp;
-    pose.header.stamp = stamp;
+    tf::poseMsgToEigen(pose.pose, T_x_tool_);
+    T_base_ee_ = T_base_x_ * T_x_tool_ * T_tool_ee_;
+    tf::poseEigenToMsg(T_base_ee_, pose.pose);
   }
 }
 

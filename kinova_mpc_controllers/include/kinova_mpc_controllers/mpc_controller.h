@@ -16,6 +16,10 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <realtime_tools/realtime_publisher.h>
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
 namespace kinova_controllers {
 
 class MPC_Controller{
@@ -58,14 +62,17 @@ class MPC_Controller{
 
   // path processing
   static bool sanityCheck(const nav_msgs::Path& path);
-  void transformPath(nav_msgs::Path& desiredPath) const;
+  void transformPath(nav_msgs::Path& desiredPath) ;
   void adjustPathTime(nav_msgs::Path& desiredPath) const;
 
 
  protected:
   double start_time_;
+
   std::string base_link_;
+  std::string tool_link_;
   std::string robot_description_;
+
   joint_vector_t jointInitialState_;
   joint_vector_t positionCommand_;
   joint_vector_t velocityCommand_;
@@ -99,5 +106,14 @@ class MPC_Controller{
   std::unique_ptr<ocs2::MPC_MRT_Interface> mpc_mrt_interface_;
 
   realtime_tools::RealtimePublisher<nav_msgs::Path> command_path_publisher_;
+
+  // tf
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
+  Eigen::Affine3d T_tool_ee_;   // transform from frame tracked by MPC to the actual tool frame
+  Eigen::Affine3d T_base_x_;    // transform from reference frame incoming trajectory and arm base
+  Eigen::Affine3d T_x_tool_;    // transfrom from point in the path to the path reference frame
+  Eigen::Affine3d T_base_ee_;   // transform from base to desired end effector pose
+
 };
 }  // namespace mobile_manipulator

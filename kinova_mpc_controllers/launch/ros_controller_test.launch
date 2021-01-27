@@ -26,7 +26,7 @@
 
     <!-- Load only MPC Controller -->
     <node name="mpc_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" ns="my_gen3"
-          output="screen" args="--stopped mpc_velocity_controller mpc_admittance_controller"/>
+          output="screen" args="--stopped mpc_velocity_controller"/>
 
     <!-- Interactive reference -->
     <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"
