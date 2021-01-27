@@ -13,4 +13,5 @@
     <depend>controller_interface</depend>
     <depend>hardware_interface</depend>
     <depend>angles</depend>
+    <depend>eigen_conversions</depend>
 </package>

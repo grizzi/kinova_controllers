@@ -8,6 +8,7 @@ set(PACKAGE_DEPENDENCIES
     control_toolbox
     controller_interface
     hardware_interface
+    eigen_conversions
     angles)
 find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES})
 

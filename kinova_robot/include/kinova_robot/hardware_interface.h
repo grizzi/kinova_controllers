@@ -10,34 +10,34 @@
 
 #pragma once
 
+// std
 #include <cmath>
 #include <memory>
 #include <map>
 
+// Ros
+#include <ros/ros.h>
+#include <angles/angles.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/JointState.h>
+#include <geometry_msgs/WrenchStamped.h>
+
+// ROS Control
+#include <control_toolbox/pid.h>
+#include <controller_manager/controller_manager.h>
+#include <realtime_tools/realtime_publisher.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_mode_interface.h>
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/force_torque_sensor_interface.h>
 #include <hardware_interface/robot_hw.h>
-#include <controller_manager/controller_manager.h>
 #include <joint_limits_interface/joint_limits.h>
 #include <joint_limits_interface/joint_limits_urdf.h>
 #include <joint_limits_interface/joint_limits_rosparam.h>
 
+// Kinova
 #include <kortex_driver/non-generated/kortex_arm_driver.h>
 #include <kinova_robot/command_interface.h>
-
-// ros stuff
-#include <ros/ros.h>
-#include <ros/time.h>
-#include "ros/duration.h"
-#include <ros/console.h>
-#include "angles/angles.h"
-#include <realtime_tools/realtime_publisher.h>
-#include <sensor_msgs/JointState.h>
-#include <control_toolbox/pid.h>
-#include "geometry_msgs/WrenchStamped.h"
-#include <sensor_msgs/Imu.h>
 
 using namespace Kinova::Api;
 using namespace Kinova::Api::BaseCyclic;
@@ -149,6 +149,8 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
    */
   bool init_pid();
 
+  void wrench_callback(const geometry_msgs::WrenchConstPtr msg);
+
  private:
   ros::Time last_time;
   controller_manager::ControllerManager* cm;
@@ -177,8 +179,9 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
   std::vector<control_toolbox::Pid> pid_;
 
   // force-torque sensing
-  double force_[3];
-  double torque_[3];
+  Eigen::Vector3d ext_force_;
+  Eigen::Vector3d ext_torque_;
+  ros::Subscriber ext_wrench_subscriber_;
 
   // gripper state and command
   double gripper_position;

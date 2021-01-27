@@ -1,4 +1,5 @@
 #include "kinova_robot/hardware_interface.h"
+#include <eigen_conversions/eigen_msg.h>
 
 #define GRIPPER_MINIMAL_POSITION_ERROR 1.5
 
@@ -130,9 +131,12 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
   }
 
   // FT sensor interface
-  hardware_interface::ForceTorqueSensorHandle ft_handle("ft_sensor", "ee", force_, torque_);
+  ext_force_.setZero();
+  ext_torque_.setZero();
+  hardware_interface::ForceTorqueSensorHandle ft_handle("ft_sensor0", "ft_sensor0", ext_force_.data(), ext_torque_.data());
   force_torque_interface.registerHandle(ft_handle);
   registerInterface(&force_torque_interface);
+  ext_wrench_subscriber_ = m_node_handle.subscribe("/ft_compensated", 1, &KinovaHardwareInterface::wrench_callback, this);
 
   last_time = ros::Time::now();
   cm = new controller_manager::ControllerManager(&*this);
@@ -613,6 +617,11 @@ bool KinovaHardwareInterface::send_joint_velocity_command() {
 
   m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
   return true;
+}
+
+void KinovaHardwareInterface::wrench_callback(const geometry_msgs::WrenchConstPtr msg) {
+  tf::vectorMsgToEigen(msg->force, ext_force_);
+  tf::vectorMsgToEigen(msg->torque, ext_torque_);
 }
 
 double KinovaHardwareInterface::wrap_angle(const double a_prev, const double a_next) const {
