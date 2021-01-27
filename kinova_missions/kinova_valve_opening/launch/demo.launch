@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+	
+	<include file="$(find kinova_valve_opening)/launch/components.launch"/>
+	
+	<include file="$(find kinova_valve_opening)/launch/mission.launch">
+	  <arg name="start_mission_delay" value="10.0"/>
+	</include>
+</launch>

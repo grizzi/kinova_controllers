@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find kinova_robot)/launch/robot.launch">
+    <arg name="tool_frame_offset" value="0.12"/>
+  </include>
+</launch>

@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="enable_viewer" default="false"/>
+    <arg name="simulation" default="false"/>
+    <arg name="test" default="false"/>
+    <arg name="start_mission_delay" default="10.0"/>
+
+    <!--   Mock modules to test state machine without sim -->
+    <group if="$(arg test)">
+        <param name="/moveit_planner/fake_execution" value="true"/>
+        <include file="$(find kinova_valve_opening)/launch/piloting_mock_modules.launch"/>
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/sm_test.rviz"/>
+    </group>
+
+    <!--    State dependent parameters -->
+    <arg name="valve_radius" default="0.065"/>
+
+
+
+    <!-- Simulation mission config and valve in gazebo -->
+    <group if="$(arg simulation)">
+        <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
+        <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
+    </group>
+
+    <group unless="$(arg simulation)">
+        <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_robot.yaml" subst_value="true"/>
+        <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
+              output="screen" args=" --stopped mpc_admittance_controller"/>
+    </group>
+
+    <!--    State machine -->
+    <node pkg="kinova_valve_opening" type="piloting_demo.py" name="piloting_demo" output="screen" launch-prefix="bash -c 'sleep $(arg start_mission_delay); $0 $@'"/>
+
+    <!--    Smach viewer -->
+    <group if="$(arg enable_viewer)">
+        <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen"/>
+    </group>
+
+    <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz"
+          unless="$(arg test)"/>
+</launch>
