@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="description_for_moveit" default="/my_gen3/robot_description"/>
-    <arg name="launch_apriltag" default="true"/>
+    <arg name="launch_apriltag" default="false"/>
     <arg name="launch_gripper" default="true"/>
     <arg name="launch_ft_sensor" default="true"/>
+    <arg name="simulation"  default="false"/>
 
     <!-- Remap description for moveit commander -->
     <param name="/moveit_planner/description_name" value="$(arg description_for_moveit)"/>
@@ -20,7 +21,7 @@
     
     <!--    Force sensor and filtering/compensation relay node-->
     <group if="$(arg launch_ft_sensor)">
-      <include file="$(sensor_tools)/launch/ft_sensor_standalone.launch"/>
+      <include file="$(find sensor_tools)/launch/ft_sensor_standalone.launch"/>
       <node name="reflex_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
               output="screen" args="reflex_controller"/>
     </group>
@@ -32,9 +33,7 @@
 
     <!--    Gripper control-->
     <group if="$(arg launch_gripper)">
-        <include file="$(find robotiq_2f_gripper_action_server)/launch/robotiq_2f_gripper_action_server.launch">
-            <arg name="gripper_name" value="/my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd"/>
-        </include>
+        <include file="$(find robotiq_2f_hw_usb)/launch/robotiq_2f_85_usb.launch"/>
     </group>
 
     

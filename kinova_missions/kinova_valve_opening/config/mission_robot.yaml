@@ -48,6 +48,16 @@ open_gripper:
   timeout: 10.0
   gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
+open_gripper_usb:
+  command_topic: /gripper_command
+  position: 0.0   # must be between 0 and 1
+  effort: 6 # must be between 0 and 10 
+
+close_gripper_usb:
+  command_topic: /gripper_command
+  position: 0.7  # must be between 0 and 1
+  effort: 6   # must be between 0 and 10 
+
 grasp:
   controller_name: mpc_admittance_controller
   manager_namespace: /my_gen3

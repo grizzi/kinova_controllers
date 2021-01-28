@@ -24,7 +24,11 @@ with state_machine:
     homing_sequence = smach.StateMachine(outcomes=['Success', 'Failure'])
     with homing_sequence:
 
-        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+        # smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+        #                         transitions={'Completed': 'HOME_ROBOT',
+        #                                      'Failure': 'Failure'})
+        
+        smach.StateMachine.add('OPEN_GRIPPER', GripperUSB(ns='open_gripper_usb'),
                                 transitions={'Completed': 'HOME_ROBOT',
                                              'Failure': 'Failure'})
         
@@ -75,9 +79,13 @@ with state_machine:
                                 transitions={'Completed': 'CLOSE_GRIPPER',
                                 'Failure': 'Failure'})
 
-        smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
-                               transitions={'Completed': 'MANIPULATE_VALVE',
-                                            'Failure': 'Failure'})
+        smach.StateMachine.add('CLOSE_GRIPPER', GripperUSB(ns='close_gripper_usb'),
+                                transitions={'Completed': 'MANIPULATE_VALVE',
+                                             'Failure': 'Failure'})
+   
+        # smach.StateMachine.add('CLOSE_GRIPPER', GripperControl(ns='close_gripper'),
+        #                        transitions={'Completed': 'MANIPULATE_VALVE',
+        #                                     'Failure': 'Failure'})
 
         #smach.StateMachine.add('CLOSE_GRIPPER', GripperPositionControlState(ns='close_gripper'),
         #                transitions={'Completed': 'MANIPULATE_VALVE',
@@ -87,9 +95,14 @@ with state_machine:
                              transitions={'Completed': 'OPEN_GRIPPER',
                                           'Failure': 'Failure'})
   
-        smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+  
+        smach.StateMachine.add('OPEN_GRIPPER', GripperUSB(ns='open_gripper_usb'),
                              transitions={'Completed': 'RESET_LATERAL_GRASP',
                                           'Failure': 'Failure'})
+
+        # smach.StateMachine.add('OPEN_GRIPPER', GripperControl(ns='open_gripper'),
+        #                      transitions={'Completed': 'RESET_LATERAL_GRASP',
+        #                                   'Failure': 'Failure'})
 
         #smach.StateMachine.add('OPEN_GRIPPER', GripperPositionControlState(ns='open_gripper'),
         #        transitions={'Completed': 'RESET_LATERAL_GRASP',

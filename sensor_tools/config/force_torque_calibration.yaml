@@ -1,5 +1,5 @@
 calibration_data:
-  mass: 1.036
+  mass: 0.930 # 1.036
   com: 
     - -0.0
     - 0.0

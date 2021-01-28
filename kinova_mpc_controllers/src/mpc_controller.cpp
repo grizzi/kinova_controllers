@@ -50,7 +50,7 @@ bool MPC_Controller::init() {
   geometry_msgs::TransformStamped transform;
   try {
     // target_frame, source_frame ...
-    transform = tf_buffer_.lookupTransform(tool_link_, mm_interface_->eeFrame_, ros::Time(0),
+    transform = tf_buffer_.lookupTransform(tool_link_, "arm_end_effector_link" /*mm_interface_->eeFrame_*/, ros::Time(0),
                                            ros::Duration(3.0));
   } catch (tf2::TransformException& ex) {
     ROS_WARN("%s", ex.what());

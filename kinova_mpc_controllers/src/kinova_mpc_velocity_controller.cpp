@@ -55,7 +55,9 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   else{
     mpc_controller_ = std::unique_ptr<MPC_Controller>(new MPC_Controller(controller_nh));
   }
-  mpc_controller_->init();
+  if (!mpc_controller_->init()){
+    ROS_ERROR("Failed to initialize the MPC controller");
+  }
 
   addStateHandles(hw);
   addCommandHandles(hw);

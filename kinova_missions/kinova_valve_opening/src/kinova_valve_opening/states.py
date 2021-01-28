@@ -3,6 +3,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 
 from smb_mission_planner.base_state_ros import BaseStateRos
@@ -33,7 +34,7 @@ class HomePose(RosControlPoseReaching):
         home_pose = get_home_pose()
         path = get_timed_path_to_target(home_pose, linear_velocity=0.25, angular_velocity=0.25)
         self.path_publisher.publish(path)
-        if not wait_until_reached(home_pose):
+        if not wait_until_reached(home_pose, quiet=True):
             return 'Failure'
         else:
             return 'Completed'
@@ -84,6 +85,33 @@ class GripperPositionControlState(BaseStateRos):
         rospy.loginfo("Sending target gripper position: {} %".format(self.command))
         cmd = Float64()
         cmd.data = self.command
+        self.command_publisher.publish(cmd)
+
+        rospy.loginfo("Sleeping 5.0s before returning.")
+        rospy.sleep(5.0)
+
+        return 'Completed'
+
+
+class GripperUSB(BaseStateRos):
+    """
+    TODO
+    """
+
+    def __init__(self, ns, outcomes=['Completed', 'Failure']):
+        BaseStateRos.__init__(self, ns=ns, outcomes=outcomes)
+        command_topic_name = self.get_scoped_param("command_topic")
+        self.position = self.get_scoped_param("position")
+        self.effort = self.get_scoped_param("effort")
+        self.command_publisher = rospy.Publisher(command_topic_name, JointState, queue_size=10)
+
+    def execute(self, ud):
+        # It should actually switch to the right controller but assuming that 
+        # the controller is already switched
+        rospy.loginfo("Target gripper position: {}, effort: {}".format(self.position, self.effort))
+        cmd = JointState()
+        cmd.position.append(self.position)
+        cmd.effort.append(self.effort)
         self.command_publisher.publish(cmd)
 
         rospy.loginfo("Sleeping 5.0s before returning.")
@@ -193,7 +221,7 @@ class LateralGraspState(RosControlPoseReaching):
             pre_pre_grasp = compute_pre_pre_lateral_grasp2()
             path = get_timed_path_to_target(pre_pre_grasp, linear_velocity=0.5, angular_velocity=0.5)
             self.path_publisher.publish(path)
-            if not wait_until_reached(pre_pre_grasp):
+            if not wait_until_reached(pre_pre_grasp, quiet=True):
                 return 'Failure'
 
         # Goal 1: move tool to the valve plane, not yet at the handle
@@ -208,13 +236,13 @@ class LateralGraspState(RosControlPoseReaching):
 
         path = get_timed_path_to_target(self.pre_grasp, linear_velocity=0.5, angular_velocity=0.5)
         self.path_publisher.publish(path)
-        if not wait_until_reached(self.pre_grasp):
+        if not wait_until_reached(self.pre_grasp, quiet=True):
             return 'Failure'
 
         # Goal 2: move forward to surround the valve
         path = get_timed_path_to_target(self.grasp, linear_velocity=0.1, angular_velocity=0.1)
         self.path_publisher.publish(path)
-        if not wait_until_reached(self.grasp):
+        if not wait_until_reached(self.grasp, quiet=True):
             return 'Failure'
 
         return 'Completed'
@@ -274,7 +302,7 @@ class ValveManipulation(RosControlPoseReaching):
                                                   speed_deg=self.speed_deg,
                                                   angle_delta_deg=self.angle_delta_deg)
         self.path_publisher.publish(path)
-        if not wait_until_reached(path.poses[-1]):
+        if not wait_until_reached(path.poses[-1], quiet=True):
             return 'Failure'
         else:
             self.total_angle += self.angle_step_deg
@@ -345,7 +373,7 @@ class PostLateralGraspState(RosControlPoseReaching):
         target_pose = compute_post_lateral_grasp()
         path = get_timed_path_to_target(target_pose, linear_velocity=0.1, angular_velocity=0.1)
         self.path_publisher.publish(path)
-        if not wait_until_reached(target_pose):
+        if not wait_until_reached(target_pose, quiet=True):
             return 'Failure'
 
         if self.get_context_data('full_rotation_done'):

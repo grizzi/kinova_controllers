@@ -388,7 +388,7 @@ def compute_execution_time(target_pose, max_linear_speed, max_angular_speed):
     return scale * 1.0  # s
 
 
-def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1, timeout=0):
+def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1, timeout=30, quiet=False):
     """
     Returns once the target pose has been reached
     """
@@ -400,11 +400,7 @@ def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1
     while not rospy.is_shutdown():
         if tolerance_met:
             return True
-
-        if timeout != 0 and time_elapsed > timeout:
-            rospy.logerror("Timeout elapsed while reaching a pose")
-            return False
-
+            
         transform = tf_buffer.lookup_transform(target_pose.header.frame_id,  # target frame
                                                valve_traj_data.tool_frame,  # source frame
                                                rospy.Time(0),  # tf at first available time
@@ -419,6 +415,15 @@ def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1
 
         rate.sleep()
         time_elapsed += 0.1
+
+
+        if timeout != 0 and time_elapsed > timeout:
+            if quiet:
+                rospy.logwarn("Timeout elapsed while reaching a pose. Current distance to target is: {}".format(linear_error))
+                return True
+            else:
+                rospy.logerror("Timeout elapsed while reaching a pose")
+                return False
 
 
 #######################################################
