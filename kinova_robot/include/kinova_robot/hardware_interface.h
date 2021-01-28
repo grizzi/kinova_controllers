@@ -149,7 +149,7 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
    */
   bool init_pid();
 
-  void wrench_callback(const geometry_msgs::WrenchConstPtr msg);
+  void wrench_callback(const geometry_msgs::WrenchStampedConstPtr msg);
 
  private:
   ros::Time last_time;

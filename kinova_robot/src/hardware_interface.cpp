@@ -627,9 +627,9 @@ bool KinovaHardwareInterface::send_joint_velocity_command() {
   return true;
 }
 
-void KinovaHardwareInterface::wrench_callback(const geometry_msgs::WrenchConstPtr msg) {
-  tf::vectorMsgToEigen(msg->force, ext_force_);
-  tf::vectorMsgToEigen(msg->torque, ext_torque_);
+void KinovaHardwareInterface::wrench_callback(const geometry_msgs::WrenchStampedConstPtr msg) {
+  tf::vectorMsgToEigen(msg->wrench.force, ext_force_);
+  tf::vectorMsgToEigen(msg->wrench.torque, ext_torque_);
 }
 
 double KinovaHardwareInterface::wrap_angle(const double a_prev, const double a_next) const {

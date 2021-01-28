@@ -39,6 +39,8 @@ bool ReflexController::init(hardware_interface::ForceTorqueSensorInterface* hw,
                                                                         << torque_max_);
   }
 
+  ROS_INFO_STREAM("Using threshold f_max=" << force_max_ <<", t_max:=" << torque_max_);
+
   // get publishing period
   std::string estop_service_name;
   if (!controller_nh.getParam("estop_service_name", estop_service_name)) {
@@ -50,6 +52,8 @@ bool ReflexController::init(hardware_interface::ForceTorqueSensorInterface* hw,
     ROS_ERROR_STREAM("Failed to connect to the estop service: " << estop_service_name);
     return false;
   }
+
+  estopped_ = false;
   return true;
 }
 
@@ -64,18 +68,23 @@ void ReflexController::update(const ros::Time& time, const ros::Duration& /*peri
   double force_norm = fv.norm();
   double torque_norm = tv.norm();
 
-  if (force_norm > force_max_) {
+  ROS_INFO_STREAM_THROTTLE(5.0, "[ReflexController::update]: Current force norm is: " << force_norm);
+  ROS_INFO_STREAM_THROTTLE(5.0, "[ReflexController::update]: Current torque norm is: " << torque_norm);
+  
+  if (force_norm > force_max_ && !estopped_) {
     ROS_ERROR_STREAM("Force exceeded force max: " << force_norm << " > " << force_max_);
     kortex_driver::ApplyEmergencyStopRequest req;
     kortex_driver::ApplyEmergencyStopResponse res;
     estop_client_.call(req, res);
+    estopped_ = true;
   }
 
-  if (torque_norm > torque_max_) {
+  if (torque_norm > torque_max_  && !estopped_) {
     ROS_ERROR_STREAM("Force exceeded force max: " << torque_norm << " > " << torque_max_);
     kortex_driver::ApplyEmergencyStopRequest req;
     kortex_driver::ApplyEmergencyStopResponse res;
     estop_client_.call(req, res);
+    estopped_ = true;
   }
 }
 

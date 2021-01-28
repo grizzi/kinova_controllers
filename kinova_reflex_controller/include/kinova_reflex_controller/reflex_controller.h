@@ -30,6 +30,8 @@ class ReflexController
 
   double force_max_;
   double torque_max_;
+
+  bool estopped_;
 };
 
 }  // namespace kinova_controllers
