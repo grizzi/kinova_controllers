@@ -23,7 +23,7 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
   parse_vector<3>(nh_, "ki_angular_gains", Ki_angular_);
   parse_vector<3>(nh_, "force_integral_max", force_integral_max_);
   parse_vector<3>(nh_, "torque_integral_max", torque_integral_max_);
-
+  
   wrench_callback_queue_ = std::unique_ptr<ros::CallbackQueue>(new ros::CallbackQueue());
   ros::SubscribeOptions so;
   so.init<geometry_msgs::WrenchStamped>(
@@ -35,9 +35,23 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
   torque_integral_.setZero();
   last_time_ = -1;
   wrench_received_ = false;
+
+  // parse thresholds
+  parse_vector<3>(nh_, "force_threshold", force_threshold_);
+  parse_vector<3>(nh_, "torque_threshold", torque_threshold_);
+  for (size_t i=0; i<3; i++){
+    if (force_threshold_(i) < 0){
+      ROS_WARN("Negative force threshold: setting to 0");
+      force_threshold_(i) = 0.0;
+    }
+    if (torque_threshold_(i) < 0){
+      ROS_WARN("Negative torque threshold: setting to 0");
+      force_threshold_(i) = 0.0;
+    }
+  } 
 }
 
-void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
+void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) {
   wrench_callback_queue_->callAvailable();
   if (!wrench_received_) {
     ROS_WARN_STREAM_THROTTLE(2.0, "No wrench received. Not modifying the path.");
@@ -69,8 +83,11 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
   Eigen::Matrix3d R(q);
 
   // Update measured wrench and tracking errors
-  force_error_ =
-      Eigen::Vector3d(wrench_.wrench.force.x, wrench_.wrench.force.y, wrench_.wrench.force.z);
+  force_error_ = Eigen::Vector3d(wrench_.wrench.force.x, 
+                                 wrench_.wrench.force.y, 
+                                 wrench_.wrench.force.z);
+  threshold(force_error_, force_threshold_);
+
   force_integral_ += force_error_ * dt;
   force_integral_ = force_integral_.cwiseMax(-force_integral_max_);
   force_integral_ = force_integral_.cwiseMin(force_integral_max_);
@@ -78,8 +95,11 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
       Kp_linear_.cwiseProduct(force_error_) + Ki_linear_.cwiseProduct(force_integral_);
   Eigen::Vector3d delta_position_transformed = R * delta_position;
 
-  torque_error_ =
-      Eigen::Vector3d(wrench_.wrench.torque.x, wrench_.wrench.torque.y, wrench_.wrench.torque.z);
+  torque_error_ = Eigen::Vector3d(wrench_.wrench.torque.x, 
+                                  wrench_.wrench.torque.y, 
+                                  wrench_.wrench.torque.z);
+  threshold(torque_error_, torque_threshold_);
+
   torque_integral_ += torque_error_ * dt;
   torque_integral_ = torque_integral_.cwiseMax(-torque_integral_max_);
   torque_integral_ = torque_integral_.cwiseMin(torque_integral_max_);
@@ -96,7 +116,7 @@ void MPC_AdmittanceController::adjustPath(nav_msgs::Path& desiredPath) const {
   }
 
 
-  ROS_INFO_STREAM_THROTTLE(
+  ROS_DEBUG_STREAM_THROTTLE(
       2.0, "Adjusting path: " << std::endl
                               << "delta position (sensor frame) = " << delta_position.transpose()
                               << std::endl
@@ -137,4 +157,11 @@ void MPC_AdmittanceController::parse_vector(ros::NodeHandle& nh, const std::stri
   }
 
   for (size_t i = 0; i < N; i++) gains(i) = gains_vector[i];
+}
+
+void MPC_AdmittanceController::threshold(Eigen::Vector3d& v, const Eigen::Vector3d& tau){
+  for (size_t i=0; i<v.size(); i++){
+    if (v(i) == 0) continue;
+    v(i) = (std::abs(v(i)) - tau(i)) > 0 ? v(i) - v(i)/std::abs(v(i)) * tau(i) : 0.0; 
+  }
 }

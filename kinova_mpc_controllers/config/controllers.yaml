@@ -68,12 +68,15 @@ mpc_admittance_controller:
   admittance: true
   wrench_topic: "/ft_compensated"
   
-  kp_linear_gains: [0.01, 0.01, 0.01]
-  kp_angular_gains: [0.05, 0.05, 0.05]
+  kp_linear_gains: [0.001, 0.001, 0.001]
+  kp_angular_gains: [0.001, 0.001, 0.001]
   ki_linear_gains: [ 0.0, 0.0, 0.0 ]
   ki_angular_gains: [ 0.0, 0.0, 0.0 ]
   force_integral_max: [1.0, 1.0, 1.0]
   torque_integral_max: [1.0, 1.0, 1.0]
+
+  force_threshold: [1.0, 1.0, 1.0]
+  torque_threshold: [0.0, 0.0, 0.0]
 
 
 

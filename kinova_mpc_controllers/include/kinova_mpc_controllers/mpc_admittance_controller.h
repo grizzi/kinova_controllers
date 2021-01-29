@@ -24,7 +24,7 @@ class MPC_AdmittanceController : public MPC_Controller {
   ~MPC_AdmittanceController() = default;
 
  private:
-  void adjustPath(nav_msgs::Path& desiredPath) const override;
+  void adjustPath(nav_msgs::Path& desiredPath) override;
   void wrench_callback(const geometry_msgs::WrenchStampedConstPtr& msg);
 
   /**
@@ -36,6 +36,8 @@ class MPC_AdmittanceController : public MPC_Controller {
   template <int N>
   void parse_vector(ros::NodeHandle& nh, const std::string& name,
                     Eigen::Matrix<double, N, 1>& gains);
+
+  void threshold(Eigen::Vector3d& v, const Eigen::Vector3d& tau);
 
  private:
   std::atomic_bool wrench_received_;
@@ -54,13 +56,16 @@ class MPC_AdmittanceController : public MPC_Controller {
   Eigen::Vector3d Ki_angular_;
 
   // Errors
-  mutable double last_time_;
-  mutable Eigen::Vector3d force_error_;
-  mutable Eigen::Vector3d force_integral_;
-  mutable Eigen::Vector3d torque_error_;
-  mutable Eigen::Vector3d torque_integral_;
+  double last_time_;
+  Eigen::Vector3d force_error_;
+  Eigen::Vector3d force_integral_;
+  Eigen::Vector3d torque_error_;
+  Eigen::Vector3d torque_integral_;
   Eigen::Vector3d force_integral_max_;
   Eigen::Vector3d torque_integral_max_;
+
+  Eigen::Vector3d force_threshold_;
+  Eigen::Vector3d torque_threshold_;
 
   // TF
   tf2_ros::TransformListener tf_listener_;
