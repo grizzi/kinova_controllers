@@ -24,7 +24,7 @@
         <param name="out_wrench_topic" value="$(arg out_wrench_topic)"/>
         <param name="imu_topic" value="$(arg imu_topic)"/>
         <param name="estimate_bias_at_startup" value="true"/>
-        <param name="filter_constant" value="0.01"/>
+        <param name="filter_constant" value="0.1"/>
     </node>
 
     <group if="$(arg test)">
