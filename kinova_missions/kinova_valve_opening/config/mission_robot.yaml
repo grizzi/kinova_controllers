@@ -51,11 +51,13 @@ open_gripper:
 open_gripper_usb:
   command_topic: /gripper_command
   position: 0.0   # must be between 0 and 1
+  velocity: 0.1  # between 0 and 1.79
   effort: 6 # must be between 0 and 10 
 
 close_gripper_usb:
   command_topic: /gripper_command
-  position: 0.7  # must be between 0 and 1
+  position: 0.55  # must be between 0 and 1
+  velocity: 0.1  # between 0 and 1.79
   effort: 6   # must be between 0 and 10 
 
 grasp:

@@ -13,7 +13,7 @@
     </group>
 
     <!--    State dependent parameters -->
-    <arg name="valve_radius" default="0.065"/>
+    <arg name="valve_radius" default="0.07"/>
 
 
 

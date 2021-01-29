@@ -103,6 +103,7 @@ class GripperUSB(BaseStateRos):
         command_topic_name = self.get_scoped_param("command_topic")
         self.position = self.get_scoped_param("position")
         self.effort = self.get_scoped_param("effort")
+        self.velocity = self.get_scoped_param("velocity")
         self.command_publisher = rospy.Publisher(command_topic_name, JointState, queue_size=10)
 
     def execute(self, ud):
@@ -111,6 +112,7 @@ class GripperUSB(BaseStateRos):
         rospy.loginfo("Target gripper position: {}, effort: {}".format(self.position, self.effort))
         cmd = JointState()
         cmd.position.append(self.position)
+        cmd.velocity.append(self.velocity)
         cmd.effort.append(self.effort)
         self.command_publisher.publish(cmd)
 

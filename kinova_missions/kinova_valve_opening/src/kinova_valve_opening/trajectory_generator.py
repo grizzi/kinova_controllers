@@ -27,7 +27,7 @@ class valve_traj_data:
     valve_haptic_frame = "valve_est_frame"
 
     # geometry
-    valve_radius = 0.065
+    valve_radius = 0.07
 
     # relative transformation from grasp to point on valve perimeter
     rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_matrix()
@@ -37,12 +37,12 @@ class valve_traj_data:
     translation_valve_frontgrasp = np.array([valve_radius, 0.0, 0.0])
 
     # offsets
-    frontal_grasp_offset = -0.05
-    lateral_grasp_offset = -0.05
+    frontal_grasp_offset = -0.10
+    lateral_grasp_offset = -0.10
 
     # home pose
-    home_pose_position = np.array([0.0, 0.57, 0.42])
-    home_pose_orientation = np.array([0.011943, 0.71421, 0.69981, -0.0043791])
+    home_pose_position = np.array([0.026, 0.349, 0.338]) #np.array([0.0, 0.57, 0.42])
+    home_pose_orientation = np.array([0.693, 0.718, 0.017, -0.063]) #np.array([0.011943, 0.71421, 0.69981, -0.0043791])
 
 #####################################
 #  Generic utility functions
@@ -226,7 +226,7 @@ def filter_grasps(poses):
 def compute_pre_pre_lateral_grasp2():
     candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
                                           radial_offset=abs(valve_traj_data.lateral_grasp_offset),
-                                          normal_offset=0.1).poses
+                                          normal_offset=0.15).poses
     return filter_grasps(candidates)
 
 def compute_pre_lateral_grasp2():

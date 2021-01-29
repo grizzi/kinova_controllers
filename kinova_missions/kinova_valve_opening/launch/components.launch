@@ -43,7 +43,7 @@
     </group>
     <group unless="$(arg launch_apriltag)">
         <node name="valve_broadcaster" type="static_transform_publisher" pkg="tf2_ros"
-              args="-0.14509 0.55719 0.18251 0.707 0 0 0.707 arm_base_link valve_base"/>
+              args="-0.156, 0.567, 0.188 0.707 0 0 0.707 arm_base_link valve_base"/>
     </group>
     
 
