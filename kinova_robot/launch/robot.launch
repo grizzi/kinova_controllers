@@ -50,7 +50,7 @@
         <group unless="$(eval not arg('prefix'))">
             <!-- Load the description for the robot -->
             <!-- Without gripper -->
-            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix)"
+            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)"
                    if="$(eval not arg('gripper'))"/>
             <!-- With gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix)"
@@ -88,6 +88,7 @@
 
             <!-- Joint zeros (calibration params) -->
             <rosparam command="load" file="$(find kinova_robot)/config/joint_zeros.yaml" subst_value="true"/>
+            <param name="calibration_file" value="$(find kinova_robot)/config/joints.yaml"/>
         </node>
 
         <!-- Start MoveIt! main executable -->
