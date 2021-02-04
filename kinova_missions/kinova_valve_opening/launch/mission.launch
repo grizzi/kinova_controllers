@@ -16,7 +16,6 @@
     <arg name="valve_radius" default="0.07"/>
 
 
-
     <!-- Simulation mission config and valve in gazebo -->
     <group if="$(arg simulation)">
         <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>

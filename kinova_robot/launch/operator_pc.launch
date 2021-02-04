@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Start RViz -->
+    <node name="rviz" pkg="rviz" type="rviz" output="log" args="-d $(find kortex_driver)/config.rviz"/>
+
+
+    <!-- Controller manager gui -->
+    <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
+</launch>
