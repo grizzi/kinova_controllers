@@ -10,6 +10,8 @@ from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.manipulation_states import RosControlPoseReaching
 from smb_mission_planner.detection_states import ObjectDetection
 from smb_mission_planner.utils.moveit_utils import MoveItPlanner
+from smb_mission_planner.navigation_states import SingleNavGoalState
+
 
 from kinova_valve_opening.trajectory_generator import *
 
@@ -37,6 +39,42 @@ class HomePose(RosControlPoseReaching):
             return 'Failure'
         else:
             return 'Completed'
+
+
+class NavigationState(SingleNavGoalState):
+    """
+    Depends on a service to provide a goal for the base
+    """
+
+    def __init__(self, ns):
+        SingleNavGoalState.__init__(self, ns=ns)
+        self.target_frame = self.get_scoped_param("target_frame")
+
+    def execute(self, userdata):
+        if self.default_outcome:
+            return self.default_outcome
+
+        target_pose = PoseStamped()
+        target_pose.header.frame_id = "world"
+        tf_buffer = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buffer)
+        try:
+            transform = tf_buffer.lookup_transform("world",
+                                                   self.target_frame,
+                                                   rospy.Time(0),
+                                                   rospy.Duration(3))
+
+            target_pose.pose = tf_to_pose(transform)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as exc:
+            rospy.logerr(exc)
+            return 'Aborted'
+
+        success = self.reach_goal(target_pose)
+        if not success:
+            rospy.logerr("Failed to reach base goal.")
+            return 'Aborted'
+
+        return 'Completed'
 
 
 class DetectionPosesVisitor(RosControlPoseReaching):

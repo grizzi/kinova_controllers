@@ -139,6 +139,19 @@ def tf_to_se3(transform):
     return pin.SE3(q, t)
 
 
+def tf_to_pose(transform):
+    pose = Pose()
+    pose.orientation.w = transform.transform.rotation.w
+    pose.orientation.x = transform.transform.rotation.x
+    pose.orientation.y = transform.transform.rotation.y
+    pose.orientation.z = transform.transform.rotation.z
+
+    pose.position.x = transform.transform.translation.x
+    pose.position.y = transform.transform.translation.y
+    pose.position.z = transform.transform.translation.z
+    return pose
+
+
 def pose_to_se3(pose):
     q = pin.Quaternion(pose.orientation.w,
                        pose.orientation.x,

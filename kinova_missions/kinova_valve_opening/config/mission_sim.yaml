@@ -10,8 +10,9 @@ home_pose:
   whitelist: [arm_joint_state_controller, arm_robotiq_2f_85_gripper_controller]
   path_topic_name: /desired_path
 
-reach_detection_hotspot:
+navigation_state:
   default_outcome: Completed
+  target_frame: navigation_target
   goal_pose_topic: /move_base/goal
   base_pose_topic: /base_pose_measured
   roco_controller: MpcTrackLocalPlan
@@ -19,7 +20,6 @@ reach_detection_hotspot:
   timeout: 10.0
   tolerance_m: 0.10
   tolerance_deg: 10
-  nav_goal_service_name: /piloting/get_nav_goal
 
 valve_detection:
   controller_name: mpc_velocity_controller

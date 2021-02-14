@@ -4,8 +4,6 @@ import rospy
 import smach
 import smach_ros
 from kinova_valve_opening.states import *
-from smb_mission_planner.navigation_states import SingleNavGoalServiceClientState
-from smb_mission_planner.manipulation_states import *
 
 """
 Implementation of the state machine for the PILOTING demo
@@ -41,7 +39,7 @@ with state_machine:
     #######################################################################
     #                      Navigation Subsequence
     ####################################################################### 
-    smach.StateMachine.add('REACH_DETECTION_HOTSPOT', SingleNavGoalServiceClientState(ns="reach_detection_hotspot"),
+    smach.StateMachine.add('REACH_DETECTION_HOTSPOT', NavigationState(ns="navigation_state"),
                            transitions={'Completed': 'VALVE_DETECTION',
                                         'Aborted': 'Failure'})
 
