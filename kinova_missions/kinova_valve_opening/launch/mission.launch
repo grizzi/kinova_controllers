@@ -5,6 +5,13 @@
     <arg name="test" default="false"/>
     <arg name="start_mission_delay" default="10.0"/>
 
+    <!-- MPC controllers -->
+    <include file="$(find kinova_mpc_controllers)/launch/controller.launch">
+        <arg name="prefix" value="arm_"/>
+        <arg name="simulation" value="$(arg simulation)"/>
+        <arg name="namespace" value="my_gen3"/>
+    </include>
+    
     <!--   Mock modules to test state machine without sim -->
     <group if="$(arg test)">
         <param name="/moveit_planner/fake_execution" value="true"/>
@@ -12,15 +19,12 @@
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/sm_test.rviz"/>
     </group>
 
-    <!--    State dependent parameters -->
-    <arg name="valve_radius" default="0.07"/>
-
-
-
     <!-- Simulation mission config and valve in gazebo -->
     <group if="$(arg simulation)">
         <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
         <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
+        <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
+              output="screen" args=" --stopped mpc_velocity_controller"/>
     </group>
 
     <group unless="$(arg simulation)">
@@ -30,7 +34,12 @@
     </group>
 
     <!--    State machine -->
-    <node pkg="kinova_valve_opening" type="piloting_demo.py" name="piloting_demo" output="screen" launch-prefix="bash -c 'sleep $(arg start_mission_delay); $0 $@'"/>
+    <node pkg="kinova_valve_opening" type="piloting_demo.py" name="piloting_demo" output="screen" launch-prefix="bash -c 'sleep $(arg start_mission_delay); $0 $@'">
+      <param name="valve_radius" value="0.07"/>
+      <param name="valve_frame" value="valve_base"/>
+      <param name="base_frame" value="arm_base_link"/>
+      <param name="tool_frame" value="arm_tool_frame"/>
+    </node>
 
     <!--    Smach viewer -->
     <group if="$(arg enable_viewer)">

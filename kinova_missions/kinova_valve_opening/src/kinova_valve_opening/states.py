@@ -7,7 +7,6 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 
 from smb_mission_planner.base_state_ros import BaseStateRos
-from smb_mission_planner.srv import DetectObject, DetectObjectRequest
 from smb_mission_planner.manipulation_states import RosControlPoseReaching
 from smb_mission_planner.detection_states import ObjectDetection
 from smb_mission_planner.utils.moveit_utils import MoveItPlanner
@@ -38,6 +37,34 @@ class HomePose(RosControlPoseReaching):
             return 'Failure'
         else:
             return 'Completed'
+
+
+class DetectionPosesVisitor(RosControlPoseReaching):
+    """
+    Go to some home pose
+    """
+
+    def __init__(self, ns):
+        RosControlPoseReaching.__init__(self, ns=ns)
+        path_topic_name = self.get_scoped_param("path_topic_name")
+        self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
+
+    def execute(self, ud):
+        controller_switched = self.do_switch()
+        if not controller_switched:
+            return 'Failure'
+
+        poses = get_detection_poses()
+        rospy.loginfo("Moving to {} different viewpoints".format(len(poses)))
+        for pose in poses:
+            path = get_timed_path_to_target(pose, linear_velocity=0.25, angular_velocity=0.25)
+            rospy.loginfo("Moving to the next viewpoint")
+            self.path_publisher.publish(path)
+            if not wait_until_reached(pose, quiet=True):
+                return 'Failure'
+            else:
+                rospy.loginfo("Viewpoint reached.")
+        return 'Completed'
 
 
 class HomeKinova(RosControlPoseReaching):
@@ -120,77 +147,6 @@ class GripperUSB(BaseStateRos):
         rospy.sleep(5.0)
 
         return 'Completed'
-
-
-class ValveDetectionState(ObjectDetection):
-    """
-    Detects the valve
-    """
-
-    def __init__(self, max_num_failure, ns):
-        ObjectDetection.__init__(self, max_num_failure=max_num_failure, ns=ns,
-                                 outcomes=['FrontalGrasp', 'LateralGrasp', 'Retry', 'Failure'])
-
-        # TODO(giuseppe) this should be returned by detection as well
-        self.valve_radius = self.get_scoped_param("valve_radius")
-        self.valve_frame = self.get_scoped_param("valve_frame")
-        self.reference_frame = self.get_scoped_param("reference_frame")
-        self.detect_from_tf = self.get_scoped_param("detect_from_tf")
-
-        self.detection_service_name = self.get_scoped_param("detection_service_name")
-        self.detection_service = rospy.ServiceProxy(self.detection_service_name, DetectObject)
-        rospy.loginfo("Calling detection service with name: {}".format(self.detection_service_name))
-
-    def execute(self, ud):
-        rospy.loginfo("Valve frame: {}, valve radius: {}".format(self.valve_frame, self.valve_radius))
-        try:
-            if self.detect_from_tf:
-                tf_buffer = tf2_ros.Buffer()
-                tf_listener = tf2_ros.TransformListener(tf_buffer)
-                try:
-                    transform = tf_buffer.lookup_transform(self.reference_frame, self.valve_frame,
-                                                           rospy.Time(0), rospy.Duration(3.0))
-                    valve_pose = PoseStamped()
-                    valve_pose.header.frame_id = self.reference_frame
-                    valve_pose.header.stamp = rospy.get_rostime()
-                    valve_pose.pose.position.x = transform.transform.translation.x
-                    valve_pose.pose.position.y = transform.transform.translation.y
-                    valve_pose.pose.position.z = transform.transform.translation.z
-                    valve_pose.pose.orientation.x = transform.transform.rotation.x
-                    valve_pose.pose.orientation.y = transform.transform.rotation.y
-                    valve_pose.pose.orientation.z = transform.transform.rotation.z
-                    valve_pose.pose.orientation.w = transform.transform.rotation.w
-                    self.set_context_data("valve_pose", valve_pose)
-                    self.set_context_data("valve_radius", self.valve_radius)
-                except Exception as exc:
-                    rospy.logerr(exc)
-                    return 'Failure'
-            else:
-                self.detection_service.wait_for_service(timeout=10.0)
-                req = DetectObjectRequest()
-                res = self.detection_service.call(req)
-                if not res.success:
-                    rospy.logerr("Valve detection failed")
-                    self.current_failures += 1
-                    if self.current_failures < self.max_num_failures:
-                        rospy.logwarn("You can retry detection")
-                        return 'Retry'
-                    else:
-                        rospy.logerr("Maximum number of detection failures achieved")
-                        return 'Failure'
-
-                self.set_context_data("valve_pose", res.object_pose)
-                self.set_context_data("valve_radius", self.valve_radius)
-
-            lateral_grasp = self.get_scoped_param("lateral_grasp")
-            if lateral_grasp:
-                return 'LateralGrasp'
-            else:
-                return 'FrontalGrasp'
-
-        except rospy.ROSException as exc:
-            rospy.logerr(exc)
-            return False
 
 
 class LateralGraspState(RosControlPoseReaching):
