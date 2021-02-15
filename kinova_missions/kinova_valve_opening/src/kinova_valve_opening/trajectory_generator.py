@@ -8,59 +8,19 @@ import pinocchio as pin
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 from nav_msgs.msg import Path
 import copy
-import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from mpl_toolkits.mplot3d import Axes3D
 
-
-class valve_traj_data:
-    """
-    Contains all the info necessary for grasp and trajectory generation
-    It is better to keep all data in one structure rather then initialize 
-    them in different places in the code
-    TODO setting this from outside
-    """
-    # frames
-    valve_frame = "valve_base"
-    tool_frame = "arm_tool_frame"
-    base_frame = "arm_base_link"
-    valve_haptic_frame = "valve_est_frame"
-
-    # geometry
-    valve_radius = 0.07
-
-    # relative transformation from grasp to point on valve perimeter
-    rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_matrix()
-    quaternion_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_quat()
-    rotation_valve_frontgrasp = R.from_euler('xyz', [0.0, 0.0, 180.0], degrees=True).as_matrix()
-    translation_valve_latgrasp = np.array([valve_radius, 0.0, 0.0])
-    translation_valve_frontgrasp = np.array([valve_radius, 0.0, 0.0])
-
-    # offsets
-    frontal_grasp_offset = -0.10
-    lateral_grasp_offset = -0.10
-
-    # home pose
-    home_pose_position = np.array([0.026, 0.349, 0.338]) #np.array([0.0, 0.57, 0.42])
-    home_pose_orientation = np.array([0.693, 0.718, 0.017, -0.063]) #np.array([0.011943, 0.71421, 0.69981, -0.0043791])
+from kinova_valve_opening.data import valve_traj_data
 
 #####################################
 #  Generic utility functions
 #####################################
 
 def get_home_pose():
-    pose = PoseStamped()
-    pose.pose.position.x = valve_traj_data.home_pose_position[0]
-    pose.pose.position.y = valve_traj_data.home_pose_position[1]
-    pose.pose.position.z = valve_traj_data.home_pose_position[2]
-    pose.pose.orientation.x = valve_traj_data.home_pose_orientation[0]
-    pose.pose.orientation.y = valve_traj_data.home_pose_orientation[1]
-    pose.pose.orientation.z = valve_traj_data.home_pose_orientation[2]
-    pose.pose.orientation.w = valve_traj_data.home_pose_orientation[3]
-    pose.header.stamp = rospy.get_rostime()
-    pose.header.frame_id = valve_traj_data.base_frame
-    return pose
-    
+    return numpy_to_pose_stamped(valve_traj_data.home_pose_position, valve_traj_data.home_pose_orientation,
+                                 valve_traj_data.base_frame)
+
 
 def get_end_effector_pose():
     """ Retrieve the end effector pose. Let it fail if unable to get the transform """
@@ -86,7 +46,7 @@ def get_valve_pose():
     return tf_to_se3(transform)
 
 
-def get_timed_path_to_target(target_pose: PoseStamped, linear_velocity: float, angular_velocity: float) -> Path:
+def get_timed_path_to_target(target_pose, linear_velocity, angular_velocity):
     """ Return a path from current pose to target timed with a specific velocity """
     start = get_end_effector_pose()
     if target_pose.header.frame_id != valve_traj_data.base_frame:
@@ -109,7 +69,7 @@ def get_timed_path_to_target(target_pose: PoseStamped, linear_velocity: float, a
     max_ang = max(abs(vel.angular))  # angular velocity to get there in 1 sec
 
     reach_time = 1.0 * max(1.0, max(max_lin / linear_velocity, max_ang / angular_velocity))
-    pose_stamped_end.header.stamp = rospy.Duration.from_sec(reach_time) + pose_stamped_start.header.stamp 
+    pose_stamped_end.header.stamp = rospy.Duration.from_sec(reach_time) + pose_stamped_start.header.stamp
 
     path.poses.append(pose_stamped_start)
     path.poses.append(pose_stamped_end)
@@ -137,6 +97,24 @@ def project_to_plane(plane_origin, plane_normal, p, in_plane=False):
         return plane_origin + tangent_vector
 
 
+#####################################
+#  Type Conversions
+#####################################
+
+def numpy_to_pose_stamped(translation, orientation, frame_id):
+    pose = PoseStamped()
+    pose.pose.position.x = valve_traj_data.home_pose_position[0]
+    pose.pose.position.y = valve_traj_data.home_pose_position[1]
+    pose.pose.position.z = valve_traj_data.home_pose_position[2]
+    pose.pose.orientation.x = valve_traj_data.home_pose_orientation[0]
+    pose.pose.orientation.y = valve_traj_data.home_pose_orientation[1]
+    pose.pose.orientation.z = valve_traj_data.home_pose_orientation[2]
+    pose.pose.orientation.w = valve_traj_data.home_pose_orientation[3]
+    pose.header.stamp = rospy.get_rostime()
+    pose.header.frame_id = frame_id
+    return pose
+
+
 def se3_to_pose_ros(se3pose):
     pose_ros = Pose()
     pose_ros.position.x = se3pose.translation[0]
@@ -161,6 +139,19 @@ def tf_to_se3(transform):
     return pin.SE3(q, t)
 
 
+def tf_to_pose(transform):
+    pose = Pose()
+    pose.orientation.w = transform.transform.rotation.w
+    pose.orientation.x = transform.transform.rotation.x
+    pose.orientation.y = transform.transform.rotation.y
+    pose.orientation.z = transform.transform.rotation.z
+
+    pose.position.x = transform.transform.translation.x
+    pose.position.y = transform.transform.translation.y
+    pose.position.z = transform.transform.translation.z
+    return pose
+
+
 def pose_to_se3(pose):
     q = pin.Quaternion(pose.orientation.w,
                        pose.orientation.x,
@@ -173,6 +164,17 @@ def pose_to_se3(pose):
 
 
 #########################################
+#  Detection utility functions
+#########################################
+
+def get_detection_poses():
+    poses = []
+    for translation, orientation in zip(valve_traj_data.det_poses['position'],
+                                        valve_traj_data.det_poses['orientation']):
+        poses.append(numpy_to_pose_stamped(translation, orientation, valve_traj_data.base_frame))
+    return poses
+
+#########################################
 #  Grasp computation utility functions
 #########################################
 
@@ -183,7 +185,8 @@ def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=
     t_base_valve = get_valve_pose()
 
     for angle in angles:
-        t = np.array([(radial_offset + radius) * np.cos(angle), (radial_offset + radius) * np.sin(angle), normal_offset])
+        t = np.array(
+            [(radial_offset + radius) * np.cos(angle), (radial_offset + radius) * np.sin(angle), normal_offset])
         orientation = np.ndarray(shape=(3, 3))
         orientation[:, 2] = np.array([0.0, 0.0, 1.0])
         orientation[:, 0] = t / np.linalg.norm(t)
@@ -211,6 +214,7 @@ def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=
 def compute_candidate_lateral_grasps():
     return compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp)
 
+
 def filter_grasps(poses):
     ee_pose = get_end_effector_pose()
     min_dist = np.inf
@@ -223,11 +227,13 @@ def filter_grasps(poses):
             best_grasp = copy.deepcopy(candidate)
     return best_grasp
 
+
 def compute_pre_pre_lateral_grasp2():
     candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
                                           radial_offset=abs(valve_traj_data.lateral_grasp_offset),
                                           normal_offset=0.15).poses
     return filter_grasps(candidates)
+
 
 def compute_pre_lateral_grasp2():
     candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
@@ -400,7 +406,7 @@ def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1
     while not rospy.is_shutdown():
         if tolerance_met:
             return True
-            
+
         transform = tf_buffer.lookup_transform(target_pose.header.frame_id,  # target frame
                                                valve_traj_data.tool_frame,  # source frame
                                                rospy.Time(0),  # tf at first available time
@@ -416,10 +422,10 @@ def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1
         rate.sleep()
         time_elapsed += 0.1
 
-
         if timeout != 0 and time_elapsed > timeout:
             if quiet:
-                rospy.logwarn("Timeout elapsed while reaching a pose. Current distance to target is: {}".format(linear_error))
+                rospy.logwarn(
+                    "Timeout elapsed while reaching a pose. Current distance to target is: {}".format(linear_error))
                 return True
             else:
                 rospy.logerror("Timeout elapsed while reaching a pose")

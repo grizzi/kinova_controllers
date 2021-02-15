@@ -1,10 +1,5 @@
 # Config file for the combined mission
 # Namespaces mirror (optionally) the state for better readability
-
-home_robot:
-  controller_name: ''
-  manager_namespace: /my_gen3
-  whitelist: []
   
 home_pose:
   controller_name: mpc_admittance_controller
@@ -12,8 +7,9 @@ home_pose:
   whitelist: [reflex_controller]
   path_topic_name: /desired_path
 
-reach_detection_hotspot:
+navigation_state:
   default_outcome: Completed
+  target_frame: navigation_target
   goal_pose_topic: /move_base/goal
   base_pose_topic: /base_pose_measured
   roco_controller: MpcTrackLocalPlan
@@ -21,32 +17,12 @@ reach_detection_hotspot:
   timeout: 10.0
   tolerance_m: 0.10
   tolerance_deg: 10
-  nav_goal_service_name: /piloting/get_nav_goal
 
 valve_detection:
-  detection_service_name : /piloting/detect_valve
-  valve_radius: $(arg valve_radius)
-  valve_frame: valve_base
-  reference_frame: world
-  detect_from_tf: true
-  lateral_grasp: true
-
-viewpoint_visitor:
-  default_outcome: Completed
-  joints_configurations:
-    - [ 0.00, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
-    - [-1.57, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
-    - [ 1.57, 0.26, 3.14, -2.27, 0.00, 0.96, 1.57]
-
-open_gripper:
-  controller_name: ''
+  controller_name: mpc_admittance_controller
   manager_namespace: /my_gen3
-  whitelist: [mpc_admittance_controller, reflex_controller]
-  position: 0.0
-  max_effort: 100
-  tolerance: 0.01
-  timeout: 10.0
-  gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
+  whitelist: [ reflex_controller ]
+  path_topic_name: /desired_path
 
 open_gripper_usb:
   command_topic: /gripper_command
@@ -66,16 +42,6 @@ grasp:
   whitelist: [reflex_controller]
   pose_topic_name: /target_pose
   path_topic_name: /desired_path
-  
-close_gripper:
-  controller_name: ''
-  manager_namespace: /my_gen3
-  whitelist: [mpc_admittance_controller, reflex_controller]
-  position: 0.4
-  max_effort: 100
-  tolerance: 0.01
-  timeout: 10.0
-  gripper_action_name: /my_gen3/arm_robotiq_2f_85_gripper_controller/gripper_cmd
 
 manipulate_valve:
   controller_name: mpc_admittance_controller
@@ -87,11 +53,3 @@ manipulate_valve:
   angle_delta_deg: 5.0    # controls trajectory discretization
   speed_deg: 5.0
   path_topic_name: /desired_path
-
-open_gripper_ll:
-  command: 0.0
-  command_topic: /my_gen3/gripper_position_controller/command
-
-close_gripper_ll:
-  command: 80.0
-  command_topic: /my_gen3/gripper_position_controller/command

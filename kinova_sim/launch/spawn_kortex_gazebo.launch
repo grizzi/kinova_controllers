@@ -49,7 +49,7 @@
         <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=true prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)"
                if="$(eval not arg('gripper'))"/>
         <!-- With gripper -->
-        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=true prefix:=$(arg prefix)"
+        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=true prefix:=$(arg prefix)  tool_frame_offset:=$(arg tool_frame_offset)"
                unless="$(eval not arg('gripper'))"/>
 
         <!-- Without gripper -->
@@ -95,7 +95,7 @@
               unless="$(eval not arg('gripper'))"/>
 
         <!-- Start simulated Kortex Driver -->
-        <node name="$(arg robot_name)_driver" pkg="kortex_driver" type="kortex_arm_driver" output="screen"> <!--launch-prefix="gdb -ex run args"-->
+        <node name="$(arg robot_name)_driver" pkg="kortex_driver" type="kortex_arm_driver" output="screen">
             <param name="sim" value="true"/>
             <param name="cyclic_data_publish_rate" value="$(arg cyclic_data_publish_rate)"/>
             <param name="arm" value="$(arg arm)"/>
