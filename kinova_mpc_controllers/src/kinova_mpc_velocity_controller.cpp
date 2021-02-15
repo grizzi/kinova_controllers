@@ -57,6 +57,7 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   }
   if (!mpc_controller_->init()){
     ROS_ERROR("Failed to initialize the MPC controller");
+    return false;
   }
 
   addStateHandles(hw);
@@ -65,6 +66,7 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   reset_imarker_pose_pub_ = root_nh.advertise<geometry_msgs::Pose>("/reset_marker_pose", 1);
   joint_state_des_pub_ = root_nh.advertise<sensor_msgs::JointState>("/mpc_joint_state_desired", 1);
   joint_state_cur_pub_ = root_nh.advertise<sensor_msgs::JointState>("/mpc_joint_state_current", 1);
+  ROS_INFO("Successfully started MPC controller.");
   return true;
 }
 
@@ -91,6 +93,15 @@ void KinovaMpcVelocityController::starting(const ros::Time& time) {
   std::cout << "Marker pose.position = " << tool_pose.translation().transpose() << std::endl;
   std::cout << "Marker pose.rotation = " << orientation.coeffs().transpose() << std::endl;
   reset_imarker_pose_pub_.publish(marker_pose);
+
+  if (is_real_robot_) {
+    ROS_INFO("Sending zero velocity command.");
+    for (auto& command_handle : robot_command_handles_) {
+      command_handle.setMode(hardware_interface::KinovaControlMode::VELOCITY);
+      command_handle.setCommand(0.0);
+    }
+  }
+  ROS_INFO("Controller started.");
 }
 
 void KinovaMpcVelocityController::update(const ros::Time& time, const ros::Duration& period) {
@@ -190,9 +201,9 @@ void KinovaMpcVelocityController::computeTorqueCommands(joint_vector_t& tau,
 
 void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
   if (is_real_robot_) {
+    Eigen::VectorXd command = mpc_controller_->get_velocity_command();
     for (size_t i = 0; i < 7; i++) {
-      robot_command_handles_[i].setMode(KinovaControlMode::VELOCITY);
-      robot_command_handles_[i].setVelocityCommand(mpc_controller_->get_velocity_command()(i));
+      robot_command_handles_[i].setCommand(command(i));
     }
   } else {
     joint_vector_t tau;
@@ -204,9 +215,11 @@ void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
       joint_state_des_.velocity[i] = velocity_command_(i);
       joint_state_des_.effort[i] = tau(i);
     }
+
+    joint_state_cur_pub_.publish(joint_state_cur_);
+    joint_state_des_pub_.publish(joint_state_des_);
   }
-  joint_state_cur_pub_.publish(joint_state_cur_);
-  joint_state_des_pub_.publish(joint_state_des_);
+
 }
 
 }  // namespace kinova_controllers

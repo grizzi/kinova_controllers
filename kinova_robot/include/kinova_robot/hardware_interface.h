@@ -70,14 +70,14 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
    * -
    * -
    */
-  bool set_servoing_mode(const Kinova::Api::Base::ServoingMode& servoing_mode);
+  bool set_servoing_mode(Kinova::Api::Base::ServoingMode servoing_mode);
 
   /**
    * @brief Set the actuator low level control mode
    * @param mode
    * @return
    */
-  bool set_actuators_control_mode(const KinovaControlMode& mode);
+  bool set_actuators_control_mode(KinovaControlMode new_mode);
 
   /**
    * @brief Send lowlevel command to the hardware

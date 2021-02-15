@@ -40,21 +40,21 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
    *
    * @param[in] command Command to set.
    */
-  void setMode(const mode_t& mode) noexcept { *mode_ = mode; }
+  void setMode(const mode_t mode) noexcept { *mode_ = mode; }
 
   /**
    * Sets the given command for the current mode.
    *
    * @param[in] command Command to set.
    */
-  void setCommand(double& cmd) {
-    if (*mode_ == KinovaControlMode::EFFORT)
-      *eff_ = cmd;
-    else if (*mode_ == KinovaControlMode::EFFORT)
-      *pos_ = cmd;
-    else if (*mode_ == KinovaControlMode::VELOCITY)
-      *vel_ = cmd;
-  }
+  // void setCommand(double& cmd) {
+  //   if (*mode_ == KinovaControlMode::EFFORT)
+  //     *eff_ = cmd;
+  //   else if (*mode_ == KinovaControlMode::EFFORT)
+  //     *pos_ = cmd;
+  //   else if (*mode_ == KinovaControlMode::VELOCITY)
+  //     *vel_ = cmd;
+  // }
 
   void setCommand(const double cmd){
     if (*mode_ == KinovaControlMode::EFFORT)
@@ -88,11 +88,11 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
     *pos_ = cmd;
     *cmd_ = cmd;
   }
-  void setVelocityCommand(double& cmd) noexcept {
+  void setVelocityCommand(double cmd) noexcept {  
     *vel_ = cmd;
     *cmd_ = cmd;
   }
-  void setEffortCommand(double& cmd) noexcept {
+  void setEffortCommand(double& cmd) noexcept {  // dangerous in case of reference to a temporary object
     *eff_ = cmd;
     *cmd_ = cmd;
   }

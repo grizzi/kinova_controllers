@@ -275,16 +275,15 @@ void KinovaHardwareInterface::check_state() {
 }
 
 void KinovaHardwareInterface::switch_mode() {
-  if (mode != current_mode) {
-    ROS_INFO_STREAM("Switching to mode: " << mode);
-    set_actuators_control_mode(mode);
-    return;
+  KinovaControlMode new_mode = mode;
+  if (new_mode != current_mode) {
+    ROS_INFO_STREAM("Switching to new mode: " << new_mode);
+    set_actuators_control_mode(new_mode);
   }
 }
 
 void KinovaHardwareInterface::copy_commands() {
   std::lock_guard<std::mutex> lock(cmd_mutex);
-  
   mode_copy = current_mode;
   for (size_t i = 0; i < 7; i++) {
     pos_cmd_copy[i] = pos[i];  // avoid following error
@@ -381,7 +380,6 @@ void KinovaHardwareInterface::read_loop(const double f /* 1/sec */) {
       ROS_WARN_STREAM_THROTTLE(
           1.0, "Read and update took too long: " << elapsed_ms << " > " << dt_ms << " ms.");
     else {
-    std:
       this_thread::sleep_for(std::chrono::nanoseconds((int)((dt_ms - elapsed_ms) * 1e6)));
     }
   }
@@ -452,14 +450,14 @@ void KinovaHardwareInterface::run() {
 
 /// Additional methods
 
-bool KinovaHardwareInterface::set_servoing_mode(const Kinova::Api::Base::ServoingMode& mode) {
+bool KinovaHardwareInterface::set_servoing_mode(Kinova::Api::Base::ServoingMode new_mode) {
   bool success = false;
   Kinova::Api::Base::ServoingModeInformation servoing_mode;
   try {
-    servoing_mode.set_servoing_mode(mode);
+    servoing_mode.set_servoing_mode(new_mode);
     m_base->SetServoingMode(servoing_mode);
     ROS_INFO("New servoing mode set.");
-    current_servoing_mode = mode;
+    current_servoing_mode = new_mode;
     success = true;
   } catch (Kinova::Api::KDetailedException& ex) {
     ROS_ERROR_STREAM_THROTTLE(5.0, "Kortex exception: " << ex.what());
@@ -474,24 +472,28 @@ bool KinovaHardwareInterface::set_servoing_mode(const Kinova::Api::Base::Servoin
   return success;
 }
 
-bool KinovaHardwareInterface::set_actuators_control_mode(const KinovaControlMode& mode) {
+bool KinovaHardwareInterface::set_actuators_control_mode(KinovaControlMode new_mode) {
+  std::cout << "In set_actuators_control_mode" << std::endl;
   Kinova::Api::ActuatorConfig::ControlModeInformation control_mode_info;
   try {
     // SINGLE LEVEL SERVOING (aka high level position/velocity control)
     // switch happens in reverse mode: first actuator, then servoing mode
-    if (mode == KinovaControlMode::NO_MODE || mode == KinovaControlMode::VELOCITY) {
-      
-      if (current_mode == KinovaControlMode::VELOCITY && mode == KinovaControlMode::NO_MODE){
-        current_mode = mode;
+    if (new_mode == KinovaControlMode::NO_MODE || new_mode == KinovaControlMode::VELOCITY) {
+      std::cout << "Here 0" << std::endl;
+      if (current_mode == KinovaControlMode::VELOCITY && new_mode == KinovaControlMode::NO_MODE){
+        current_mode = new_mode;
         ROS_INFO("Sending zero joint velocities when switching from VELOCITY to NO_MODE");
         for (size_t i = 0; i < 7; ++i) 
           kortex_joint_speeds_cmd_.mutable_joint_speeds(i)->set_value(0.0);
         m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
+        std::cout << "Here1" << std::endl;
         return true;
       }
       
       if (current_servoing_mode == Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING){
-        current_mode = mode;
+        std::cout << "Here3" << std::endl;
+        current_mode = new_mode;
+        std::cout << "Here4" << std::endl;
         ROS_INFO("Already in high servoing mode.");
         return true;
       }
@@ -510,14 +512,14 @@ bool KinovaHardwareInterface::set_actuators_control_mode(const KinovaControlMode
       if (!set_servoing_mode(Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING)) {
         return false;
       } else {
-        ROS_INFO_STREAM("Mode switched to " << mode);
-        current_mode = mode;
+        ROS_INFO_STREAM("Mode switched to " << new_mode);
+        current_mode = new_mode;
         return true;
       }
     }
 
     // LOW LEVEL SERVOING (position or torque)
-    if (mode == KinovaControlMode::POSITION || mode == KinovaControlMode::EFFORT) {
+    if (new_mode == KinovaControlMode::POSITION || new_mode == KinovaControlMode::EFFORT) {
       stop_writing = false;
       if (!set_servoing_mode(Kinova::Api::Base::ServoingMode::LOW_LEVEL_SERVOING)) {
         return false;
@@ -527,7 +529,7 @@ bool KinovaHardwareInterface::set_actuators_control_mode(const KinovaControlMode
       send_lowlevel_command();
     }
 
-    if (mode == KinovaControlMode::EFFORT) {
+    if (new_mode == KinovaControlMode::EFFORT) {
       control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
     } else {
       control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
@@ -536,8 +538,8 @@ bool KinovaHardwareInterface::set_actuators_control_mode(const KinovaControlMode
     for (size_t i = 1; i < 8; i++) {
       m_actuator_config->SetControlMode(control_mode_info, i);
     }
-    ROS_INFO_STREAM("Mode switched to " << mode);
-    current_mode = mode;
+    ROS_INFO_STREAM("Mode switched to " << new_mode);
+    current_mode = new_mode;
     return true;
   } catch (Kinova::Api::KDetailedException& ex) {
     ROS_ERROR_STREAM("Kortex exception: " << ex.what());

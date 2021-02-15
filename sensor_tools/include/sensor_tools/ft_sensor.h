@@ -45,7 +45,7 @@ class ForceTorqueSensor {
   ros::NodeHandle nh_;
   std::unique_ptr<ros::CallbackQueue> wrench_callback_queue_;
   ros::Subscriber raw_wrench_subscriber_;
-  realtime_tools::RealtimePublisher<geometry_msgs::WrenchStamped> wrench_publisher_;
+  ros::Publisher wrench_publisher_;
 
 
   int estimate_bias_measurements_;

@@ -55,7 +55,7 @@ bool ForceTorqueSensor::init() {
     ROS_ERROR_STREAM("Failed to parse out_wrench_topic");
     return false;
   }
-  wrench_publisher_.init(nh_, out_wrench_topic, 1);
+  wrench_publisher_ = nh_.advertise<geometry_msgs::WrenchStamped>(out_wrench_topic, 1);
 
   ros::SubscribeOptions so;
   wrench_callback_queue_ = std::make_unique<ros::CallbackQueue>();
@@ -177,10 +177,13 @@ void ForceTorqueSensor::update() {
   wrench_compensated_.header = wrench_raw_.header;
 
   // publish only once bias estimate is done
-  if (wrench_publisher_.trylock() && !estimate_bias_){
-    wrench_publisher_.msg_ = wrench_compensated_;
-    wrench_publisher_.unlockAndPublish();
-  }
+  wrench_publisher_.publish(wrench_compensated_);
+  //ROS_INFO_STREAM("Trying publishing, estimate bias: " << estimate_bias_);
+  //if (wrench_publisher_.trylock() && !estimate_bias_){
+  //  wrench_publisher_.msg_ = wrench_compensated_;
+  //  wrench_publisher_.unlockAndPublish();
+  //  ROS_INFO_STREAM("Publishing new wrench message");
+  //}
 }
 
 void ForceTorqueSensor::imu_callback(const sensor_msgs::ImuConstPtr& msg){
