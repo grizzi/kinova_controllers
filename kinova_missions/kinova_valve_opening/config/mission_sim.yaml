@@ -13,7 +13,7 @@ home_pose:
 navigation_state:
   default_outcome: Completed
   target_frame: navigation_target
-  goal_pose_topic: /move_base/goal
+  goal_pose_topic: lol
   base_pose_topic: /base_pose_measured
   roco_controller: MpcTrackLocalPlan
   controller_manager_namespace: /smb_highlevel_controller

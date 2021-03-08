@@ -1,7 +1,12 @@
 # Config file for the combined mission
 # Namespaces mirror (optionally) the state for better readability
   
+home_pose_joints:
+  joints_configurations:
+    - [0.01430224031815985, -0.5557954548291901, -0.03524296309150898, 2.281651279700482, -1.466734905096706, 1.509397547337284, 0.1480374351198569]
+
 home_pose:
+  default_outcome: Completed
   controller_name: mpc_admittance_controller
   manager_namespace: /my_gen3
   whitelist: [reflex_controller]
@@ -10,16 +15,17 @@ home_pose:
 navigation_state:
   default_outcome: Completed
   target_frame: navigation_target
-  goal_pose_topic: /move_base/goal
+  goal_pose_topic: /move_base_simple/goal
   base_pose_topic: /base_pose_measured
+  base_odometry_topic: /base_odom
   roco_controller: MpcTrackLocalPlan
   controller_manager_namespace: /smb_highlevel_controller
-  timeout: 10.0
-  tolerance_m: 0.10
-  tolerance_deg: 10
+  timeout: 10000.0
+  tolerance_m: 0.30
+  tolerance_deg: 50
 
 valve_detection:
-  controller_name: mpc_admittance_controller
+  controller_name: mpc_velocity_controller
   manager_namespace: /my_gen3
   whitelist: [ reflex_controller ]
   path_topic_name: /desired_path
@@ -44,6 +50,7 @@ grasp:
   path_topic_name: /desired_path
 
 manipulate_valve:
+  default_outcome: Completed
   controller_name: mpc_admittance_controller
   manager_namespace: /my_gen3
   whitelist: [reflex_controller]

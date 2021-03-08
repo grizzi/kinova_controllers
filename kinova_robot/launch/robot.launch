@@ -28,7 +28,7 @@
     <arg name="api_connection_inactivity_timeout_ms" default="20000"/> <!--milliseconds-->
 
     <!-- Automatically start other modules -->
-    <arg name="start_rviz" default="true"/>
+    <arg name="start_rviz" default="false"/>
     <arg name="start_moveit" default="true"/>
 
     <!-- Action server params -->

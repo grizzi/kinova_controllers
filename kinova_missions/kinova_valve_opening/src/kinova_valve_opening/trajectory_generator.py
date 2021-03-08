@@ -120,7 +120,7 @@ def se3_to_pose_ros(se3pose):
     pose_ros.position.x = se3pose.translation[0]
     pose_ros.position.y = se3pose.translation[1]
     pose_ros.position.z = se3pose.translation[2]
-    q = R.from_matrix(se3pose.rotation).as_quat()
+    q = R.from_dcm(se3pose.rotation).as_quat()
     pose_ros.orientation.x = q[0]
     pose_ros.orientation.y = q[1]
     pose_ros.orientation.z = q[2]
@@ -191,7 +191,7 @@ def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=
         orientation[:, 2] = np.array([0.0, 0.0, 1.0])
         orientation[:, 0] = t / np.linalg.norm(t)
         orientation[:, 1] = np.cross(orientation[:, 2], orientation[:, 0])
-        r = R.from_matrix(orientation).as_quat()
+        r = R.from_dcm(orientation).as_quat()
         q = pin.Quaternion(r[3], r[0], r[1], r[2])
 
         t_valve_grasp = pin.SE3(q, t)
@@ -272,7 +272,7 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
                   t_tool_valve.transform.rotation.y,
                   t_tool_valve.transform.rotation.z,
                   t_tool_valve.transform.rotation.w]
-    rotation = R.from_quat(quaternion).as_matrix()
+    rotation = R.from_quat(quaternion).as_dcm()
     normal = rotation[:, 2]
 
     # get the point on the plane which intersects with the perimeter
@@ -293,7 +293,7 @@ def compute_grasp(reference_frame, tool_frame, valve_frame, valve_radius, offset
     grasp_orientation[:, 1] = np.cross(grasp_orientation[:, 2], grasp_orientation[:, 0])
 
     grasp_orientation = np.dot(grasp_orientation, relative_grasp_rotation)
-    grasp_quat = R.from_matrix(grasp_orientation).as_quat()
+    grasp_quat = R.from_dcm(grasp_orientation).as_quat()
 
     # Pose ros 
     pose = PoseStamped()
@@ -502,7 +502,7 @@ class ValveTrajectoryGenerator(object):
         tf_ref_valve_ros.transform.translation.x = self.tf_ref_valve.translation[0]
         tf_ref_valve_ros.transform.translation.y = self.tf_ref_valve.translation[1]
         tf_ref_valve_ros.transform.translation.z = self.tf_ref_valve.translation[2]
-        q = R.from_matrix(self.tf_ref_valve.rotation).as_quat()
+        q = R.from_dcm(self.tf_ref_valve.rotation).as_quat()
         tf_ref_valve_ros.transform.rotation.x = q[0]
         tf_ref_valve_ros.transform.rotation.y = q[1]
         tf_ref_valve_ros.transform.rotation.z = q[2]
