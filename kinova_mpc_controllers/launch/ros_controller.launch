@@ -12,13 +12,15 @@
     <!-- Gazebo simulation -->
     <arg name="robot_name" default="my_gen3"/>
     <arg name="gripper" default=""/>
-    <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
-        <arg name="gazebo_gui" value="false"/>
-        <arg name="robot_name" value="$(arg robot_name)"/>
-        <arg name="gripper" value="$(arg gripper)"/>
-        <arg name="prefix" value="$(arg prefix)"/>
-        <arg name="debug" value="false"/>
-    </include>
+    <group if="$(arg simulation)">
+        <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
+            <arg name="gazebo_gui" value="false"/>
+            <arg name="robot_name" value="$(arg robot_name)"/>
+            <arg name="gripper" value="$(arg gripper)"/>
+            <arg name="prefix" value="$(arg prefix)"/>
+            <arg name="debug" value="false"/>
+        </include>
+    </group>
 
     <!-- Load controllers and its params -->
     <rosparam command="load" file="$(find kinova_mpc_controllers)/params/common.yaml" subst_value="true"/>
