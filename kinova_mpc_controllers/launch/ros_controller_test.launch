@@ -8,7 +8,7 @@
 
     <!-- Gazebo simulation -->
     <arg name="robot_name" default="my_gen3"/>
-    <arg name="gripper" default=""/>
+    <arg name="gripper" default="robotiq_2f_85"/>
     <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
         <arg name="gazebo_gui" value="false"/>
         <arg name="robot_name" value="$(arg robot_name)"/>

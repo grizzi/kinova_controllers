@@ -6,7 +6,7 @@
 #include <ros/callback_queue.h>
 #include <ros/subscribe_options.h>
 #include <std_srvs/Empty.h>
-#include "kinova_mpc_controllers/mpc_controller.h"
+#include "kinova_mpc_controllers/mpc_velocity_controller.h"
 
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -17,7 +17,7 @@
 
 namespace kinova_controllers {
 
-class MPC_AdmittanceController : public MPC_Controller {
+class MPC_AdmittanceController : public MPC_VelocityController {
  public:
   MPC_AdmittanceController() = delete;
   explicit MPC_AdmittanceController(const ros::NodeHandle& nh);

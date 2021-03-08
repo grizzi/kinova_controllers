@@ -22,13 +22,13 @@
 
 namespace kinova_controllers {
 
-class MPC_Controller{
+class MPC_VelocityController{
  public:
   using joint_vector_t = Eigen::Matrix<double, 7, 1>;
 
-  MPC_Controller() = delete;
-  explicit MPC_Controller(const ros::NodeHandle& nh);
-  ~MPC_Controller() = default;
+  MPC_VelocityController() = delete;
+  explicit MPC_VelocityController(const ros::NodeHandle& nh);
+  ~MPC_VelocityController() = default;
 
   bool init();
   void start(const joint_vector_t& initial_observation);

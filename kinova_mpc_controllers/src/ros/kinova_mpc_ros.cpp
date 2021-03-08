@@ -2,17 +2,17 @@
 // Created by giuseppe on 06.01.21.
 //
 
-#include "kinova_mpc_controllers/kinova_mpc_velocity_controller.h"
-#include "kinova_mpc_controllers/mpc_admittance_controller.h"
+#include "kinova_mpc_controllers/ros/kinova_mpc_ros.h"
 #include <angles/angles.h>
-#include <pluginlib/class_list_macros.h>
 
 using namespace hardware_interface;
 
 namespace kinova_controllers {
 
-bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::NodeHandle& root_nh,
-                                       ros::NodeHandle& controller_nh) {
+template <typename Controller>
+bool KinovaMpcControllerRos<Controller>::init(hardware_interface::RobotHW* hw,
+                                              ros::NodeHandle& root_nh,
+                                              ros::NodeHandle& controller_nh) {
   controller_nh.param<std::vector<std::string>>("joint_names", joint_names_, {});
   if (joint_names_.size() != 7) {
     ROS_ERROR("Joint names must be 7.");
@@ -22,7 +22,7 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   controller_nh.param<std::string>("tool_link", tool_frame_, "tool_frame");
 
   bool simulation;
-  controller_nh.param<bool>("simulation", simulation, {});
+  controller_nh.param<bool>("simulation", simulation, false);
   is_real_robot_ = !simulation;
   ROS_INFO_STREAM("Is real robot? " << is_real_robot_);
 
@@ -36,26 +36,17 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   position_current_ = Eigen::VectorXd::Zero(model_->getDof());
   velocity_current_ = Eigen::VectorXd::Zero(model_->getDof());
 
-  if (!is_real_robot_) {
-    for (size_t i = 0; i < 7; i++) {
-      if (!pid_controllers_[i].init(ros::NodeHandle(controller_nh, "gains/" + joint_names_[i]),
-                                    false)) {
-        ROS_ERROR_STREAM("Failed to load PID parameters from " << joint_names_[i] + "/pid");
-        return false;
-      }
-      pid_controllers_[i].printValues();
+  for (size_t i = 0; i < 7; i++) {
+    if (!pid_controllers_[i].init(ros::NodeHandle(controller_nh, "gains/" + joint_names_[i]),
+                                  false)) {
+      ROS_ERROR_STREAM("Failed to load PID parameters from " << joint_names_[i] + "/pid");
+      return false;
     }
+    pid_controllers_[i].printValues();
   }
-  bool admittance;
-  controller_nh.param<bool>("admittance", admittance, false);
-  if (admittance){
-    ROS_INFO("Selected admittance mpc controller.");
-    mpc_controller_ = std::unique_ptr<MPC_AdmittanceController>(new MPC_AdmittanceController(controller_nh));
-  }
-  else{
-    mpc_controller_ = std::unique_ptr<MPC_Controller>(new MPC_Controller(controller_nh));
-  }
-  if (!mpc_controller_->init()){
+
+  mpc_controller_ = std::unique_ptr<Controller>(new Controller(controller_nh));
+  if (!mpc_controller_->init()) {
     ROS_ERROR("Failed to initialize the MPC controller");
   }
 
@@ -68,7 +59,8 @@ bool KinovaMpcVelocityController::init(hardware_interface::RobotHW* hw, ros::Nod
   return true;
 }
 
-void KinovaMpcVelocityController::starting(const ros::Time& time) {
+template <typename Controller>
+void KinovaMpcControllerRos<Controller>::starting(const ros::Time& time) {
   ROS_INFO("Starting KinovaMpcVelocityController!");
   readState();
 
@@ -93,24 +85,16 @@ void KinovaMpcVelocityController::starting(const ros::Time& time) {
   reset_imarker_pose_pub_.publish(marker_pose);
 }
 
-void KinovaMpcVelocityController::update(const ros::Time& time, const ros::Duration& period) {
+template <typename Controller>
+void KinovaMpcControllerRos<Controller>::update(const ros::Time& time,
+                                                const ros::Duration& period) {
   readState();
   mpc_controller_->update(time, position_current_.head<7>());
   writeCommand(period);
 }
 
-void KinovaMpcVelocityController::stopping(const ros::Time& time) {
-  ROS_INFO("Stopping KinovaMpcVelocityController!");
-  mpc_controller_->stop();
-  if (is_real_robot_) {
-    for (auto& handle : robot_command_handles_) {
-      handle.setMode(KinovaControlMode::NO_MODE);
-    }
-  }
-  ROS_INFO("Stopping KinovaMpcVelocityController has been stopped!");
-}
-
-bool KinovaMpcVelocityController::addStateHandles(hardware_interface::RobotHW* hw) {
+template <typename Controller>
+bool KinovaMpcControllerRos<Controller>::addStateHandles(hardware_interface::RobotHW* hw) {
   // only arm joints
   auto state_interface = hw->get<JointStateInterface>();
   if (state_interface == nullptr) {
@@ -130,32 +114,8 @@ bool KinovaMpcVelocityController::addStateHandles(hardware_interface::RobotHW* h
   return true;
 }
 
-bool KinovaMpcVelocityController::addCommandHandles(hardware_interface::RobotHW* hw) {
-  // only arm joints
-  if (is_real_robot_) {
-    auto command_interface = hw->get<KinovaCommandInterface>();
-    if (command_interface == nullptr) {
-      ROS_ERROR_STREAM("Can't get state interface");
-      return false;
-    }
-    for (size_t i = 0; i < 7; i++) {
-      robot_command_handles_[i] = command_interface->getHandle(joint_names_[i]);
-    }
-    return true;
-  } else {
-    auto command_interface = hw->get<EffortJointInterface>();
-    if (command_interface == nullptr) {
-      ROS_ERROR_STREAM("Can't get state interface");
-      return false;
-    }
-    for (size_t i = 0; i < 7; i++) {
-      sim_command_handles_[i] = command_interface->getHandle(joint_names_[i]);
-    }
-    return true;
-  }
-}
-
-void KinovaMpcVelocityController::readState() {
+template <typename Controller>
+void KinovaMpcControllerRos<Controller>::readState() {
   for (size_t i = 0; i < 7; i++) {
     position_current_(i) = state_handles_[i].getPosition();
     velocity_current_(i) = state_handles_[i].getVelocity();
@@ -164,8 +124,9 @@ void KinovaMpcVelocityController::readState() {
   }
 }
 
-void KinovaMpcVelocityController::computeTorqueCommands(joint_vector_t& tau,
-                                                        const ros::Duration& period) {
+template <typename Controller>
+void KinovaMpcControllerRos<Controller>::computeTorqueCommands(joint_vector_t& tau,
+                                                               const ros::Duration& period) {
   position_command_ = mpc_controller_->get_position_command();
   velocity_command_ = mpc_controller_->get_velocity_command();
 
@@ -188,28 +149,4 @@ void KinovaMpcVelocityController::computeTorqueCommands(joint_vector_t& tau,
              gravity_and_coriolis_(i);
 }
 
-void KinovaMpcVelocityController::writeCommand(const ros::Duration& period) {
-  if (is_real_robot_) {
-    for (size_t i = 0; i < 7; i++) {
-      robot_command_handles_[i].setMode(KinovaControlMode::VELOCITY);
-      robot_command_handles_[i].setVelocityCommand(mpc_controller_->get_velocity_command()(i));
-    }
-  } else {
-    joint_vector_t tau;
-    computeTorqueCommands(tau, period);
-
-    for (size_t i = 0; i < 7; i++) {
-      sim_command_handles_[i].setCommand(tau(i));
-      joint_state_des_.position[i] = position_command_(i);
-      joint_state_des_.velocity[i] = velocity_command_(i);
-      joint_state_des_.effort[i] = tau(i);
-    }
-  }
-  joint_state_cur_pub_.publish(joint_state_cur_);
-  joint_state_des_pub_.publish(joint_state_des_);
-}
-
 }  // namespace kinova_controllers
-
-PLUGINLIB_EXPORT_CLASS(kinova_controllers::KinovaMpcVelocityController,
-                       controller_interface::ControllerBase)

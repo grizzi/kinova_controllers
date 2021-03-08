@@ -2,16 +2,16 @@
 // Created by giuseppe on 31.12.20.
 //
 
-#include "kinova_mpc_controllers/mpc_controller.h"
+#include "kinova_mpc_controllers/mpc_velocity_controller.h"
 #include <eigen_conversions/eigen_msg.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <ocs2_ros_interfaces/common/RosMsgConversions.h>
 
 namespace kinova_controllers {
 
-MPC_Controller::MPC_Controller(const ros::NodeHandle& nh) : nh_(nh), tf_listener_(tf_buffer_) {}
+MPC_VelocityController::MPC_VelocityController(const ros::NodeHandle& nh) : nh_(nh), tf_listener_(tf_buffer_) {}
 
-bool MPC_Controller::init() {
+bool MPC_VelocityController::init() {
   nh_.param<std::string>("/robot_description_mpc", robot_description_, "");
   nh_.param<std::string>("/task_file", taskFile_, "");
 
@@ -25,7 +25,7 @@ bool MPC_Controller::init() {
 
   std::string pathTopic;
   nh_.param<std::string>("path_topic", pathTopic, "/desired_path");
-  targetPathSubscriber_ = nh_.subscribe(pathTopic, 10, &MPC_Controller::pathCallback, this);
+  targetPathSubscriber_ = nh_.subscribe(pathTopic, 10, &MPC_VelocityController::pathCallback, this);
 
   std::string robotName;
   nh_.param<std::string>("robot_name", robotName, "/mobile_manipulator");
@@ -65,7 +65,7 @@ bool MPC_Controller::init() {
   return true;
 }
 
-void MPC_Controller::start(const joint_vector_t& initial_observation) {
+void MPC_VelocityController::start(const joint_vector_t& initial_observation) {
   // initial observation
   if (!stopped_) return;
 
@@ -83,11 +83,11 @@ void MPC_Controller::start(const joint_vector_t& initial_observation) {
   mpcTimer_.reset();
 
   stopped_ = false;
-  mpcThread_ = std::thread(&MPC_Controller::advanceMpc, this);
+  mpcThread_ = std::thread(&MPC_VelocityController::advanceMpc, this);
   ROS_INFO("MPC Controller Successfully started.");
 }
 
-void MPC_Controller::advanceMpc() {
+void MPC_VelocityController::advanceMpc() {
   static double elapsed;
 
   while (ros::ok() && !stopped_) {
@@ -141,20 +141,20 @@ void MPC_Controller::advanceMpc() {
   }
 }
 
-void MPC_Controller::update(const ros::Time& time, const joint_vector_t& observation) {
+void MPC_VelocityController::update(const ros::Time& time, const joint_vector_t& observation) {
   setObservation(observation);
   updateCommand();
   publishObservation();
 }
 
-void MPC_Controller::setObservation(const joint_vector_t& observation) {
+void MPC_VelocityController::setObservation(const joint_vector_t& observation) {
   std::lock_guard<std::mutex> lock(observationMutex_);
   observation_.time = ros::Time::now().toSec() - start_time_;
   observation_.state.tail(7) = observation;
   observationEverReceived_ = true;
 }
 
-void MPC_Controller::updateCommand() {
+void MPC_VelocityController::updateCommand() {
   static Eigen::VectorXd mpcState;
   static Eigen::VectorXd mpcInput;
   static size_t mode;
@@ -172,7 +172,7 @@ void MPC_Controller::updateCommand() {
   velocityCommand_ = mpcInput.tail(7);
 }
 
-void MPC_Controller::publishObservation() {
+void MPC_VelocityController::publishObservation() {
   ocs2_msgs::mpc_observation observationMsg;
   {
     std::lock_guard<std::mutex> lock(observationMutex_);
@@ -181,7 +181,7 @@ void MPC_Controller::publishObservation() {
   observationPublisher_.publish(observationMsg);
 }
 
-void MPC_Controller::adjustPathTime(nav_msgs::Path& desiredPath) const {
+void MPC_VelocityController::adjustPathTime(nav_msgs::Path& desiredPath) const {
   if (desiredPath.poses.empty()) return;
 
   // take only relative timing from path
@@ -196,7 +196,7 @@ void MPC_Controller::adjustPathTime(nav_msgs::Path& desiredPath) const {
   }
 }
 
-void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
+void MPC_VelocityController::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
   if (desiredPath->poses.empty()) {
     ROS_WARN("[MPC_Controller::pathCallback] Received path is empty");
     return;
@@ -220,7 +220,7 @@ void MPC_Controller::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
   referenceEverReceived_ = true;
 }
 
-void MPC_Controller::writeDesiredPath(const nav_msgs::Path& desiredPath) {
+void MPC_VelocityController::writeDesiredPath(const nav_msgs::Path& desiredPath) {
   ocs2::CostDesiredTrajectories costDesiredTrajectories(desiredPath.poses.size());
   size_t idx = 0;
   for (const auto& waypoint : desiredPath.poses) {
@@ -247,7 +247,7 @@ void MPC_Controller::writeDesiredPath(const nav_msgs::Path& desiredPath) {
   mpc_mrt_interface_->setTargetTrajectories(costDesiredTrajectories);
 }
 
-bool MPC_Controller::sanityCheck(const nav_msgs::Path& path) {
+bool MPC_VelocityController::sanityCheck(const nav_msgs::Path& path) {
   // check time monotonicity
   for (size_t idx = 1; idx < path.poses.size(); idx++) {
     if ((path.poses[idx].header.stamp.toSec() - path.poses[idx - 1].header.stamp.toSec()) < 0) {
@@ -257,7 +257,7 @@ bool MPC_Controller::sanityCheck(const nav_msgs::Path& path) {
   return true;
 }
 
-void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) {
+void MPC_VelocityController::transformPath(nav_msgs::Path& desiredPath) {
   ROS_INFO_STREAM("[MPC_Controller::transformPath] Transforming path from "
                   << desiredPath.header.frame_id << " to " << base_link_);
   geometry_msgs::TransformStamped transformStamped;
@@ -279,7 +279,7 @@ void MPC_Controller::transformPath(nav_msgs::Path& desiredPath) {
   }
 }
 
-void MPC_Controller::stop() {
+void MPC_VelocityController::stop() {
   ROS_INFO("[MPC_Controller::stop] Stopping MPC update thread");
   stopped_ = true;
   mpcThread_.join();

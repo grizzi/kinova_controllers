@@ -11,7 +11,7 @@
 using namespace kinova_controllers;
 
 MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
-    : MPC_Controller(nh), tf_listener_(tf_buffer_) {
+    : MPC_VelocityController(nh), tf_listener_(tf_buffer_) {
   std::string wrench_topic;
   if (!nh.param<std::string>("wrench_topic", wrench_topic, "/wrench")) {
     ROS_WARN_STREAM("Failed to parse wrench topic, defaulting to /wrench");

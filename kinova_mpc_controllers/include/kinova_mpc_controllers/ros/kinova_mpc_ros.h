@@ -7,16 +7,16 @@
 
 #include <control_toolbox/pid.h>
 #include <kinova_robot/command_interface.h>
-
-#include <controller_interface/multi_interface_controller.h>
 #include <hardware_interface/joint_command_interface.h>
+#include <controller_interface/multi_interface_controller.h>
 
-#include <kinova_mpc_controllers/mpc_controller.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/JointState.h>
 
 namespace kinova_controllers {
 
-class KinovaMpcVelocityController
+template<typename Controller>
+class KinovaMpcControllerRos
     : public controller_interface::MultiInterfaceController<
           hardware_interface::JointStateInterface, hardware_interface::EffortJointInterface,
           hardware_interface::KinovaCommandInterface> {
@@ -29,8 +29,8 @@ class KinovaMpcVelocityController
                                                      hardware_interface::KinovaCommandInterface>;
 
   // optional interfaces
-  KinovaMpcVelocityController() : BASE(true){};
-  ~KinovaMpcVelocityController() = default;
+  KinovaMpcControllerRos() : BASE(true){};
+  ~KinovaMpcControllerRos() = default;
 
  private:
   bool init(hardware_interface::RobotHW* hw, ros::NodeHandle& root_nh,
@@ -38,20 +38,25 @@ class KinovaMpcVelocityController
 
   void starting(const ros::Time& time) override;
   void update(const ros::Time& time, const ros::Duration& period) override;
-  void stopping(const ros::Time& time) override;
+  virtual void stopping(const ros::Time& time) {};
 
  protected:
+  bool initRos(ros::NodeHandle& nh);
   bool addStateHandles(hardware_interface::RobotHW* hw);
-  bool addCommandHandles(hardware_interface::RobotHW* hw);
-  void writeCommand(const ros::Duration& period);
+  virtual bool addCommandHandles(hardware_interface::RobotHW* hw) = 0;
+  virtual void writeCommand(const ros::Duration& period) = 0;
   void computeTorqueCommands(joint_vector_t& tau, const ros::Duration& period);
   void readState();
+
+ protected:
+  std::vector<std::string> joint_names_;
+  std::unique_ptr<Controller> mpc_controller_;
+  joint_vector_t tau_;
 
  private:
   std::string tool_frame_;
   bool is_real_robot_;
   std::string robot_description_;
-  std::vector<std::string> joint_names_;
   ros::Publisher reset_imarker_pose_pub_;
 
   sensor_msgs::JointState joint_state_des_;
@@ -70,12 +75,6 @@ class KinovaMpcVelocityController
   Eigen::VectorXd position_current_;    // compute PD error: dynamic vector in the gripper case
   Eigen::VectorXd velocity_current_;    // compute PD error: dynamic vector in the gripper case
 
-  // mpc controller
-  std::unique_ptr<MPC_Controller> mpc_controller_;
-
-  // joint handles
   std::array<hardware_interface::JointStateHandle, 7> state_handles_;
-  std::array<hardware_interface::JointHandle, 7> sim_command_handles_;
-  std::array<hardware_interface::KinovaCommandHandle, 7> robot_command_handles_;
 };
 }  // namespace kinova_controllers

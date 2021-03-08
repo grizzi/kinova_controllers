@@ -33,10 +33,16 @@ set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES})
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME} src/mpc_controller.cpp
-        src/kinova_mpc_velocity_controller.cpp
+add_library(mpc_controllers
+        src/mpc_velocity_controller.cpp
         src/mpc_admittance_controller.cpp)
-target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
+target_link_libraries(mpc_controllers ${COMMON_LIBRARIES})
+
+add_library(${PROJECT_NAME}
+        src/ros/kinova_mpc_ros.cpp
+        src/ros/kinova_mpc_controllers.cpp include/kinova_mpc_controllers/ros/kinova_mpc_controllers.h)
+target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES} mpc_controllers)
+add_dependencies(${PROJECT_NAME} mpc_controllers)
 
 install(DIRECTORY launch config
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
