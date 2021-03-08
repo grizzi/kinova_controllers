@@ -115,13 +115,11 @@ void MPC_VelocityController::advanceMpc() {
       command_path_publisher_.unlockAndPublish();
     }
 
-    std::cout << "Setting current observation to: " << observation_.state.transpose() << std::endl;
     {
       std::lock_guard<std::mutex> lock(observationMutex_);
       mpc_mrt_interface_->setCurrentObservation(observation_);
     }
 
-    std::cout << "Starting mpc thread" << std::endl;
     mpcTimer_.startTimer();
     try {
       mpc_mrt_interface_->advanceMpc();
@@ -167,9 +165,7 @@ void MPC_VelocityController::updateCommand() {
     return;
   }
 
-  std::cout << "Updating policy" << std::endl;
   mpc_mrt_interface_->updatePolicy();
-  std::cout << "Policy updated" << std::endl;
   mpc_mrt_interface_->evaluatePolicy(observation_.time, observation_.state, mpcState, mpcInput,
                                      mode);
   positionCommand_ = mpcState.tail(7);  // when mpc active, only velocity command
@@ -195,11 +191,9 @@ void MPC_VelocityController::adjustPathTime(nav_msgs::Path& desiredPath) const {
   double time_offset = desiredPath.poses[0].header.stamp.toSec() - current_mpc_time;
   ROS_INFO_STREAM("[MPC_Controller::adjustPathTime] Time offset is: " << time_offset);
 
-  std::cout << "Poses in path are: " << desiredPath.poses.size() << std::endl;
   for (auto& pose : desiredPath.poses) {
     pose.header.stamp = pose.header.stamp - ros::Duration(time_offset);
   }
-  std::cout << "Path has been adapted" << std::endl;
 }
 
 void MPC_VelocityController::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
@@ -223,7 +217,6 @@ void MPC_VelocityController::pathCallback(const nav_msgs::PathConstPtr& desiredP
     transformPath(desiredPath_);   // transform to the correct base frame
     adjustPathTime(desiredPath_);  // adjust time stamps keeping relative time-distance
   }
-  std::cout << "Setting reference received to true" << std::endl;
   referenceEverReceived_ = true;
 }
 
@@ -251,7 +244,6 @@ void MPC_VelocityController::writeDesiredPath(const nav_msgs::Path& desiredPath)
     idx++;
   }
 
-  std::cout << "Setting target trajectory" << std::endl;
   mpc_mrt_interface_->setTargetTrajectories(costDesiredTrajectories);
 }
 
