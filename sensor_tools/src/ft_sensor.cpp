@@ -158,7 +158,7 @@ void ForceTorqueSensor::update() {
   
   // Use payload compensated wrench to estimate bias
   if (estimate_bias_){
-    bias_ += compensated_wrench;
+    bias_ += (raw_wrench - compensated_wrench);
     estimate_bias_measurements_++;
     if (estimate_bias_measurements_ > 1000){
       bias_ = 0.001 * bias_;

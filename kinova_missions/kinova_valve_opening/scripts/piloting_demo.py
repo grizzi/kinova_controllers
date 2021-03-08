@@ -29,9 +29,13 @@ with state_machine:
                                 transitions={'Completed': 'HOME_ROBOT',
                                              'Failure': 'Failure'})
 
-        smach.StateMachine.add('HOME_ROBOT', HomePose(ns="home_pose"),
+        smach.StateMachine.add('HOME_ROBOT', HomePoseJointConfiguration(ns="home_pose_joints"),
                                 transitions={'Completed': 'Success',
                                              'Failure': 'Failure'})
+
+        # smach.StateMachine.add('HOME_ROBOT', HomePose(ns="home_pose"),
+        #                         transitions={'Completed': 'Success',
+        #                                      'Failure': 'Failure'})
 
     smach.StateMachine.add('HOME_ROBOT_START', homing_sequence,
                            transitions={'Success': 'REACH_DETECTION_HOTSPOT', 'Failure': 'Failure'})

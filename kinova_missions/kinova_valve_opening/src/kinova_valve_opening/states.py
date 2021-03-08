@@ -7,13 +7,20 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 
 from smb_mission_planner.base_state_ros import BaseStateRos
-from smb_mission_planner.manipulation_states import RosControlPoseReaching
+from smb_mission_planner.manipulation_states import RosControlPoseReaching, JointsConfigurationVisitor
 from smb_mission_planner.detection_states import ObjectDetection
 from smb_mission_planner.utils.moveit_utils import MoveItPlanner
 from smb_mission_planner.navigation_states import SingleNavGoalState
 
 
 from kinova_valve_opening.trajectory_generator import *
+
+class HomePoseJointConfiguration(JointsConfigurationVisitor):
+    """
+    Go to some home joints configuration pose
+    """
+    def __init__(self, ns):
+        JointsConfigurationVisitor.__init__(self, ns=ns)
 
 
 class HomePose(RosControlPoseReaching):
@@ -52,14 +59,15 @@ class NavigationState(SingleNavGoalState):
 
     def execute(self, userdata):
         if self.default_outcome:
+            rospy.loginfo("Choosing default outcome: {}".format(self.default_outcome))
             return self.default_outcome
 
         target_pose = PoseStamped()
-        target_pose.header.frame_id = "world"
+        target_pose.header.frame_id = "map"
         tf_buffer = tf2_ros.Buffer()
         tf_listener = tf2_ros.TransformListener(tf_buffer)
         try:
-            transform = tf_buffer.lookup_transform("world",
+            transform = tf_buffer.lookup_transform("map",
                                                    self.target_frame,
                                                    rospy.Time(0),
                                                    rospy.Duration(3))
@@ -69,6 +77,7 @@ class NavigationState(SingleNavGoalState):
             rospy.logerr(exc)
             return 'Aborted'
 
+        rospy.loginfo("Reaching goal at {}, {}".format(target_pose.pose.position.x, target_pose.pose.position.y))
         success = self.reach_goal(target_pose)
         if not success:
             rospy.logerr("Failed to reach base goal.")
@@ -88,6 +97,10 @@ class DetectionPosesVisitor(RosControlPoseReaching):
         self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
 
     def execute(self, ud):
+        # if self.default_outcome:
+        #     rospy.loginfo("Choosing default outcome: {}".format(self.default_outcome))
+        #     return self.default_outcome
+            
         controller_switched = self.do_switch()
         if not controller_switched:
             return 'Failure'
@@ -102,6 +115,9 @@ class DetectionPosesVisitor(RosControlPoseReaching):
                 return 'Failure'
             else:
                 rospy.loginfo("Viewpoint reached.")
+        
+            rospy.loginfo("Sleeping 3.0 sec before moving to next viewpoint.")
+            rospy.sleep(3.0)
         return 'Completed'
 
 
@@ -220,7 +236,7 @@ class LateralGraspState(RosControlPoseReaching):
             if not wait_until_reached(pre_pre_grasp, quiet=True):
                 return 'Failure'
 
-        # Goal 1: move tool to the valve plane, not yet at the handle
+            # Goal 1: move tool to the valve plane, not yet at the handle
             self.pre_grasp = compute_pre_lateral_grasp2()
 
             # Goal 2: move tool forward to grasp the handle
@@ -241,7 +257,7 @@ class LateralGraspState(RosControlPoseReaching):
         if not wait_until_reached(self.grasp, quiet=True):
             return 'Failure'
 
-        return 'Completed'
+        return 'Failure'
 
 
 class FrontalGraspState(RosControlPoseReaching):

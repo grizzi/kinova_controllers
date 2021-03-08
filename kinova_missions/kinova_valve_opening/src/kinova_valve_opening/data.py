@@ -18,9 +18,9 @@ class valve_traj_data:
     valve_radius = 0.07
 
     # relative transformation from grasp to point on valve perimeter
-    rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_matrix()
-    quaternion_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_quat()
-    rotation_valve_frontgrasp = R.from_euler('xyz', [0.0, 0.0, 180.0], degrees=True).as_matrix()
+    rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_dcm()
+    quaternion_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_dcm()
+    rotation_valve_frontgrasp = R.from_euler('xyz', [0.0, 0.0, 180.0], degrees=True).as_dcm()
     translation_valve_latgrasp = np.array([valve_radius, 0.0, 0.0])
     translation_valve_frontgrasp = np.array([valve_radius, 0.0, 0.0])
 
@@ -30,20 +30,36 @@ class valve_traj_data:
 
     # !!! The following poses are all referenced to the arm base frame
     # home pose
-    home_pose_position = np.array([0.026, 0.349, 0.338])
-    home_pose_orientation = np.array([0.693, 0.718, 0.017, -0.063])
+    home_pose_position = np.array([0.096, 0.266, 0.559])
+    home_pose_orientation = np.array([0.011, 0.751, 0.660, 0.010])
 
     # detection poses
-    det_pose_position_0 = np.array([0.026, 0.349, 0.338])
-    det_pose_orientation_0 = np.array([0.693, 0.718, 0.017, -0.063])
-    det_pose_position_1 = np.array([0.026, 0.349, 0.338])
-    det_pose_orientation_1 = np.array([0.693, 0.718, 0.017, -0.063])
+    det_pose_position_0 = np.array([0.096, 0.266, 0.559])
+    det_pose_orientation_0 = np.array([0.011, 0.751, 0.660, 0.010])
+    det_pose_position_1 = np.array([0.161, 0.220, 0.515])
+    det_pose_orientation_1 = np.array([0.118, 0.791, 0.593, 0.092])
+    det_pose_position_2 = np.array([0.359, 0.171, 0.490])
+    det_pose_orientation_2 = np.array([0.053, 0.758, 0.650, 0.016])
+    det_pose_position_3 = np.array([0.324, 0.526, 0.494])
+    det_pose_orientation_3 = np.array([0.050, 0.733, 0.671, 0.096])
+    det_pose_position_4 = np.array([0.469, 0.321, 0.470])
+    det_pose_orientation_4 = np.array([-0.060, 0.702, 0.700, 0.115])
+    det_pose_position_5 = np.array([-0.016, 0.398, 0.517])
+    det_pose_orientation_5 = np.array([0.272, 0.670, 0.673, 0.156])
 
-    det_pose_position_2 = np.array([0.026, 0.349, 0.338])
-    det_pose_orientation_2 = np.array([0.693, 0.718, 0.017, -0.063])
 
-    det_poses = {'position': [det_pose_position_0, det_pose_position_1, det_pose_position_2],
-                 'orientation': [det_pose_orientation_0, det_pose_orientation_1, det_pose_orientation_2]}
+    det_poses = {'position': [det_pose_position_0, 
+                              det_pose_position_1, 
+                              det_pose_position_2, 
+                              det_pose_position_3, 
+                              det_pose_position_4, 
+                              det_pose_position_5],
+                 'orientation': [det_pose_orientation_0, 
+                                 det_pose_orientation_1, 
+                                 det_pose_orientation_2, 
+                                 det_pose_orientation_3, 
+                                 det_pose_orientation_4, 
+                                 det_pose_orientation_5]}
 
     @classmethod
     def init_from_ros(cls):
