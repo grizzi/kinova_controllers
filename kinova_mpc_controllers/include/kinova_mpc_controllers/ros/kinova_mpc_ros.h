@@ -78,3 +78,5 @@ class KinovaMpcControllerRos
   std::array<hardware_interface::JointStateHandle, 7> state_handles_;
 };
 }  // namespace kinova_controllers
+
+#include "kinova_mpc_controllers/ros/kinova_mpc_ros.tpp"

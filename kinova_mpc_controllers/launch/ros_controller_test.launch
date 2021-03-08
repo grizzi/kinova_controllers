@@ -1,32 +1,35 @@
 <launch>
 
+    <arg name="simulation" value="true"/>
+    <arg name="prefix" default="arm_"/>
+    <arg name="task_file" default="$(find kinova_mpc_controllers)/params/task.info"/>
+
     <!-- Robot description for MPC -->
-    <arg name="task_file" default="$(find kinova_mpc_controllers)/config/task.info"/>
     <param name="robot_description_mpc"
            command="$(find xacro)/xacro --inorder $(find kinova_description_for_controllers)/urdf/kinova.urdf.xacro"/>
     <param name="task_file" value="$(arg task_file)"/>
 
     <!-- Gazebo simulation -->
     <arg name="robot_name" default="my_gen3"/>
-    <arg name="gripper" default="robotiq_2f_85"/>
+    <arg name="gripper" default=""/>
     <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
         <arg name="gazebo_gui" value="false"/>
         <arg name="robot_name" value="$(arg robot_name)"/>
         <arg name="gripper" value="$(arg gripper)"/>
+        <arg name="prefix" value="$(arg prefix)"/>
+        <arg name="debug" value="false"/>
     </include>
 
-    <!-- Load controllers -->
-    <arg name="simulation" value="true"/>
-    <arg name="prefix" default=""/>
-    <rosparam file="$(find kinova_mpc_controllers)/config/controllers.yaml" command="load" ns="my_gen3"
+    <!-- Load controllers and its params -->
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/common.yaml" subst_value="true"/>
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/gains.yaml" unless="$(arg simulation)" subst_value="true"/>
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/gains_sim.yaml" if="$(arg simulation)" subst_value="true"/>
+    <rosparam file="$(find kinova_mpc_controllers)/params/ros_control.yaml" command="load" ns="my_gen3"
               subst_value="true"/>
+
 
     <!-- Controller manager gui -->
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
-
-    <!-- Load only MPC Controller -->
-    <node name="mpc_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" ns="my_gen3"
-          output="screen" args="--stopped mpc_velocity_controller"/>
 
     <!-- Interactive reference -->
     <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"

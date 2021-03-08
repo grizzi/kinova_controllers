@@ -13,16 +13,16 @@ using namespace kinova_controllers;
 MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
     : MPC_VelocityController(nh), tf_listener_(tf_buffer_) {
   std::string wrench_topic;
-  if (!nh.param<std::string>("wrench_topic", wrench_topic, "/wrench")) {
+  if (!nh.param<std::string>("/mpc_controller/wrench_topic", wrench_topic, "/wrench")) {
     ROS_WARN_STREAM("Failed to parse wrench topic, defaulting to /wrench");
   }
 
-  parse_vector<3>(nh_, "kp_linear_gains", Kp_linear_);
-  parse_vector<3>(nh_, "kp_angular_gains", Kp_angular_);
-  parse_vector<3>(nh_, "ki_linear_gains", Ki_linear_);
-  parse_vector<3>(nh_, "ki_angular_gains", Ki_angular_);
-  parse_vector<3>(nh_, "force_integral_max", force_integral_max_);
-  parse_vector<3>(nh_, "torque_integral_max", torque_integral_max_);
+  parse_vector<3>(nh_, "/mpc_controller/kp_linear_gains", Kp_linear_);
+  parse_vector<3>(nh_, "/mpc_controller/kp_angular_gains", Kp_angular_);
+  parse_vector<3>(nh_, "/mpc_controller/ki_linear_gains", Ki_linear_);
+  parse_vector<3>(nh_, "/mpc_controller/ki_angular_gains", Ki_angular_);
+  parse_vector<3>(nh_, "/mpc_controller/force_integral_max", force_integral_max_);
+  parse_vector<3>(nh_, "/mpc_controller/torque_integral_max", torque_integral_max_);
   
   wrench_callback_queue_ = std::unique_ptr<ros::CallbackQueue>(new ros::CallbackQueue());
   ros::SubscribeOptions so;
@@ -37,8 +37,8 @@ MPC_AdmittanceController::MPC_AdmittanceController(const ros::NodeHandle& nh)
   wrench_received_ = false;
 
   // parse thresholds
-  parse_vector<3>(nh_, "force_threshold", force_threshold_);
-  parse_vector<3>(nh_, "torque_threshold", torque_threshold_);
+  parse_vector<3>(nh_, "/mpc_controller/force_threshold", force_threshold_);
+  parse_vector<3>(nh_, "/mpc_controller/torque_threshold", torque_threshold_);
   for (size_t i=0; i<3; i++){
     if (force_threshold_(i) < 0){
       ROS_WARN("Negative force threshold: setting to 0");

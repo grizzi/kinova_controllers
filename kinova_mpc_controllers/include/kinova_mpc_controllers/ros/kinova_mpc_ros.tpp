@@ -2,7 +2,6 @@
 // Created by giuseppe on 06.01.21.
 //
 
-#include "kinova_mpc_controllers/ros/kinova_mpc_ros.h"
 #include <angles/angles.h>
 
 using namespace hardware_interface;
@@ -13,31 +12,19 @@ template <typename Controller>
 bool KinovaMpcControllerRos<Controller>::init(hardware_interface::RobotHW* hw,
                                               ros::NodeHandle& root_nh,
                                               ros::NodeHandle& controller_nh) {
-  controller_nh.param<std::vector<std::string>>("joint_names", joint_names_, {});
-  if (joint_names_.size() != 7) {
-    ROS_ERROR("Joint names must be 7.");
-    return false;
+
+  if (!initRos(controller_nh)){
+    ROS_ERROR("Failed to initialize parameters!");
   }
-
-  controller_nh.param<std::string>("tool_link", tool_frame_, "tool_frame");
-
-  bool simulation;
-  controller_nh.param<bool>("simulation", simulation, false);
-  is_real_robot_ = !simulation;
-  ROS_INFO_STREAM("Is real robot? " << is_real_robot_);
 
   // init model
-  if (!root_nh.param<std::string>("/my_gen3/robot_description", robot_description_, "")) {
-    ROS_ERROR_STREAM("Could not find param /my_gen3/robot_description");
-    return false;
-  }
   model_ = std::unique_ptr<rc::RobotWrapper>(new rc::RobotWrapper());
   model_->initFromXml(robot_description_);
   position_current_ = Eigen::VectorXd::Zero(model_->getDof());
   velocity_current_ = Eigen::VectorXd::Zero(model_->getDof());
 
   for (size_t i = 0; i < 7; i++) {
-    if (!pid_controllers_[i].init(ros::NodeHandle(controller_nh, "gains/" + joint_names_[i]),
+    if (!pid_controllers_[i].init(ros::NodeHandle("/mpc_controller/gains/" + joint_names_[i]),
                                   false)) {
       ROS_ERROR_STREAM("Failed to load PID parameters from " << joint_names_[i] + "/pid");
       return false;
@@ -48,14 +35,40 @@ bool KinovaMpcControllerRos<Controller>::init(hardware_interface::RobotHW* hw,
   mpc_controller_ = std::unique_ptr<Controller>(new Controller(controller_nh));
   if (!mpc_controller_->init()) {
     ROS_ERROR("Failed to initialize the MPC controller");
+    return false;
   }
 
-  addStateHandles(hw);
-  addCommandHandles(hw);
+  if (!addStateHandles(hw)){
+    ROS_ERROR("Failed to add state handles");
+    return false;
+  }
 
-  reset_imarker_pose_pub_ = root_nh.advertise<geometry_msgs::Pose>("/reset_marker_pose", 1);
-  joint_state_des_pub_ = root_nh.advertise<sensor_msgs::JointState>("/mpc_joint_state_desired", 1);
-  joint_state_cur_pub_ = root_nh.advertise<sensor_msgs::JointState>("/mpc_joint_state_current", 1);
+  if (!addCommandHandles(hw)){
+    ROS_ERROR("Failed to add command handles!");
+    return false;
+  }
+  return true;
+}
+
+template <typename Controller>
+bool KinovaMpcControllerRos<Controller>::initRos(ros::NodeHandle& nh) {
+
+  nh.param<std::string>("/mpc_controller/tool_link", tool_frame_, "tool_frame");
+
+  nh.param<std::vector<std::string>>("/mpc_controller/joint_names", joint_names_, {});
+  if (joint_names_.size() != 7) {
+    ROS_ERROR("Joint names must be 7.");
+    return false;
+  }
+
+  if (!nh.param<std::string>("/my_gen3/robot_description", robot_description_, "")) {
+    ROS_ERROR_STREAM("Could not find param /my_gen3/robot_description");
+    return false;
+  }
+
+  reset_imarker_pose_pub_ = nh.advertise<geometry_msgs::Pose>("/reset_marker_pose", 1);
+  joint_state_des_pub_ = nh.advertise<sensor_msgs::JointState>("/mpc_joint_state_desired", 1);
+  joint_state_cur_pub_ = nh.advertise<sensor_msgs::JointState>("/mpc_joint_state_current", 1);
   return true;
 }
 
@@ -139,10 +152,10 @@ void KinovaMpcControllerRos<Controller>::computeTorqueCommands(joint_vector_t& t
   velocity_error_ = velocity_command_ - velocity_current_.head<7>();
 
   ROS_DEBUG_STREAM_THROTTLE(1.0, std::endl
-                                     << "Pos cmd: " << position_command_.transpose() << std::endl
-                                     << "Pos mes: " << position_current_.transpose() << std::endl
-                                     << "Vel cmd: " << velocity_command_.transpose() << std::endl
-                                     << "Vel mes: " << velocity_current_.transpose());
+      << "Pos cmd: " << position_command_.transpose() << std::endl
+      << "Pos mes: " << position_current_.transpose() << std::endl
+      << "Vel cmd: " << velocity_command_.transpose() << std::endl
+      << "Vel mes: " << velocity_current_.transpose());
 
   for (size_t i = 0; i < 7; i++)
     tau(i) = pid_controllers_[i].computeCommand(position_error_(i), velocity_error_(i), period) +

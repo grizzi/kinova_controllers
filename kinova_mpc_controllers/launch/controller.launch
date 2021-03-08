@@ -1,6 +1,6 @@
 <launch>
     <!-- Robot description for MPC -->
-    <arg name="task_file" default="$(find kinova_mpc_controllers)/config/task.info"/>
+    <arg name="task_file" default="$(find kinova_mpc_controllers)/params/task.info"/>
     <param name="robot_description_mpc"
            command="$(find xacro)/xacro --inorder $(find kinova_description_for_controllers)/urdf/kinova.urdf.xacro"/>
     <param name="task_file" value="$(arg task_file)"/>
@@ -9,12 +9,13 @@
     <arg name="namespace" default="my_gen3"/>
     <arg name="simulation" default="true"/>
     <arg name="prefix" default=""/>
-    <group ns="$(arg namespace)">
-        <rosparam file="$(find kinova_mpc_controllers)/config/controllers.yaml" command="load" subst_value="true"/>
 
-        <!-- Load only MPC Controller -->
-        <node name="mpc_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-              output="screen" args="--stopped mpc_velocity_controller mpc_admittance_controller"/>
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/common.yaml" subst_value="true"/>
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/gains.yaml" unless="$(arg simulation)" subst_value="true"/>
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/gains_sim.yaml" if="$(arg simulation)" subst_value="true"/>
+
+    <group ns="$(arg namespace)">
+        <rosparam file="$(find kinova_mpc_controllers)/params/ros_control.yaml" command="load" subst_value="true"/>
     </group>
 
     <!-- Interactive reference -->

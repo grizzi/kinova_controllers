@@ -15,20 +15,20 @@ bool MPC_VelocityController::init() {
   nh_.param<std::string>("/robot_description_mpc", robot_description_, "");
   nh_.param<std::string>("/task_file", taskFile_, "");
 
-  nh_.param<std::string>("base_link", base_link_, "base_link");
-  nh_.param<std::string>("tool_link", tool_link_, "tool_frame");
+  nh_.param<std::string>("/mpc_controller/base_link", base_link_, "base_link");
+  nh_.param<std::string>("/mpc_controller/tool_link", tool_link_, "tool_frame");
   nh_.param<double>("mpc_frequency", mpcFrequency_, -1);
 
   std::string commandTopic;
-  nh_.param<std::string>("command_topic", commandTopic, "/command");
+  nh_.param<std::string>("/mpc_controller/command_topic", commandTopic, "/command");
   commandPublisher_ = nh_.advertise<std_msgs::Float64MultiArray>(commandTopic, 1);
 
   std::string pathTopic;
-  nh_.param<std::string>("path_topic", pathTopic, "/desired_path");
+  nh_.param<std::string>("/mpc_controller/path_topic", pathTopic, "/desired_path");
   targetPathSubscriber_ = nh_.subscribe(pathTopic, 10, &MPC_VelocityController::pathCallback, this);
 
   std::string robotName;
-  nh_.param<std::string>("robot_name", robotName, "/mobile_manipulator");
+  nh_.param<std::string>("/mpc_controller/robot_name", robotName, "/mobile_manipulator");
   observationPublisher_ =
       nh_.advertise<ocs2_msgs::mpc_observation>("/" + robotName + "_mpc_observation", 10);
 
@@ -50,7 +50,7 @@ bool MPC_VelocityController::init() {
   geometry_msgs::TransformStamped transform;
   try {
     // target_frame, source_frame ...
-    transform = tf_buffer_.lookupTransform(tool_link_, "arm_end_effector_link" /*mm_interface_->eeFrame_*/, ros::Time(0),
+    transform = tf_buffer_.lookupTransform(tool_link_, "arm_end_effector_link", ros::Time(0),
                                            ros::Duration(3.0));
   } catch (tf2::TransformException& ex) {
     ROS_WARN("%s", ex.what());
@@ -115,11 +115,13 @@ void MPC_VelocityController::advanceMpc() {
       command_path_publisher_.unlockAndPublish();
     }
 
+    std::cout << "Setting current observation to: " << observation_.state.transpose() << std::endl;
     {
       std::lock_guard<std::mutex> lock(observationMutex_);
       mpc_mrt_interface_->setCurrentObservation(observation_);
     }
 
+    std::cout << "Starting mpc thread" << std::endl;
     mpcTimer_.startTimer();
     try {
       mpc_mrt_interface_->advanceMpc();
@@ -165,7 +167,9 @@ void MPC_VelocityController::updateCommand() {
     return;
   }
 
+  std::cout << "Updating policy" << std::endl;
   mpc_mrt_interface_->updatePolicy();
+  std::cout << "Policy updated" << std::endl;
   mpc_mrt_interface_->evaluatePolicy(observation_.time, observation_.state, mpcState, mpcInput,
                                      mode);
   positionCommand_ = mpcState.tail(7);  // when mpc active, only velocity command
@@ -191,9 +195,11 @@ void MPC_VelocityController::adjustPathTime(nav_msgs::Path& desiredPath) const {
   double time_offset = desiredPath.poses[0].header.stamp.toSec() - current_mpc_time;
   ROS_INFO_STREAM("[MPC_Controller::adjustPathTime] Time offset is: " << time_offset);
 
+  std::cout << "Poses in path are: " << desiredPath.poses.size() << std::endl;
   for (auto& pose : desiredPath.poses) {
     pose.header.stamp = pose.header.stamp - ros::Duration(time_offset);
   }
+  std::cout << "Path has been adapted" << std::endl;
 }
 
 void MPC_VelocityController::pathCallback(const nav_msgs::PathConstPtr& desiredPath) {
@@ -217,6 +223,7 @@ void MPC_VelocityController::pathCallback(const nav_msgs::PathConstPtr& desiredP
     transformPath(desiredPath_);   // transform to the correct base frame
     adjustPathTime(desiredPath_);  // adjust time stamps keeping relative time-distance
   }
+  std::cout << "Setting reference received to true" << std::endl;
   referenceEverReceived_ = true;
 }
 
@@ -244,6 +251,7 @@ void MPC_VelocityController::writeDesiredPath(const nav_msgs::Path& desiredPath)
     idx++;
   }
 
+  std::cout << "Setting target trajectory" << std::endl;
   mpc_mrt_interface_->setTargetTrajectories(costDesiredTrajectories);
 }
 

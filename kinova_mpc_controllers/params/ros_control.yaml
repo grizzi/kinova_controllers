@@ -1,0 +1,18 @@
+joint_state_controller:
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50
+
+mpc_sim:
+  type: kinova_controllers/KinovaMpcControllerSim
+
+mpc_position_velocity:
+  type: kinova_controllers/KinovaMpcControllerRobotPositionVelocity
+
+mpc_position_torque:
+  type: kinova_controllers/KinovaMpcControllerRobotPositionTorque
+
+mpc_admittance_velocity:
+  type: kinova_controllers/KinovaMpcControllerRobotAdmittanceVelocity
+
+mpc_admittance_torque:
+  type: kinova_controllers/KinovaMpcControllerRobotAdmittanceTorque

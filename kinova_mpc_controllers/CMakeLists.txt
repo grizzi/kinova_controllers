@@ -39,8 +39,7 @@ add_library(mpc_controllers
 target_link_libraries(mpc_controllers ${COMMON_LIBRARIES})
 
 add_library(${PROJECT_NAME}
-        src/ros/kinova_mpc_ros.cpp
-        src/ros/kinova_mpc_controllers.cpp include/kinova_mpc_controllers/ros/kinova_mpc_controllers.h)
+        src/controllers.cpp)
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES} mpc_controllers)
 add_dependencies(${PROJECT_NAME} mpc_controllers)
 

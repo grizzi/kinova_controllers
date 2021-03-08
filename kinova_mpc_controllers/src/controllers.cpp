@@ -8,7 +8,7 @@
 
 using namespace hardware_interface;
 
-namespace kinova_controllers{
+namespace kinova_controllers {
 
 bool KinovaMpcControllerSim::addCommandHandles(hardware_interface::RobotHW* hw) {
   auto command_interface = hw->get<EffortJointInterface>();
@@ -69,7 +69,18 @@ void KinovaMpcControllerRobotTorque<Controller>::writeCommand(const ros::Duratio
   }
 }
 
-}
+}  // namespace kinova_controllers
+
+// Explicit instantiations
+namespace kinova_controllers {
+
+template class KinovaMpcControllerRos<MPC_VelocityController>;
+template class KinovaMpcControllerRobot<MPC_VelocityController>;
+template class KinovaMpcControllerRobotTorque<MPC_VelocityController>;
+template class KinovaMpcControllerRobot<MPC_AdmittanceController>;
+template class KinovaMpcControllerRobotTorque<MPC_AdmittanceController>;
+
+}  // namespace kinova_controllers
 
 // Export plugins
 PLUGINLIB_EXPORT_CLASS(kinova_controllers::KinovaMpcControllerSim,
