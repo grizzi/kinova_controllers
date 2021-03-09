@@ -59,6 +59,7 @@ class MPC_VelocityController{
   void setObservation(const joint_vector_t& q);
   void updateCommand();
   void writeDesiredPath(const nav_msgs::Path& path);
+  void publishObservation();
 
   // path processing
   static bool sanityCheck(const nav_msgs::Path& path);

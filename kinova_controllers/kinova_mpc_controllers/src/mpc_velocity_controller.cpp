@@ -33,6 +33,7 @@ bool MPC_VelocityController::init() {
   observationPublisher_ =
       nh_.advertise<ocs2_msgs::mpc_observation>("/" + robotName + "_mpc_observation", 10);
 
+  model_.reset(new rc::RobotWrapper());
   model_->initFromXml(robot_description_);
   mm_interface_.reset(
       new mobile_manipulator::MobileManipulatorInterface(taskFile_, robot_description_));
@@ -154,6 +155,7 @@ void MPC_VelocityController::advanceMpc() {
 void MPC_VelocityController::update(const ros::Time& time, const joint_vector_t& observation) {
   setObservation(observation);
   updateCommand();
+  publishObservation();
 }
 
 void MPC_VelocityController::setObservation(const joint_vector_t& observation) {
@@ -161,6 +163,15 @@ void MPC_VelocityController::setObservation(const joint_vector_t& observation) {
   observation_.time = ros::Time::now().toSec() - start_time_;
   observation_.state.tail(7) = observation;
   observationEverReceived_ = true;
+}
+
+void MPC_VelocityController::publishObservation() {
+  ocs2_msgs::mpc_observation observationMsg;
+  {
+    std::lock_guard<std::mutex> lock(observationMutex_);
+    ocs2::ros_msg_conversions::createObservationMsg(observation_, observationMsg);
+  }
+  observationPublisher_.publish(observationMsg);
 }
 
 void MPC_VelocityController::updateCommand() {
@@ -294,18 +305,18 @@ void MPC_VelocityController::publishCurrentRollout(){
   ocs2::vector_array_t state_trajectory;
   {
     std::unique_lock<std::mutex> lock(policyMutex_);
-    if (mpc_mrt_interface_->initialPolicyReceived()){
-      time_trajectory = mpc_mrt_interface_->getPolicy().timeTrajectory_;
+    if (!mpc_mrt_interface_->initialPolicyReceived()) return;
+
+    time_trajectory = mpc_mrt_interface_->getPolicy().timeTrajectory_;
       state_trajectory = mpc_mrt_interface_->getPolicy().stateTrajectory_;
-    }
   }
 
-  std::string ee_frame = "arm_end_effector_link";
+  std::string ee_frame = "end_effector_link";  // this is the one in the task file
   nav_msgs::Path rollout;
   rollout.header.frame_id = "arm_base_link";
   rollout.header.stamp = ros::Time::now();
   for (int i = 0; i < time_trajectory.size(); i++) {
-    model_->updateState(state_trajectory[i], Eigen::VectorXd::Zero(model_->getDof()));
+    model_->updateState(state_trajectory[i].tail<7>(), Eigen::VectorXd::Zero(model_->getDof()));
     Eigen::Vector3d t(model_->getFramePlacement(ee_frame).translation());
     Eigen::Quaterniond q(model_->getFramePlacement(ee_frame).rotation());
 
@@ -333,7 +344,7 @@ void MPC_VelocityController::publishDesiredPath(){
 
 void MPC_VelocityController::publishRos(){
   while (ros::ok() && !stopped_){
-    publishDesiredPath();
+    //publishDesiredPath();
     publishCurrentRollout();
     std::this_thread::sleep_for(std::chrono::milliseconds((int)(1e3 / publishRosFrequency_)));
   }

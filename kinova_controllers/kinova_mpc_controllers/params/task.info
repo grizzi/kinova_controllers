@@ -24,10 +24,10 @@ ddp
   maxNumStepsPerSecond          50000
   backwardPassIntegratorType    ODE45
 
-  inequalityConstraintMu        1e-5
-  inequalityConstraintDelta     1e-4
+  inequalityConstraintMu        1e-3
+  inequalityConstraintDelta     1e-2
   constraintPenaltyInitialValue 0
-  constraintPenaltyIncreaseRate 0.0000001
+  constraintPenaltyIncreaseRate 0.001
   preComputeRiccatiTerms        true
   useNominalTimeForBackwardPass false
 
@@ -68,7 +68,7 @@ mpc
   initMinStepLength              0.1
   coldStart                      false
   useParallelRiccatiSolver       true  ; use disjoint riccati solver in MP case and recedingHorizon fashion
-  solutionTimeWindow             0.2   ; [s]
+  solutionTimeWindow             1.0   ; [s]
   mpcDesiredFrequency            100   ; [Hz]
   mrtDesiredFrequency            400   ; [Hz]
   debugPrint                     false
@@ -144,7 +144,7 @@ endEffectorCost
 
 joint_limits
 {
-  active false
+  active true
   lower
   {
     scaling 1e+0

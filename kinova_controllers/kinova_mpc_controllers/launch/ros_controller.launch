@@ -46,7 +46,7 @@
           args="0 0 0 0 0 0 $(arg prefix)tool_frame /ft_sensor0"/>
 
     <node pkg="rqt_multiplot" name="rqt_multiplot" type="rqt_multiplot"
-          args="--multiplot-config $(find kinova_controllers)/config/rqt_bota.xml"/>
+          args="--multiplot-config $(find kinova_common)/config/rqt/rqt_bota.xml"/>
 
     <arg name="test_admittance" default="false"/>
     <group if="$(arg test_admittance)">
