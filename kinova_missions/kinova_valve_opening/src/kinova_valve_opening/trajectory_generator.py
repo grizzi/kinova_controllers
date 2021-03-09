@@ -1,16 +1,16 @@
 #! /usr/bin/env python
 
+import copy
 import numpy as np
+import pinocchio as pin
+
 import rospy
 import tf2_ros
 import tf2_geometry_msgs
-import pinocchio as pin
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 from nav_msgs.msg import Path
-import copy
-from scipy.spatial.transform import Rotation as R
-from mpl_toolkits.mplot3d import Axes3D
 
+from kinova_valve_opening.utils import PortableRotation as R
 from kinova_valve_opening.data import valve_traj_data
 
 #####################################

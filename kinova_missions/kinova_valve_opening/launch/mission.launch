@@ -30,7 +30,7 @@
         <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
         <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
         <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
-              output="screen" args=" --stopped mpc_velocity_controller"/>
+              output="screen" args=" --stopped mpc_sim"/>
     </group>
 
     <group unless="$(arg simulation)">
