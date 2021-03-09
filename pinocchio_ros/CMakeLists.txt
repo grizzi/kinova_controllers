@@ -23,4 +23,4 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME} src/model.cpp src/ros_conversions.cpp src/ros_conversions.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} pinocchio::pinocchio)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PINOCCHIO_LIBRARIES})

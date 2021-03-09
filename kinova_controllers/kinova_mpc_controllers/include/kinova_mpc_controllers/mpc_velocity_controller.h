@@ -6,6 +6,8 @@
 
 #include <mutex>
 
+#include <robot_control/modeling/robot_wrapper.h>
+
 #include <ocs2_core/misc/Benchmark.h>
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 #include <ocs2_mobile_manipulator_example/MobileManipulatorInterface.h>
@@ -28,7 +30,7 @@ class MPC_VelocityController{
 
   MPC_VelocityController() = delete;
   explicit MPC_VelocityController(const ros::NodeHandle& nh);
-  ~MPC_VelocityController() = default;
+  ~MPC_VelocityController();
 
   bool init();
   void start(const joint_vector_t& initial_observation);
@@ -64,6 +66,7 @@ class MPC_VelocityController{
   void adjustPathTime(nav_msgs::Path& desiredPath) const;
 
   // publish ros
+  void publishRos();
   void publishCurrentRollout();
   void publishDesiredPath();
 
@@ -103,10 +106,9 @@ class MPC_VelocityController{
   std::mutex desiredPathMutex_;
   nav_msgs::Path desiredPath_;
 
+  std::mutex policyMutex_;
   std::unique_ptr<mobile_manipulator::MobileManipulatorInterface> mm_interface_;
   std::unique_ptr<ocs2::MPC_MRT_Interface> mpc_mrt_interface_;
-
-  realtime_tools::RealtimePublisher<nav_msgs::Path> command_path_publisher_;
 
   // tf
   tf2_ros::Buffer tf_buffer_;
@@ -116,7 +118,13 @@ class MPC_VelocityController{
   Eigen::Affine3d T_x_tool_;    // transfrom from point in the path to the path reference frame
   Eigen::Affine3d T_base_ee_;   // transform from base to desired end effector pose
 
+  // internal model
+  std::unique_ptr<rc::RobotWrapper> model_;
+
   // realtime publisher
+  double publishRosFrequency_;
+  std::thread publishRosThread_;
+  realtime_tools::RealtimePublisher<nav_msgs::Path> command_path_publisher_;
   realtime_tools::RealtimePublisher<nav_msgs::Path> desired_path_publisher_;
   realtime_tools::RealtimePublisher<nav_msgs::Path> rollout_publisher_;
 

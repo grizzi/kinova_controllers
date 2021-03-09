@@ -2,12 +2,12 @@
 // Created by giuseppe on 24.01.21.
 //
 
+
+#include "kinova_mpc_controllers/mpc_velocity_controller.h"
 #include <geometry_msgs/WrenchStamped.h>
 #include <ros/callback_queue.h>
 #include <ros/subscribe_options.h>
 #include <std_srvs/Empty.h>
-#include "kinova_mpc_controllers/mpc_velocity_controller.h"
-
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 

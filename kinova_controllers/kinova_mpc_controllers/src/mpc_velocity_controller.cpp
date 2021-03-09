@@ -17,7 +17,8 @@ bool MPC_VelocityController::init() {
 
   nh_.param<std::string>("/mpc_controller/base_link", base_link_, "base_link");
   nh_.param<std::string>("/mpc_controller/tool_link", tool_link_, "tool_frame");
-  nh_.param<double>("mpc_frequency", mpcFrequency_, -1);
+  nh_.param<double>("/mpc_controller/mpc_frequency", mpcFrequency_, -1);
+  nh_.param<double>("/mpc_controller/publish_ros_frequency", publishRosFrequency_, 20);
 
   std::string commandTopic;
   nh_.param<std::string>("/mpc_controller/command_topic", commandTopic, "/command");
@@ -32,12 +33,14 @@ bool MPC_VelocityController::init() {
   observationPublisher_ =
       nh_.advertise<ocs2_msgs::mpc_observation>("/" + robotName + "_mpc_observation", 10);
 
+  model_->initFromXml(robot_description_);
   mm_interface_.reset(
       new mobile_manipulator::MobileManipulatorInterface(taskFile_, robot_description_));
   mpcPtr_ = mm_interface_->getMpc();
   mpc_mrt_interface_.reset(new ocs2::MPC_MRT_Interface(*mpcPtr_));
 
   command_path_publisher_.init(nh_, "/command_path", 10);
+  rollout_publisher_.init(nh_, "/mpc_rollout", 10);
 
   observation_.time = 0.0;
   observation_.state.setZero(mm_interface_->stateDim_);
@@ -65,6 +68,11 @@ bool MPC_VelocityController::init() {
   return true;
 }
 
+MPC_VelocityController::~MPC_VelocityController(){
+  publishRosThread_.join();
+  mpcThread_.join();
+}
+
 void MPC_VelocityController::start(const joint_vector_t& initial_observation) {
   // initial observation
   if (!stopped_) return;
@@ -84,6 +92,8 @@ void MPC_VelocityController::start(const joint_vector_t& initial_observation) {
 
   stopped_ = false;
   mpcThread_ = std::thread(&MPC_VelocityController::advanceMpc, this);
+  publishRosThread_ = std::thread(&MPC_VelocityController::publishRos, this);
+
   ROS_INFO("MPC Controller Successfully started.");
 }
 
@@ -164,9 +174,12 @@ void MPC_VelocityController::updateCommand() {
     return;
   }
 
-  mpc_mrt_interface_->updatePolicy();
-  mpc_mrt_interface_->evaluatePolicy(observation_.time, observation_.state, mpcState, mpcInput,
-                                     mode);
+  {
+    std::unique_lock<std::mutex> lock(policyMutex_);
+    mpc_mrt_interface_->updatePolicy();
+    mpc_mrt_interface_->evaluatePolicy(observation_.time, observation_.state, mpcState, mpcInput,
+                                       mode);
+  }
   positionCommand_ = mpcState.tail(7);  // when mpc active, only velocity command
   velocityCommand_ = mpcInput.tail(7);
 }
@@ -276,4 +289,53 @@ void MPC_VelocityController::stop() {
   ROS_INFO("[MPC_Controller::stop] Stopped MPC update thread");
 }
 
+void MPC_VelocityController::publishCurrentRollout(){
+  ocs2::scalar_array_t time_trajectory;
+  ocs2::vector_array_t state_trajectory;
+  {
+    std::unique_lock<std::mutex> lock(policyMutex_);
+    if (mpc_mrt_interface_->initialPolicyReceived()){
+      time_trajectory = mpc_mrt_interface_->getPolicy().timeTrajectory_;
+      state_trajectory = mpc_mrt_interface_->getPolicy().stateTrajectory_;
+    }
+  }
+
+  std::string ee_frame = "arm_end_effector_link";
+  nav_msgs::Path rollout;
+  rollout.header.frame_id = "arm_base_link";
+  rollout.header.stamp = ros::Time::now();
+  for (int i = 0; i < time_trajectory.size(); i++) {
+    model_->updateState(state_trajectory[i], Eigen::VectorXd::Zero(model_->getDof()));
+    Eigen::Vector3d t(model_->getFramePlacement(ee_frame).translation());
+    Eigen::Quaterniond q(model_->getFramePlacement(ee_frame).rotation());
+
+    geometry_msgs::PoseStamped pose;
+    pose.header.frame_id = "arm_base_link";
+    pose.pose.position.x = t.x();
+    pose.pose.position.y = t.y();
+    pose.pose.position.z = t.z();
+    pose.pose.orientation.x = q.x();
+    pose.pose.orientation.y = q.y();
+    pose.pose.orientation.z = q.z();
+    pose.pose.orientation.w = q.w();
+    rollout.poses.push_back(pose);
+  }
+
+  if (rollout_publisher_.trylock()){
+    rollout_publisher_.msg_ = rollout;
+    rollout_publisher_.unlockAndPublish();
+  }
+}
+
+void MPC_VelocityController::publishDesiredPath(){
+  // TODO(giuseppe) to implement
+}
+
+void MPC_VelocityController::publishRos(){
+  while (ros::ok() && !stopped_){
+    publishDesiredPath();
+    publishCurrentRollout();
+    std::this_thread::sleep_for(std::chrono::milliseconds((int)(1e3 / publishRosFrequency_)));
+  }
+}
 }  // namespace kinova_controllers
