@@ -1,0 +1,9 @@
+<library path="lib/libkinova_reflex_controller">
+    <class name="kinova_controllers/ReflexController"
+           type="kinova_controllers::ReflexController"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Controller using the FT sensor to trigger E-stop on high contact wrenches.
+        </description>
+    </class>
+</library>

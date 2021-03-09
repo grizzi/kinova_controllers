@@ -1,0 +1,92 @@
+# -------------------------------------------------------------
+# Publish all joint states
+# -------------------------------------------------------------
+joint_state_controller:
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50
+
+# -------------------------------------------------------------
+# Mpc controllers
+# -------------------------------------------------------------
+
+mpc_velocity_controller:
+  type: kinova_controllers/KinovaMpcVelocityController
+  robot_name: "mobile_manipulator"
+  base_link: $(arg prefix)base_link
+  tool_link: $(arg prefix)tool_frame
+  simulation: $(arg simulation)
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7
+  gains:
+    $(arg prefix)joint_1: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0 }
+    $(arg prefix)joint_2: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -5.0, i_clamp_max: 5.0 }
+    $(arg prefix)joint_3: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_4: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_5: { p: 20.0, i: 0.0, d: 0.2, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_6: { p: 20.0, i: 0.0, d: 1.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_7: { p: 10.0, i: 0.0, d: 1.0, i_clamp_min: -0.1, i_clamp_max: 0.1 }
+
+  mpc_frequency: 20
+  command_topic: "/joints_position_controller/command"
+  path_topic: "/desired_path"
+
+  admittance: false
+
+mpc_admittance_controller:
+  type: kinova_controllers/KinovaMpcVelocityController
+  robot_name: "mobile_manipulator"
+  base_link: $(arg prefix)base_link
+  tool_link: $(arg prefix)tool_frame
+  simulation: $(arg simulation)
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7
+  gains:
+    $(arg prefix)joint_1: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -100.0, i_clamp_max: 100.0 }
+    $(arg prefix)joint_2: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -5.0, i_clamp_max: 5.0 }
+    $(arg prefix)joint_3: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_4: { p: 10.0, i: 0.0, d: 2.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_5: { p: 20.0, i: 0.0, d: 0.2, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_6: { p: 20.0, i: 0.0, d: 1.0, i_clamp_min: -1.0, i_clamp_max: 1.0 }
+    $(arg prefix)joint_7: { p: 10.0, i: 0.0, d: 1.0, i_clamp_min: -0.1, i_clamp_max: 0.1 }
+
+  mpc_frequency: 20
+  command_topic: "/joints_position_controller/command"
+  path_topic: "/desired_path"
+
+  admittance: true
+  wrench_topic: "/ft_compensated"
+  
+  kp_linear_gains: [0.001, 0.001, 0.001]
+  kp_angular_gains: [0.001, 0.001, 0.001]
+  ki_linear_gains: [ 0.0, 0.0, 0.0 ]
+  ki_angular_gains: [ 0.0, 0.0, 0.0 ]
+  force_integral_max: [1.0, 1.0, 1.0]
+  torque_integral_max: [1.0, 1.0, 1.0]
+
+  force_threshold: [1.0, 1.0, 1.0]
+  torque_threshold: [0.0, 0.0, 0.0]
+
+
+
+joint_velocity_controller:
+  type: "kinova_controllers/KinovaJointVelocityController"
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7

@@ -1,0 +1,7 @@
+<launch>
+    <arg name="namespace" default="my_gen3"/>
+    <group ns="$(arg namespace)">
+        <rosparam file="$(find kinova_reflex_controller)/config/controller.yaml" command="load"/>
+    </group>
+</launch>
+

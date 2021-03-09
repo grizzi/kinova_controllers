@@ -1,0 +1,56 @@
+<launch>
+
+    <arg name="simulation" value="true"/>
+    <arg name="prefix" default="arm_"/>
+    <arg name="task_file" default="$(find kinova_mpc_controllers)/params/task.info"/>
+
+    <!-- Robot description for MPC -->
+    <param name="robot_description_mpc"
+           command="$(find xacro)/xacro --inorder $(find kinova_description_for_controllers)/urdf/kinova.urdf.xacro"/>
+    <param name="task_file" value="$(arg task_file)"/>
+
+    <!-- Gazebo simulation -->
+    <arg name="robot_name" default="my_gen3"/>
+    <arg name="gripper" default=""/>
+    <group if="$(arg simulation)">
+        <include file="$(find kinova_sim)/launch/spawn_kortex_gazebo.launch">
+            <arg name="gazebo_gui" value="false"/>
+            <arg name="robot_name" value="$(arg robot_name)"/>
+            <arg name="gripper" value="$(arg gripper)"/>
+            <arg name="prefix" value="$(arg prefix)"/>
+            <arg name="debug" value="false"/>
+        </include>
+    </group>
+
+    <!-- Load controllers and its params -->
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/common.yaml" subst_value="true"/>
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/gains.yaml" unless="$(arg simulation)" subst_value="true"/>
+    <rosparam command="load" file="$(find kinova_mpc_controllers)/params/gains_sim.yaml" if="$(arg simulation)" subst_value="true"/>
+    <rosparam file="$(find kinova_mpc_controllers)/params/ros_control.yaml" command="load" ns="my_gen3"
+              subst_value="true"/>
+
+
+    <!-- Controller manager gui -->
+    <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
+
+    <!-- Interactive reference -->
+    <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"
+          output="screen" args="$(arg task_file)"/>
+
+    <!-- RViz -->
+    <arg name="rvizconfig" default="$(find kinova_mpc_controllers)/config/ocs2_test.rviz"/>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rvizconfig)" output="screen"/>
+
+    <!--    Tf to the force sensor -->
+    <node pkg="tf2_ros" name="tf2_ros" type="static_transform_publisher"
+          args="0 0 0 0 0 0 $(arg prefix)tool_frame /ft_sensor0"/>
+
+    <node pkg="rqt_multiplot" name="rqt_multiplot" type="rqt_multiplot"
+          args="--multiplot-config $(find kinova_controllers)/config/rqt_bota.xml"/>
+
+    <arg name="test_admittance" default="false"/>
+    <group if="$(arg test_admittance)">
+        <include file="$(find sensor_tools)/launch/ft_sensor_standalone.launch"/>
+    </group>
+
+</launch>
