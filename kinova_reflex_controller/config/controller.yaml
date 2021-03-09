@@ -1,6 +1,0 @@
-reflex_controller:
-  type: kinova_controllers/ReflexController
-  force_max: 20 # [N]
-  torque_max: 2 # [Nm]
-  estop_service_name: /my_gen3/base/apply_emergency_stop
-

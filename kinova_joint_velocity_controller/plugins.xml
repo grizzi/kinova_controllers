@@ -1,9 +1,0 @@
-<library path="lib/libkinova_joint_velocity_controller">
-    <class name="kinova_controllers/KinovaJointVelocityController"
-           type="kinova_controllers::KinovaJointVelocityController"
-           base_class_type="controller_interface::ControllerBase">
-        <description>
-            Kinova Joint Velocity Controller
-        </description>
-    </class>
-</library>
