@@ -30,13 +30,13 @@
         <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_sim.yaml" subst_value="true"/>
         <include file="$(find kinova_valve_opening)/launch/load_valve.launch"/>
         <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
-              output="screen" args=" --stopped mpc_sim"/>
+              output="screen" args="--stopped mpc_sim" ns="my_gen3"/>
     </group>
 
     <group unless="$(arg simulation)">
         <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_robot.yaml" subst_value="true"/>
         <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
-              output="screen" args=" --stopped mpc_admittance_controller"/>
+              output="screen" args="--stopped mpc_admittance_torque" ns="my_gen3"/>
         <node name="target_base_publisher" pkg="tf2_ros" type="static_transform_publisher" args="2.14 -0.75 0.0 -0.873 0.0 0.0 map navigation_target"/>      
     </group>
 
