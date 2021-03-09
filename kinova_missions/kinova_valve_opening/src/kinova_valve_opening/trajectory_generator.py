@@ -103,13 +103,13 @@ def project_to_plane(plane_origin, plane_normal, p, in_plane=False):
 
 def numpy_to_pose_stamped(translation, orientation, frame_id):
     pose = PoseStamped()
-    pose.pose.position.x = valve_traj_data.home_pose_position[0]
-    pose.pose.position.y = valve_traj_data.home_pose_position[1]
-    pose.pose.position.z = valve_traj_data.home_pose_position[2]
-    pose.pose.orientation.x = valve_traj_data.home_pose_orientation[0]
-    pose.pose.orientation.y = valve_traj_data.home_pose_orientation[1]
-    pose.pose.orientation.z = valve_traj_data.home_pose_orientation[2]
-    pose.pose.orientation.w = valve_traj_data.home_pose_orientation[3]
+    pose.pose.position.x = translation[0]
+    pose.pose.position.y = translation[1]
+    pose.pose.position.z = translation[2]
+    pose.pose.orientation.x = orientation[0]
+    pose.pose.orientation.y = orientation[1]
+    pose.pose.orientation.z = orientation[2]
+    pose.pose.orientation.w = orientation[3]
     pose.header.stamp = rospy.get_rostime()
     pose.header.frame_id = frame_id
     return pose
@@ -171,6 +171,8 @@ def get_detection_poses():
     poses = []
     for translation, orientation in zip(valve_traj_data.det_poses['position'],
                                         valve_traj_data.det_poses['orientation']):
+        print(translation)
+        print(orientation)
         poses.append(numpy_to_pose_stamped(translation, orientation, valve_traj_data.base_frame))
     return poses
 
@@ -636,18 +638,21 @@ class ValveTrajectoryGenerator(object):
 
 if __name__ == "__main__":
     rospy.init_node("trajectory_generator")
-    path_publisher = rospy.Publisher("desired_path", Path, queue_size=1)
+    print(get_detection_poses())
 
-    # Test trajectory generation
-    generator = ValveTrajectoryGenerator()
-    generator.estimate_valve_from_lateral_grasp()
-
-    rospy.loginfo("Generating path from 0 to 10 and sleeping 10 secs.")
-    path = generator.get_path(0, 10)
-    path_publisher.publish(path)
-    rospy.sleep(10)
-
-    rospy.loginfo("Generating path from 10 to 0 and sleeping 10 secs.")
-    path = generator.get_path(10, 0)
-    path_publisher.publish(path)
-    rospy.sleep(10)
+# rospy.init_node("trajectory_generator")
+    # path_publisher = rospy.Publisher("desired_path", Path, queue_size=1)
+    #
+    # # Test trajectory generation
+    # generator = ValveTrajectoryGenerator()
+    # generator.estimate_valve_from_lateral_grasp()
+    #
+    # rospy.loginfo("Generating path from 0 to 10 and sleeping 10 secs.")
+    # path = generator.get_path(0, 10)
+    # path_publisher.publish(path)
+    # rospy.sleep(10)
+    #
+    # rospy.loginfo("Generating path from 10 to 0 and sleeping 10 secs.")
+    # path = generator.get_path(10, 0)
+    # path_publisher.publish(path)
+    # rospy.sleep(10)
