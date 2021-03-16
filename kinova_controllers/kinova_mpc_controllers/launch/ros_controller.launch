@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="simulation" value="true"/>
+    <arg name="simulation" default="true"/>
     <arg name="prefix" default="arm_"/>
     <arg name="task_file" default="$(find kinova_mpc_controllers)/params/task.info"/>
 
@@ -42,8 +42,12 @@
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rvizconfig)" output="screen"/>
 
     <!--    Tf to the force sensor -->
-    <node pkg="tf2_ros" name="tf2_ros" type="static_transform_publisher"
+    <node pkg="tf2_ros" name="ftsensor_transform_publisher" type="static_transform_publisher"
           args="0 0 0 0 0 0 $(arg prefix)tool_frame /ft_sensor0"/>
+
+    <!--    Tf to world -->
+    <node pkg="tf2_ros" name="world_transform_publisher" type="static_transform_publisher"
+          args="0 0 0 0 0 0 world $(arg prefix)base_link"/>
 
     <node pkg="rqt_multiplot" name="rqt_multiplot" type="rqt_multiplot"
           args="--multiplot-config $(find kinova_common)/config/rqt/rqt_bota.xml"/>
