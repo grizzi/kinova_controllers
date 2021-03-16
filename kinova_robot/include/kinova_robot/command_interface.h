@@ -40,26 +40,18 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
    *
    * @param[in] command Command to set.
    */
-  void setMode(const mode_t mode) noexcept { *mode_ = mode; }
+  void setMode(const mode_t mode);
 
   /**
    * Sets the given command for the current mode.
    *
    * @param[in] command Command to set.
    */
-  // void setCommand(double& cmd) {
-  //   if (*mode_ == KinovaControlMode::EFFORT)
-  //     *eff_ = cmd;
-  //   else if (*mode_ == KinovaControlMode::EFFORT)
-  //     *pos_ = cmd;
-  //   else if (*mode_ == KinovaControlMode::VELOCITY)
-  //     *vel_ = cmd;
-  // }
 
   void setCommand(const double cmd){
     if (*mode_ == KinovaControlMode::EFFORT)
       *eff_ = cmd;
-    else if (*mode_ == KinovaControlMode::EFFORT)
+    else if (*mode_ == KinovaControlMode::POSITION)
       *pos_ = cmd;
     else if (*mode_ == KinovaControlMode::VELOCITY)
       *vel_ = cmd;
@@ -84,7 +76,7 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
    *
    * @param[in] command Command to set.
    */
-  void setPositionCommand(double& cmd) noexcept {
+  void setPositionCommand(double cmd) noexcept {
     *pos_ = cmd;
     *cmd_ = cmd;
   }
@@ -92,7 +84,7 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
     *vel_ = cmd;
     *cmd_ = cmd;
   }
-  void setEffortCommand(double& cmd) noexcept {  // dangerous in case of reference to a temporary object
+  void setEffortCommand(double cmd) noexcept {
     *eff_ = cmd;
     *cmd_ = cmd;
   }
@@ -102,10 +94,10 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
    *
    * @return Current command.
    */
-  const double& getPositionCommand() const noexcept { return *pos_; }
-  const double& getVelocityCommand() const noexcept { return *vel_; }
-  const double& getEffortCommand() const noexcept { return *eff_; }
-  const mode_t& getMode() const noexcept { return *mode_; }
+  const double getPositionCommand() const noexcept { return *pos_; }
+  const double getVelocityCommand() const noexcept { return *vel_; }
+  const double getEffortCommand() const noexcept { return *eff_; }
+  const mode_t getMode() const noexcept { return *mode_; }
 
  private:
   double* cmd_;

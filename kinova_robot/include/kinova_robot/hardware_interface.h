@@ -20,20 +20,22 @@
 #include <angles/angles.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/WrenchStamped.h>
 
 // ROS Control
-#include <control_toolbox/pid.h>
 #include <controller_manager/controller_manager.h>
-#include <realtime_tools/realtime_publisher.h>
+
+#include <hardware_interface/robot_hw.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_mode_interface.h>
 #include <hardware_interface/joint_state_interface.h>
-#include <hardware_interface/force_torque_sensor_interface.h>
-#include <hardware_interface/robot_hw.h>
+
 #include <joint_limits_interface/joint_limits.h>
 #include <joint_limits_interface/joint_limits_urdf.h>
 #include <joint_limits_interface/joint_limits_rosparam.h>
+
+// ROS tools
+#include <control_toolbox/pid.h>
+#include <realtime_tools/realtime_publisher.h>
 
 // Kinova
 #include <kortex_driver/non-generated/kortex_arm_driver.h>
@@ -149,67 +151,60 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
    */
   bool init_pid();
 
-  void wrench_callback(const geometry_msgs::WrenchStampedConstPtr msg);
-
  private:
-  ros::Time last_time;
-  controller_manager::ControllerManager* cm;
-  hardware_interface::KinovaCommandInterface jnt_cmd_interface;
-  hardware_interface::JointStateInterface jnt_state_interface;
-  hardware_interface::PositionJointInterface gripper_cmd_interface;
-  hardware_interface::ForceTorqueSensorInterface force_torque_interface;
+  ros::Time last_time_;
+  controller_manager::ControllerManager* cm_;
 
-  std::vector<std::string> joint_names;
+  hardware_interface::KinovaCommandInterface jnt_cmd_interface_;
+  hardware_interface::JointStateInterface jnt_state_interface_;
+  hardware_interface::PositionJointInterface gripper_cmd_interface_;
 
-  double pos[7];                         // [-PI, PI] converted readings from actuators
-  double pos_cmd[7];                     // [-PI, PI] converted commands to actuators
-  double pos_cmd_copy[7];                // intermediate variable to reduce locking time
-  double pos_wrapped[7];                 // position reading with continuous revolution for continuous joints
+  std::vector<std::string> joint_names_;
 
-  double vel[7];
-  double vel_cmd[7];
-  double vel_cmd_copy[7];
+  double pos_[7];                         // [-PI, PI] converted readings from actuators
+  double pos_cmd_[7];                     // [-PI, PI] converted commands to actuators
+  double pos_cmd_copy_[7];                // intermediate variable to reduce locking time
+  double pos_wrapped_[7];                 // position reading with continuous revolution for continuous joints
 
-  double eff[7];
-  double eff_cmd[7];
-  double eff_cmd_copy[7];
+  double vel_[7];
+  double vel_cmd_[7];
+  double vel_cmd_copy_[7];
 
-  double pos_error[7];
-  double vel_error[7];
+  double eff_[7];
+  double eff_cmd_[7];
+  double eff_cmd_copy_[7];
+
+  double pos_error_[7];
+  double vel_error_[7];
   std::vector<control_toolbox::Pid> pid_;
 
-  // force-torque sensing
-  Eigen::Vector3d ext_force_;
-  Eigen::Vector3d ext_torque_;
-  ros::Subscriber ext_wrench_subscriber_;
-
   // gripper state and command
-  double gripper_position;
-  double gripper_velocity;
-  double gripper_force;
+  double gripper_position_;
+  double gripper_velocity_;
+  double gripper_force_;
 
-  double gripper_position_error;
-  double gripper_position_command;
-  double gripper_velocity_command;
-  double gripper_force_command;
+  double gripper_position_error_;
+  double gripper_position_command_;
+  double gripper_velocity_command_;
+  double gripper_force_command_;
 
-  std::vector<joint_limits_interface::JointLimits> limits;
+  std::vector<joint_limits_interface::JointLimits> limits_;
 
-  hardware_interface::KinovaControlMode mode;
-  hardware_interface::KinovaControlMode mode_copy;
-  hardware_interface::KinovaControlMode current_mode;
+  hardware_interface::KinovaControlMode mode_;
+  hardware_interface::KinovaControlMode mode_copy_;
+  hardware_interface::KinovaControlMode current_mode_;
 
   // multi-threading
-  std::atomic_bool stop_writing;    // when switching back to highlevel we need to stop the concurrent write
-  std::mutex cmd_mutex;
+  std::atomic_bool stop_writing_;    // when switching back to highlevel we need to stop the concurrent write
+  std::mutex cmd_mutex_;
 
-  std::thread write_thread;
-  std::thread read_update_thread;
+  std::thread write_thread_;
+  std::thread read_update_thread_;
 
-  Feedback current_state;
-  Kinova::Api::BaseCyclic::Command kortex_cmd;
-  Kinova::Api::GripperCyclic::MotorCommand* kortex_gripper_cmd;
-  Kinova::Api::Base::ServoingMode current_servoing_mode;
+  Feedback current_state_;
+  Kinova::Api::BaseCyclic::Command kortex_cmd_;
+  Kinova::Api::GripperCyclic::MotorCommand* kortex_gripper_cmd_;
+  Kinova::Api::Base::ServoingMode current_servoing_mode_;
 
   // publish state and command
   realtime_tools::RealtimePublisher<sensor_msgs::JointState> realtime_state_pub_;
@@ -227,8 +222,6 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
   ros::ServiceClient estop_client_;
 
   Kinova::Api::Base::JointSpeeds kortex_joint_speeds_cmd_;
-
-
 };
 }
 
