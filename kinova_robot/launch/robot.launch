@@ -9,9 +9,10 @@
     <arg name="use_hard_limits" default="false"/> <!-- Set soft limits as hard limits (Gen3 only) -->
 
     <!-- Gripper configuration -->
-    <!-- Default gripper for Gen3 is none, default gripper for Gen3 lite is gen3_lite_2f -->
-    <arg name="gripper" default="" if="$(eval arg('arm') == 'gen3')"/>
-    <arg name="gripper" default="gen3_lite_2f" if="$(eval arg('arm') == 'gen3_lite')"/>
+    <arg name="gripper" default=""/>
+    <arg name="has_gripper" default="true" if="$(eval arg('gripper')=='robotiq_2f_85')"/>
+    <arg name="has_gripper" default="false" if="$(eval arg('gripper')!='robotiq_2f_85')"/>
+    
     <arg name="tool_frame_offset" default="0.12"/>
 
     <!-- Namespace -->
@@ -42,19 +43,19 @@
             <!-- Without gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false
                  tool_frame_offset:=$(arg tool_frame_offset)"
-                   if="$(eval not arg('gripper'))"/>
+                   unless="$(eval arg('has_gripper'))"/>
             <!-- With gripper -->
-            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false"
-                   unless="$(eval not arg('gripper'))"/>
+            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false tool_frame_offset:=$(arg tool_frame_offset)"
+                   if="$(eval arg('has_gripper'))"/>
         </group>
         <group unless="$(eval not arg('prefix'))">
             <!-- Load the description for the robot -->
             <!-- Without gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)"
-                   if="$(eval not arg('gripper'))"/>
+                   unless="$(eval arg('has_gripper'))"/>
             <!-- With gripper -->
-            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix)"
-                   unless="$(eval not arg('gripper'))"/>
+            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)"
+                   if="$(eval arg('has_gripper'))"/>
         </group>
 
         <!-- Manually specified joint limits, zeros and low level pd gains -->
@@ -84,7 +85,7 @@
             <rosparam command="load" file="$(find kortex_description)/arms/$(arg arm)/$(arg dof)dof/config/joint_limits.yaml" subst_value="true"/>
 
             <!-- If there is a gripper, load the active joint names for it -->
-            <rosparam command="load" file="$(find kortex_description)/grippers/$(arg gripper)/config/joint_limits.yaml" unless="$(eval not arg('gripper'))" subst_value="true"/>
+            <rosparam command="load" file="$(find kortex_description)/grippers/$(arg gripper)/config/joint_limits.yaml" unless="$(eval not arg('has_gripper'))" subst_value="true"/>
 
             <!-- Joint zeros (calibration params) -->
             <rosparam command="load" file="$(find kinova_robot)/config/joint_zeros.yaml" subst_value="true"/>
@@ -96,13 +97,13 @@
 
             <!-- TODO Find cleaner way to do that and that will work with other arms -->
             <!-- Without gripper -->
-            <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_move_it_config/launch/move_group.launch" if="$(eval not arg('gripper'))">
+            <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_move_it_config/launch/move_group.launch" if="$(eval not arg('has_gripper'))">
                 <arg name="dof" value="$(arg dof)"/>
                 <arg name="use_hard_limits" value="$(arg use_hard_limits)"/>
                 <arg name="prefix" value="$(arg prefix)"/>
             </include>
             <!-- With gripper -->
-            <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_$(arg gripper)_move_it_config/launch/move_group.launch" unless="$(eval not arg('gripper'))">
+            <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_$(arg gripper)_move_it_config/launch/move_group.launch" unless="$(eval not arg('has_gripper'))">
                 <arg name="dof" value="$(arg dof)"/>
                 <arg name="use_hard_limits" value="$(arg use_hard_limits)"/>
                 <arg name="prefix" value="$(arg prefix)"/>
@@ -136,7 +137,7 @@
             <param name="dof" value="$(arg dof)"/>
             <rosparam command="load" file="$(find kortex_description)/arms/$(arg arm)/$(arg dof)dof/config/joint_limits.yaml" subst_value="true"/>
             <!-- If there is a gripper, load the active joint names for it -->
-            <rosparam command="load" file="$(find kortex_description)/grippers/$(arg gripper)/config/joint_limits.yaml" unless="$(eval not arg('gripper'))" subst_value="true"/>
+            <rosparam command="load" file="$(find kortex_description)/grippers/$(arg gripper)/config/joint_limits.yaml" unless="$(eval not arg('has_gripper'))" subst_value="true"/>
         </test>
 
         <!-- Test feedback and joint state publishing -->
