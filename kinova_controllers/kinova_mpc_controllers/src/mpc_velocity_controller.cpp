@@ -307,8 +307,14 @@ void MPC_VelocityController::publishCurrentRollout(){
     std::unique_lock<std::mutex> lock(policyMutex_);
     if (!mpc_mrt_interface_->initialPolicyReceived()) return;
 
-    time_trajectory = mpc_mrt_interface_->getPolicy().timeTrajectory_;
-      state_trajectory = mpc_mrt_interface_->getPolicy().stateTrajectory_;
+    try{
+	  time_trajectory = mpc_mrt_interface_->getPolicy().timeTrajectory_;
+	  state_trajectory = mpc_mrt_interface_->getPolicy().stateTrajectory_;
+    }
+    catch(std::runtime_error& err){
+      ROS_WARN_STREAM_THROTTLE(1.0, err.what());
+      return;	
+    }
   }
 
   std::string ee_frame = "end_effector_link";  // this is the one in the task file

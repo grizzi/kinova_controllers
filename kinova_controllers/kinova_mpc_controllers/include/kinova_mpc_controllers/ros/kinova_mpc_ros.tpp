@@ -6,7 +6,7 @@
 
 using namespace hardware_interface;
 
-namespace kinova_controllers {
+namespace kinova_controllers { 
 
 template <typename Controller>
 bool KinovaMpcControllerRos<Controller>::init(hardware_interface::RobotHW* hw,

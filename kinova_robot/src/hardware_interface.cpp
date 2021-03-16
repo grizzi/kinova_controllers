@@ -17,6 +17,14 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
     joint_names_[i] = m_arm_joint_names[i];
   }
 
+  // init command data for velocity control
+  for (size_t i = 0; i < 7; ++i) {
+    auto joint_speed = kortex_joint_speeds_cmd_.add_joint_speeds();
+    joint_speed->set_joint_identifier(i);
+    joint_speed->set_value(0.0);
+    joint_speed->set_duration(1.0); // avoid last command is kept forever
+  }
+
 
   ROS_INFO_STREAM("Starting Kinova Robot interface in namespace: " << nh.getNamespace());
   for (std::size_t i = 0; i < 7; ++i) {
@@ -259,7 +267,7 @@ void KinovaHardwareInterface::check_state() {
 
 void KinovaHardwareInterface::switch_mode() {
   if (mode_ != current_mode_) {
-    ROS_INFO_STREAM("Switching to new mode: " << mode_);
+    //ROS_INFO_STREAM("Switching to new mode: " << mode_);
     set_actuators_control_mode(mode_);
   }
 }
@@ -361,11 +369,13 @@ void KinovaHardwareInterface::read_loop(const double f /* 1/sec */) {
     
     end = std::chrono::steady_clock::now();
     elapsed_ms = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / 1e6;
-    if (elapsed_ms > dt_ms)
-      ROS_WARN_STREAM_THROTTLE(
-          1.0, "Read and update took too long: " << elapsed_ms << " > " << dt_ms << " ms.");
+    if (elapsed_ms > dt_ms){
+
+      // ROS_WARN_STREAM_THROTTLE(
+      //     1.0, "Read and update took too long: " << elapsed_ms << " > " << dt_ms << " ms.");
+    }
     else {
-      this_thread::sleep_for(std::chrono::nanoseconds((int)((dt_ms - elapsed_ms) * 1e6)));
+      std::this_thread::sleep_for(std::chrono::nanoseconds((int)((dt_ms - elapsed_ms) * 1e6)));
     }
   }
 }
@@ -464,7 +474,6 @@ bool KinovaHardwareInterface::set_actuators_control_mode(KinovaControlMode new_m
     // SINGLE LEVEL SERVOING (aka high level position/velocity control)
     // switch happens in reverse mode: first actuator, then servoing mode
     if (new_mode == KinovaControlMode::NO_MODE || new_mode == KinovaControlMode::VELOCITY) {
-      std::cout << "Here 0" << std::endl;
       if (current_mode_ == KinovaControlMode::VELOCITY && new_mode == KinovaControlMode::NO_MODE){
         current_mode_ = new_mode;
         ROS_INFO("Sending zero joint velocities when switching from VELOCITY to NO_MODE");
@@ -472,14 +481,11 @@ bool KinovaHardwareInterface::set_actuators_control_mode(KinovaControlMode new_m
           kortex_joint_speeds_cmd_.mutable_joint_speeds(i)->set_value(0.0);  
         } 
         m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
-        std::cout << "Here1" << std::endl;
         return true;
       }
       
       if (current_servoing_mode_ == Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING){
-        std::cout << "Here3" << std::endl;
         current_mode_ = new_mode;
-        std::cout << "Here4" << std::endl;
         ROS_INFO("Already in high servoing mode.");
         return true;
       }

@@ -27,7 +27,7 @@ void KinovaJointVelocityController::starting(const ros::Time& time) {
     command_handles_[i].setMode(hardware_interface::KinovaControlMode::VELOCITY);
     command_handles_[i].setCommand(0.0);
   }
-  command_handles_[6].setCommand(0.1); // TODO(giuseppe) this is for debugging
+  command_handles_[6].setCommand(0.1); // TODO(giuseppe) this is for debugging only
 }
 
 void KinovaJointVelocityController::update(const ros::Time& time, const ros::Duration& period) {

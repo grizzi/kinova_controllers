@@ -7,7 +7,6 @@
 namespace hardware_interface {
 
 void KinovaCommandHandle::setMode(const mode_t mode) { 
-  std::cout << __FILE__ << ",  " << __LINE__ << ", "<< mode << std::endl;
   *mode_ = mode; 
 }
 

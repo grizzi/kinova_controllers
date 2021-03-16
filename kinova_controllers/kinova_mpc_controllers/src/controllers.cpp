@@ -49,14 +49,16 @@ bool KinovaMpcControllerRobot<Controller>::addCommandHandles(hardware_interface:
   for (size_t i = 0; i < 7; i++) {
     command_handles_[i] = command_interface->getHandle(this->joint_names_[i]);
   }
+  ROS_INFO("Successfully added robot command handles.");
   return true;
 }
 
 template <typename Controller>
 void KinovaMpcControllerRobot<Controller>::writeCommand(const ros::Duration& period) {
   for (size_t i = 0; i < 7; i++) {
-    command_handles_[i].setMode(KinovaControlMode::VELOCITY);
-    command_handles_[i].setVelocityCommand(this->mpc_controller_->get_velocity_command()(i));
+    KinovaControlMode mode = KinovaControlMode::VELOCITY;
+    command_handles_[i].setMode(mode);
+    //command_handles_[i].setVelocityCommand(this->mpc_controller_->get_velocity_command()(i)); // TODO(giuseppe) bug here
   }
 }
 
