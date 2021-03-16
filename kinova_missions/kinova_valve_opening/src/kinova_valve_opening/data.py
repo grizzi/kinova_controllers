@@ -1,6 +1,6 @@
 import rospy
 import numpy as np
-from scipy.spatial.transform import Rotation as R
+from kinova_valve_opening.utils import PortableRotation as R
 
 
 class valve_traj_data:
