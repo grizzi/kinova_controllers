@@ -57,14 +57,15 @@ class KinovaMpcControllerRos
   std::string tool_frame_;
   bool is_real_robot_;
   std::string robot_description_;
-  ros::Publisher reset_imarker_pose_pub_;
 
+  // Ros
   sensor_msgs::JointState joint_state_des_;
   sensor_msgs::JointState joint_state_cur_;
   ros::Publisher joint_state_des_pub_;
   ros::Publisher joint_state_cur_pub_;
+  ros::Publisher reset_imarker_pose_pub_;
 
-  // model for the simulation
+  // dynamic model
   std::unique_ptr<rc::RobotWrapper> model_;
   std::array<control_toolbox::Pid, 7> pid_controllers_;
   joint_vector_t position_command_;
@@ -72,8 +73,13 @@ class KinovaMpcControllerRos
   joint_vector_t position_error_;
   joint_vector_t velocity_error_;
   joint_vector_t gravity_and_coriolis_;
-  Eigen::VectorXd position_current_;    // compute PD error: dynamic vector in the gripper case
-  Eigen::VectorXd velocity_current_;    // compute PD error: dynamic vector in the gripper case
+
+  // State dynamic vector to account for eventual gripper case
+  Eigen::VectorXd position_current_; 
+  Eigen::VectorXd velocity_current_;
+  Eigen::VectorXd torque_current_;
+  Eigen::VectorXd torque_offset_;
+  Eigen::VectorXd position_integral_;
 
   std::array<hardware_interface::JointStateHandle, 7> state_handles_;
 };

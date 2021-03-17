@@ -22,6 +22,7 @@ bool KinovaMpcControllerRos<Controller>::init(hardware_interface::RobotHW* hw,
   model_->initFromXml(robot_description_);
   position_current_ = Eigen::VectorXd::Zero(model_->getDof());
   velocity_current_ = Eigen::VectorXd::Zero(model_->getDof());
+  torque_current_ = Eigen::VectorXd::Zero(model_->getDof());
 
   for (size_t i = 0; i < 7; i++) {
     if (!pid_controllers_[i].init(ros::NodeHandle("/mpc_controller/gains/" + joint_names_[i]),
@@ -79,6 +80,13 @@ void KinovaMpcControllerRos<Controller>::starting(const ros::Time& time) {
 
   ROS_INFO_STREAM("Starting with current joint position: " << position_current_.transpose());
   mpc_controller_->start(position_current_.head<7>());
+  position_integral_ = position_current_;
+
+  // Compute kinova torque offset
+  model_->updateState(position_current_, Eigen::VectorXd::Zero(model_->getDof()));
+  model_->computeAllTerms();
+  torque_offset_ = torque_current_ - model_->getNonLinearTerms().head<7>();
+  ROS_INFO_STREAM("Torque offset at startup: " << torque_offset_.transpose());
 
   // Reset interactive marker pose (if running)
   ROS_INFO_STREAM("Resetting marker pose to current tool pose. Tool frame id: " << tool_frame_);
@@ -132,6 +140,7 @@ void KinovaMpcControllerRos<Controller>::readState() {
   for (size_t i = 0; i < 7; i++) {
     position_current_(i) = state_handles_[i].getPosition();
     velocity_current_(i) = state_handles_[i].getVelocity();
+    torque_current_(i) = state_handles_[i].getEffort();
     joint_state_cur_.position[i] = position_current_(i);
     joint_state_cur_.velocity[i] = velocity_current_(i);
   }
@@ -142,10 +151,12 @@ void KinovaMpcControllerRos<Controller>::computeTorqueCommands(joint_vector_t& t
                                                                const ros::Duration& period) {
   position_command_ = mpc_controller_->get_position_command();
   velocity_command_ = mpc_controller_->get_velocity_command();
+  position_integral_ += velocity_command_ * period.toSec();
 
   model_->updateState(position_current_, Eigen::VectorXd::Zero(model_->getDof()));
   model_->computeAllTerms();
   gravity_and_coriolis_ = model_->getNonLinearTerms().head<7>();
+
 
   ROS_DEBUG_STREAM_THROTTLE(1.0, std::endl
       << "Pos cmd: " << position_command_.transpose() << std::endl
@@ -154,11 +165,11 @@ void KinovaMpcControllerRos<Controller>::computeTorqueCommands(joint_vector_t& t
       << "Vel mes: " << velocity_current_.transpose());
 
   for (size_t i = 0; i < 7; i++){
-    position_error_(i) = angles::shortest_angular_distance(position_current_(i), position_command_(i));
+    position_error_(i) = angles::shortest_angular_distance(position_current_(i), position_integral_(i));
     velocity_error_(i) = velocity_command_(i) - velocity_current_(i);
-    tau(i) = pid_controllers_[i].computeCommand(position_error_(i), velocity_error_(i), period) +
-             gravity_and_coriolis_(i);
+    tau(i) = pid_controllers_[i].computeCommand(position_error_(i), velocity_error_(i), period) + 
+             gravity_and_coriolis_(i) + torque_offset_(i);
   }
-}
+}   
 
 }  // namespace kinova_controllers
