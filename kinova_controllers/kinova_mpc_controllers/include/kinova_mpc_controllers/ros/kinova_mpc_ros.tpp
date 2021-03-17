@@ -147,19 +147,18 @@ void KinovaMpcControllerRos<Controller>::computeTorqueCommands(joint_vector_t& t
   model_->computeAllTerms();
   gravity_and_coriolis_ = model_->getNonLinearTerms().head<7>();
 
-  // tau = ff + pd
-  position_error_ = position_command_ - position_current_.head<7>();
-  velocity_error_ = velocity_command_ - velocity_current_.head<7>();
-
   ROS_DEBUG_STREAM_THROTTLE(1.0, std::endl
       << "Pos cmd: " << position_command_.transpose() << std::endl
       << "Pos mes: " << position_current_.transpose() << std::endl
       << "Vel cmd: " << velocity_command_.transpose() << std::endl
       << "Vel mes: " << velocity_current_.transpose());
 
-  for (size_t i = 0; i < 7; i++)
+  for (size_t i = 0; i < 7; i++){
+    position_error_(i) = angles::shortest_angular_distance(position_current_(i), position_command_(i));
+    velocity_error_(i) = velocity_command_(i) - velocity_current_(i);
     tau(i) = pid_controllers_[i].computeCommand(position_error_(i), velocity_error_(i), period) +
              gravity_and_coriolis_(i);
+  }
 }
 
 }  // namespace kinova_controllers
