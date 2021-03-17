@@ -78,15 +78,12 @@ class KinovaCommandHandle : public hardware_interface::JointHandle {
    */
   void setPositionCommand(double cmd) noexcept {
     *pos_ = cmd;
-    *cmd_ = cmd;
   }
   void setVelocityCommand(double cmd) noexcept {  
     *vel_ = cmd;
-    *cmd_ = cmd;
   }
   void setEffortCommand(double cmd) noexcept {
     *eff_ = cmd;
-    *cmd_ = cmd;
   }
 
   /**
