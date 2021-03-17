@@ -9,11 +9,11 @@
 
     <!--    Tf to the force sensor -->
     <node pkg="tf2_ros" name="ftsensor_transform_publisher" type="static_transform_publisher"
-          args="0 0 0 0 0 0 $(arg prefix)tool_frame /ft_sensor0"/>
+          args="0 0 0 0 0 0 arm_tool_frame /ft_sensor0"/>
 
     <!--    Tf to world -->
     <node pkg="tf2_ros" name="world_transform_publisher" type="static_transform_publisher"
-          args="0 0 0 0 0 0 world $(arg prefix)base_link"/>
+          args="0 0 0 0 0 0 world arm_base_link"/>
 
     <node pkg="rqt_multiplot" name="rqt_multiplot" type="rqt_multiplot"
           args="--multiplot-config $(find kinova_common)/config/rqt/rqt_bota.xml"/>
