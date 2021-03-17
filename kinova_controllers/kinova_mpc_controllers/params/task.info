@@ -8,7 +8,7 @@ ddp
 {
   algorithm                     SLQ
 
-  nThreads                      3
+  nThreads                      1
 
   maxNumIterations              10
   minRelCost                    0.1
@@ -51,7 +51,7 @@ rollout
   AbsTolODE                     1e-5    ;1e-6
   RelTolODE                     1e-3    ;1e-4
   minTimeStep                   1e-3
-  maxNumStepsPerSecond          50000
+  maxNumStepsPerSecond          10000
   checkNumericalStability       false
 }
 
@@ -68,7 +68,7 @@ mpc
   initMinStepLength              0.1
   coldStart                      false
   useParallelRiccatiSolver       true  ; use disjoint riccati solver in MP case and recedingHorizon fashion
-  solutionTimeWindow             1.0   ; [s]
+  solutionTimeWindow             0.2   ; [s]
   mpcDesiredFrequency            100   ; [Hz]
   mrtDesiredFrequency            400   ; [Hz]
   debugPrint                     false

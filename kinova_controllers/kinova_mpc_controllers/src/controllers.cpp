@@ -10,6 +10,9 @@ using namespace hardware_interface;
 
 namespace kinova_controllers {
 
+///
+///  Simulation 
+///
 bool KinovaMpcControllerSim::addCommandHandles(hardware_interface::RobotHW* hw) {
   auto command_interface = hw->get<EffortJointInterface>();
   if (command_interface == nullptr) {
@@ -29,6 +32,9 @@ void KinovaMpcControllerSim::writeCommand(const ros::Duration& period) {
   }
 }
 
+///
+///  Robot
+///
 template <typename Controller>
 void KinovaMpcControllerRobot<Controller>::stopping(const ros::Time& time) {
   ROS_INFO("Stopping Mpc Controller!");
@@ -58,7 +64,7 @@ void KinovaMpcControllerRobot<Controller>::writeCommand(const ros::Duration& per
   for (size_t i = 0; i < 7; i++) {
     KinovaControlMode mode = KinovaControlMode::VELOCITY;
     command_handles_[i].setMode(mode);
-    //command_handles_[i].setVelocityCommand(this->mpc_controller_->get_velocity_command()(i)); // TODO(giuseppe) bug here
+    command_handles_[i].setCommand(this->mpc_controller_->get_velocity_command()(i));
   }
 }
 
@@ -67,7 +73,7 @@ void KinovaMpcControllerRobotTorque<Controller>::writeCommand(const ros::Duratio
   this->computeTorqueCommands(this->tau_, period);
   for (size_t i = 0; i < 7; i++) {
     this->command_handles_[i].setMode(KinovaControlMode::EFFORT);
-    this->command_handles_[i].setEffortCommand(this->tau_(i));
+    this->command_handles_[i].setCommand(this->tau_(i));
   }
 }
 

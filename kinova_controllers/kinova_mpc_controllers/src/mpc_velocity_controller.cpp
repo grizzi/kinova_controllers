@@ -87,7 +87,7 @@ void MPC_VelocityController::start(const joint_vector_t& initial_observation) {
   setObservation(initial_observation);
 
   // mpc solution update thread
-  start_time_ = ros::Time::now().toSec();
+  start_time_ = 0.0;ros::Time::now().toSec();
   mpc_mrt_interface_->reset();
   mpcTimer_.reset();
 
@@ -139,15 +139,16 @@ void MPC_VelocityController::advanceMpc() {
     }
     mpcTimer_.endTimer();
     elapsed = mpcTimer_.getLastIntervalInMilliseconds() / 1e3;
-    if (1. / elapsed < mpcFrequency_) {
-      ROS_WARN_STREAM_THROTTLE(
-          5.0, "[MPC_Controller::advanceMpc] Mpc thread running slower than real time: "
-                   << elapsed << " > " << 1. / mpcFrequency_);
-    }
+    ROS_INFO_STREAM_THROTTLE(10.0, "Mpc update took " << mpcTimer_.getLastIntervalInMilliseconds() << " ms.");
+    // if (1. / elapsed < mpcFrequency_) {
+    //   ROS_WARN_STREAM_THROTTLE(
+    //       5.0, "[MPC_Controller::advanceMpc] Mpc thread running slower than real time: "
+    //                << elapsed << " > " << 1. / mpcFrequency_);
+    // }
 
-    if (mpcFrequency_ > 0 && 1. / elapsed < mpcFrequency_)
-      std::this_thread::sleep_for(
-          std::chrono::microseconds(int(1e6 * (1.0 / mpcFrequency_ - elapsed))));
+    // if (mpcFrequency_ > 0 && 1. / elapsed < mpcFrequency_)
+    //   std::this_thread::sleep_for(
+    //       std::chrono::microseconds(int(1e6 * (1.0 / mpcFrequency_ - elapsed))));
     policyReady_ = true;
   }
 }
@@ -168,7 +169,7 @@ void MPC_VelocityController::setObservation(const joint_vector_t& observation) {
 void MPC_VelocityController::publishObservation() {
   ocs2_msgs::mpc_observation observationMsg;
   {
-    std::lock_guard<std::mutex> lock(observationMutex_);
+    std::unique_lock<std::mutex> lock(observationMutex_);
     ocs2::ros_msg_conversions::createObservationMsg(observation_, observationMsg);
   }
   observationPublisher_.publish(observationMsg);
@@ -186,12 +187,13 @@ void MPC_VelocityController::updateCommand() {
   }
 
   {
-    std::unique_lock<std::mutex> lock(policyMutex_);
+    std::unique_lock<std::mutex> policyLock(policyMutex_);
+    std::unique_lock<std::mutex> observationLock(observationMutex_);
     mpc_mrt_interface_->updatePolicy();
     mpc_mrt_interface_->evaluatePolicy(observation_.time, observation_.state, mpcState, mpcInput,
                                        mode);
   }
-  positionCommand_ = mpcState.tail(7);  // when mpc active, only velocity command
+  positionCommand_ = mpcState.tail(7);
   velocityCommand_ = mpcInput.tail(7);
 }
 
@@ -310,7 +312,7 @@ void MPC_VelocityController::publishCurrentRollout(){
     try{
 	  time_trajectory = mpc_mrt_interface_->getPolicy().timeTrajectory_;
 	  state_trajectory = mpc_mrt_interface_->getPolicy().stateTrajectory_;
-    }
+	}
     catch(std::runtime_error& err){
       ROS_WARN_STREAM_THROTTLE(1.0, err.what());
       return;	
