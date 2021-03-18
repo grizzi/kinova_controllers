@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen"/>
+    <node name="rviz_mission" pkg="rviz" type="rviz" args="-d $(find kinova_valve_opening)/config/config.rviz"
+          unless="$(arg test)"/>
+</launch>
