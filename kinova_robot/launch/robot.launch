@@ -19,6 +19,11 @@
     <arg name="robot_name" default="my_$(arg arm)"/>
     <arg name="prefix" default=""/>
 
+    <!-- Payload options (only supported without gripper) -->
+    <arg name="add_payload" default="false"/>
+    <arg name="payload_mass" default="1.2522"/>
+    <arg name="payload_offset" default="0.087"/>
+
     <!-- Kortex API options -->
     <arg name="ip_address" default="192.168.1.10"/>
     <arg name="username" default="admin"/>
@@ -42,8 +47,9 @@
             <!-- Load the description for the robot -->
             <!-- Without gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false
-                 tool_frame_offset:=$(arg tool_frame_offset)"
+                 tool_frame_offset:=$(arg tool_frame_offset) add_payload:=$(arg add_payload) payload_mass:=$(arg payload_mass) payload_offset:=$(arg payload_offset)" 
                    unless="$(eval arg('has_gripper'))"/>
+            
             <!-- With gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false tool_frame_offset:=$(arg tool_frame_offset)"
                    if="$(eval arg('has_gripper'))"/>
@@ -51,7 +57,7 @@
         <group unless="$(eval not arg('prefix'))">
             <!-- Load the description for the robot -->
             <!-- Without gripper -->
-            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)"
+            <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)  add_payload:=$(arg add_payload) payload_mass:=$(arg payload_mass) payload_offset:=$(arg payload_offset)"
                    unless="$(eval arg('has_gripper'))"/>
             <!-- With gripper -->
             <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/$(arg arm)_$(arg gripper).xacro dof:=$(arg dof) vision:=$(arg vision) sim:=false prefix:=$(arg prefix) tool_frame_offset:=$(arg tool_frame_offset)"
