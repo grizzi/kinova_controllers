@@ -3,6 +3,7 @@
   <include file="$(find kinova_robot)/launch/robot.launch">
     <arg name="tool_frame_offset" value="0.196"/>
     <arg name="prefix" value="arm_"/>
+    <arg name="add_payload" value="true"/>
   </include>
 
   <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_base_publisher" args="0 0 0 0 0 0 world arm_base_link" output="screen"/>
