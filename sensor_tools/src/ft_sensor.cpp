@@ -112,21 +112,21 @@ void ForceTorqueSensor::update() {
 
 
   /// alternative using IMU
-  Eigen::Vector3d gravity(imu_.linear_acceleration.x, 
-                          imu_.linear_acceleration.y, 
-                          imu_.linear_acceleration.z);
+  Eigen::Vector3d gravity_temp(imu_.linear_acceleration.x, 
+                               imu_.linear_acceleration.y, 
+                               imu_.linear_acceleration.z);
   geometry_msgs::TransformStamped transform;
   try {
     // target_frame, source_frame ...
     transform = tf2_buffer_.lookupTransform(sensor_frame_, imu_.header.frame_id, ros::Time(0));
   } catch (tf2::TransformException& ex) {
-    ROS_WARN_STREAM_THROTTLE(2.0, ex.what());
     return;
   }
   Eigen::Quaterniond q(transform.transform.rotation.w, transform.transform.rotation.x,
                        transform.transform.rotation.y, transform.transform.rotation.z);
+  
   Eigen::Matrix3d R(q);
-  gravity = R * gravity;
+  Eigen::Vector3d gravity = R * gravity_temp;
 
   // geometry_msgs::Vector3Stamped g;
   // g.vector = imu_.linear_acceleration;
@@ -158,13 +158,16 @@ void ForceTorqueSensor::update() {
   
   // Use payload compensated wrench to estimate bias
   if (estimate_bias_){
-    bias_ += (raw_wrench - compensated_wrench);
+    bias_ += compensated_wrench;
     estimate_bias_measurements_++;
     if (estimate_bias_measurements_ > 1000){
       bias_ = 0.001 * bias_;
       calibration_data_.bias = bias_;
       estimate_bias_ = false;
-      ROS_INFO_STREAM("Estimated bias is: " << calibration_data_.bias.transpose());
+      ROS_INFO_STREAM("Estimated bias is: " << calibration_data_.bias.transpose() << std::endl
+        << "   current tool wrench is: " << tool_wrench_.to_vector().transpose() << std::endl
+        << "   current raw is: " << raw_wrench.transpose() << std::endl
+        << "   gravity in sensor frame is: " << gravity.transpose());
     }
   }
 
@@ -176,14 +179,8 @@ void ForceTorqueSensor::update() {
   tf::wrenchEigenToMsg(wrench_compensated_filtered_, wrench_compensated_.wrench);
   wrench_compensated_.header = wrench_raw_.header;
 
-  // publish only once bias estimate is done
   wrench_publisher_.publish(wrench_compensated_);
-  //ROS_INFO_STREAM("Trying publishing, estimate bias: " << estimate_bias_);
-  //if (wrench_publisher_.trylock() && !estimate_bias_){
-  //  wrench_publisher_.msg_ = wrench_compensated_;
-  //  wrench_publisher_.unlockAndPublish();
-  //  ROS_INFO_STREAM("Publishing new wrench message");
-  //}
+  
 }
 
 void ForceTorqueSensor::imu_callback(const sensor_msgs::ImuConstPtr& msg){
