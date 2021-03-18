@@ -14,8 +14,8 @@
     <!--    Force sensor and filtering/compensation relay node-->
     <group if="$(arg launch_ft_sensor)">
       <include file="$(find sensor_tools)/launch/ft_sensor_standalone.launch"/>
-      <node name="reflex_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-              output="screen" args="reflex_controller"/>
+    <!--   <node name="reflex_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+               output="screen" args="reflex_controller"/> -->
     </group>
     
     <!-- Reflex controller -->
@@ -25,7 +25,8 @@
 
     <!--    Gripper control-->
     <group if="$(arg launch_gripper)">
-        <include file="$(find robotiq_2f_hw_usb)/launch/robotiq_2f_85_usb.launch"/>
+        <node name="robotiq_2f_gripper_control" pkg="robotiq_2f_gripper_control" type="Robotiq2FGripperRtuNode.py" args="/dev/r2Fg" output="screen"/>
+        <node name="robotiq_2f_gripper_commander" pkg="kinova_valve_opening" type="gripper_commander.py" output="screen"/>
     </group>
 
     
