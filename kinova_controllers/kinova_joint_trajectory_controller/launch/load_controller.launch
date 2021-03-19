@@ -1,0 +1,8 @@
+<launch>
+    <arg name="namespace" value="my_gen3"/>
+    <arg name="prefix" value="arm_"/>
+   
+    <group ns="$(arg namespace)">
+        <rosparam file="$(find kinova_joint_trajectory_controller)/config/controller.yaml" command="load" subst_value="true"/>
+    </group>
+</launch>

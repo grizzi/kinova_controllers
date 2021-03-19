@@ -1,0 +1,9 @@
+<library path="lib/libkinova_joint_trajectory_controller">
+    <class name="kinova_controllers/KinovaJointTrajectoryController"
+           type="kinova_controllers::KinovaJointTrajectoryController"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Kinova Joint Trajectory Controller
+        </description>
+    </class>
+</library>

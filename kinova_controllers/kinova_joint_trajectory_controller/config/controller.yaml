@@ -1,0 +1,15 @@
+joint_velocity_controller_test:
+  type: kinova_controllers/KinovaJointVelocityController
+  joint_names:
+    - $(arg prefix)joint_1
+    - $(arg prefix)joint_2
+    - $(arg prefix)joint_3
+    - $(arg prefix)joint_4
+    - $(arg prefix)joint_5
+    - $(arg prefix)joint_6
+    - $(arg prefix)joint_7
+  lower_limit: [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23, -6.28]
+  upper_limit: [6.28, 2.41, 6.28, 2.66, 6.28, 2.23, 6.28]
+  max_velocity: 0.5
+  max_acceleration: 1.5
+  gain: 1.0
