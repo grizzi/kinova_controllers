@@ -3,10 +3,8 @@
   
 home_pose_joints:
   joints_configurations:
-    - [-1.5555307961433193, -0.3365214836536694, -0.006754100056901968, 1.539247322099327, -0.03815071940310672, 1.6380966712281213, -1.4902096048413158]
-    
-
-# This joint configuration is a good retracted configuration for hand camera detection
+    - [-1.236452963534207, 0.2156914307010919, 2.995119592583762, -1.611908077174668, -0.0010391654573496112, -1.5482041986355366, 1.4961178277196578] 
+#  This joint configuration is a good retracted configuration for hand camera detection
 #    - [0.01430224031815985, -0.5557954548291901, -0.03524296309150898, 2.281651279700482, -1.466734905096706, 1.509397547337284, 0.1480374351198569]
     
 home_pose:
@@ -44,8 +42,8 @@ open_gripper_usb:
 close_gripper_usb:
   command_topic: /gripper_command
   position: 0.55  # must be between 0 and 1
-  velocity: 0  # between 0 and 1
-  effort: 0   # must be between 0 and 10 
+  velocity: 0.01  # between 0 and 1
+  effort: 0.5   # must be between 0 and 10 
 
 grasp:
   controller_name: mpc_admittance_torque
@@ -55,13 +53,12 @@ grasp:
   path_topic_name: /desired_path
 
 manipulate_valve:
-  default_outcome: Completed
   controller_name: mpc_admittance_torque
   manager_namespace: /my_gen3
   whitelist: [reflex_controller]
 
-  angle_step_deg: 60.0
-  angle_end_deg: 120.0
+  angle_step_deg: -30.0   # how much to rotate at once
+  angle_end_deg: -30.0    # total desired rotation 
   angle_delta_deg: 5.0    # controls trajectory discretization
   speed_deg: 5.0
   path_topic_name: /desired_path

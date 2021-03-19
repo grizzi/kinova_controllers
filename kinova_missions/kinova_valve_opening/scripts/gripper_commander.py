@@ -20,6 +20,7 @@ def gripperCommandCallback(msg):
     if len(msg.position) == 0 or not (0 <= msg.effort[0] <= 1):
         rospy.logerr(error_msg)
 
+    print("Received new gripper command: " + jointStateToString(msg))
     cmd = outputMsg.Robotiq2FGripper_robot_output()
     cmd.rACT = 1
     cmd.rGTO = 1
@@ -27,8 +28,10 @@ def gripperCommandCallback(msg):
     cmd.rSP = int(msg.velocity[0] * 255)
     cmd.rFR = int(msg.effort[0] * 255)
     print("{}, {}, {}".format(cmd.rPR, cmd.rSP, cmd.rFR))
-    print("Received new gripper command: " + jointStateToString(msg))
-    pub.publish(cmd)
+    
+    for i in range(10):
+        pub.publish(cmd)
+        rospy.sleep(0.1)
 
     
 def genCommand(char, command):
@@ -44,6 +47,10 @@ def genCommand(char, command):
     if char == 'r':
         command = outputMsg.Robotiq2FGripper_robot_output();
         command.rACT = 0
+        command.rGTO = 0
+        command.rSP  = 0
+        command.rFR  = 0
+
 
     if char == 'c':
         command.rPR = 255
@@ -117,7 +124,8 @@ def askForCommand(command):
 
 if __name__ == '__main__':
     #Main loop which requests new commands and publish them on the Robotiq2FGripperRobotOutput topic.
-    rospy.init_node('Robotiq2FGripperSimpleController')
+    rospy.init_node('robotiq_2f_gripper_commander')
+    rospy.sleep(5.0)
     
     pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=1)
     sub = rospy.Subscriber('/gripper_command', JointState, gripperCommandCallback, queue_size=1)
@@ -125,13 +133,17 @@ if __name__ == '__main__':
     rospy.loginfo("Resetting Robotiq2fGripper")
     reset_cmd = outputMsg.Robotiq2FGripper_robot_output();
     reset_cmd = genCommand('r', reset_cmd)
-    pub.publish(reset_cmd)
-    rospy.sleep(2.0)
+    for i in range(10):
+        pub.publish(reset_cmd)
+        rospy.sleep(0.1)
 
     rospy.loginfo("Activating Robotiq2fGripper")
     activation_cmd = outputMsg.Robotiq2FGripper_robot_output();
     activation_cmd = genCommand('a', activation_cmd)
-    pub.publish(activation_cmd)
+    
+    for i in range(10):
+        pub.publish(activation_cmd)
+        rospy.sleep(0.1)
 
     rospy.spin()
    

@@ -97,9 +97,9 @@ class DetectionPosesVisitor(RosControlPoseReaching):
         self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=1)
 
     def execute(self, ud):
-        # if self.default_outcome:
-        #     rospy.loginfo("Choosing default outcome: {}".format(self.default_outcome))
-        #     return self.default_outcome
+        if self.default_outcome:
+            rospy.loginfo("Choosing default outcome: {}".format(self.default_outcome))
+            return self.default_outcome
             
         controller_switched = self.do_switch()
         if not controller_switched:
@@ -257,7 +257,7 @@ class LateralGraspState(RosControlPoseReaching):
         if not wait_until_reached(self.grasp, quiet=True):
             return 'Failure'
 
-        return 'Failure'
+        return 'Completed'
 
 
 class FrontalGraspState(RosControlPoseReaching):
@@ -313,14 +313,18 @@ class ValveManipulation(RosControlPoseReaching):
                                                   angle_end_deg=self.angle_step_deg,
                                                   speed_deg=self.speed_deg,
                                                   angle_delta_deg=self.angle_delta_deg)
+        
         self.path_publisher.publish(path)
         if not wait_until_reached(path.poses[-1], quiet=True):
             return 'Failure'
+        
         else:
-            self.total_angle += self.angle_step_deg
-            if self.total_angle >= self.angle_end_deg:
-                rospy.loginfo("Valve has been successfully operated.")
+            rospy.loginfo("Total angle is: {} (target angle={})".format(self.total_angle, self.angle_end_deg))
+            self.total_angle += self.angle_step_deg # compute the absolute total angle displacement
+            
+            if abs(self.total_angle) > abs(self.angle_end_deg):
                 self.set_context_data("full_rotation_done", True, overwrite=True)
+                rospy.loginfo("Valve has been successfully operated.")
             return 'Completed'
 
 

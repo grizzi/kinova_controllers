@@ -191,7 +191,8 @@ def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=
             [(radial_offset + radius) * np.cos(angle), (radial_offset + radius) * np.sin(angle), normal_offset])
         orientation = np.ndarray(shape=(3, 3))
         orientation[:, 2] = np.array([0.0, 0.0, 1.0])
-        orientation[:, 0] = t / np.linalg.norm(t)
+        radial_vector = np.array([t[0], t[1], 0.0])
+        orientation[:, 0] = radial_vector / np.linalg.norm(radial_vector)
         orientation[:, 1] = np.cross(orientation[:, 2], orientation[:, 0])
         r = R.from_dcm(orientation).as_quat()
         q = pin.Quaternion(r[3], r[0], r[1], r[2])
@@ -199,7 +200,7 @@ def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=
         t_valve_grasp = pin.SE3(q, t)
         t_base_grasp = t_base_valve.act(t_valve_grasp)
 
-        if (rotation is not None):
+        if rotation is not None:
             t_rel = np.array([0.0, 0.0, 0.0])
             q_rel = pin.Quaternion(rotation[3], rotation[0], rotation[1], rotation[2])
             t_grasp_tool = pin.SE3(q_rel, t_rel)
@@ -214,26 +215,41 @@ def compute_candidate_grasps(radius=valve_traj_data.valve_radius, radial_offset=
 
 
 def compute_candidate_lateral_grasps():
+    print("Computing candidate lateral grasps: relative orientation is: ")
     return compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp)
 
 
-def filter_grasps(poses):
-    ee_pose = get_end_effector_pose()
-    min_dist = np.inf
+def filter_grasps(poses, method='top'):
+    methods = ['distance', 'top']
+    if method not in methods:
+        rospy.logerr("Wrong grasp filtering method. Availables are: {}. Given {}".format(methods, method))
+    
     best_grasp = poses[0]
-    for candidate in poses:
-        grasp_pose = pose_to_se3(candidate.pose)
-        dist = np.linalg.norm(grasp_pose.translation - ee_pose.translation)
-        if dist < min_dist:
-            min_dist = dist
-            best_grasp = copy.deepcopy(candidate)
-    return best_grasp
+        
+    if method == 'top':
+        max_height = -np.inf
+        for candidate in poses:
+            if candidate.pose.position.z > max_height:
+                best_grasp = copy.deepcopy(candidate)
+                max_height = candidate.pose.position.z 
+        return best_grasp
+
+    if method == 'distance':
+        ee_pose = get_end_effector_pose()
+        min_dist = np.inf
+        for candidate in poses:
+            grasp_pose = pose_to_se3(candidate.pose)
+            dist = np.linalg.norm(grasp_pose.translation - ee_pose.translation)
+            if dist < min_dist:
+                min_dist = dist
+                best_grasp = copy.deepcopy(candidate)
+        return best_grasp
 
 
 def compute_pre_pre_lateral_grasp2():
     candidates = compute_candidate_grasps(rotation=valve_traj_data.quaternion_valve_latgrasp,
                                           radial_offset=abs(valve_traj_data.lateral_grasp_offset),
-                                          normal_offset=0.15).poses
+                                          normal_offset=0.05).poses
     return filter_grasps(candidates)
 
 

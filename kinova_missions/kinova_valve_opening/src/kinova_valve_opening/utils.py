@@ -24,11 +24,11 @@ else:
             Rotation.__init__(self, *args, **kwargs)
 
         def as_matrix(self):
-            self.as_dcm()
+            return self.as_dcm()
 
         @classmethod
         def from_matrix(cls, *args, **kwargs):
-            cls.from_dcm(*args, **kwargs)
+            return cls.from_dcm(*args, **kwargs)
 
 
 if __name__ == "__main__":

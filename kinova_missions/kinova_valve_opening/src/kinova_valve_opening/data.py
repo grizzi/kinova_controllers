@@ -15,18 +15,18 @@ class valve_traj_data:
     valve_haptic_frame = "valve_est_frame"
 
     # geometry
-    valve_radius = 0.07
+    valve_radius = 0.12
 
     # relative transformation from grasp to point on valve perimeter
     rotation_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_dcm()
-    quaternion_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_dcm()
+    quaternion_valve_latgrasp = R.from_euler('zyx', [180.0, -90.0, 0.0], degrees=True).as_quat()
     rotation_valve_frontgrasp = R.from_euler('xyz', [0.0, 0.0, 180.0], degrees=True).as_dcm()
     translation_valve_latgrasp = np.array([valve_radius, 0.0, 0.0])
     translation_valve_frontgrasp = np.array([valve_radius, 0.0, 0.0])
 
     # offsets
-    frontal_grasp_offset = -0.10
-    lateral_grasp_offset = -0.10
+    frontal_grasp_offset = -0.1
+    lateral_grasp_offset = -0.1
 
     # !!! The following poses are all referenced to the arm base frame
     # home pose
