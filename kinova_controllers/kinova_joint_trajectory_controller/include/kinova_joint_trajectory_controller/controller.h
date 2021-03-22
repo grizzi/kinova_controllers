@@ -36,7 +36,7 @@ class KinovaJointTrajectoryController
   std::array<hardware_interface::KinovaCommandHandle, 7> command_handles_;
   
   std::mutex generator_mutex_;
-  TrajectoryGenerator generator_;
+  std::unique_ptr<TrajectoryGenerator> generator_;
 
   std::atomic_bool trajectory_available_;
   ros::Subscriber trajectory_subscriber_;

@@ -4,19 +4,14 @@
 namespace kinova_controllers{
 
 TrajectoryGenerator::TrajectoryGenerator(double max_vel, double max_acc, unsigned int size)
-    : generators_(size)
 {
   for (unsigned int i=0; i<size; i++){
-    generators_[i] = new kinova_controllers::VelocityProfile_Trap(max_vel, max_acc);
+    generators_.push_back(std::make_unique<VelocityProfile_Trap>(max_vel, max_acc));
     std::cout << "Created generator " << i << std::endl;
   }
 }
 
-TrajectoryGenerator::~TrajectoryGenerator()
-{
-  for (unsigned int i=0; i<generators_.size(); i++)
-    delete generators_[i];
-}
+TrajectoryGenerator::~TrajectoryGenerator(){}
 
 
 void TrajectoryGenerator::compute(const Eigen::VectorXd& start,
@@ -38,12 +33,12 @@ void TrajectoryGenerator::compute(const Eigen::VectorXd& start,
   }
 
   // find profile that takes most time
-  max_time = 0.001;
-
+  max_time = -1.0;
   for (unsigned int i = 0; i < generators_.size(); i++)
     if (generators_[i]->Duration() > max_time)
       max_time = generators_[i]->Duration();
 
+  max_time += 0.001;
   // generate profiles with max time
   for (unsigned int i = 0; i < generators_.size(); i++)
     generators_[i]->SetProfileDuration(start(i), end(i), max_time);

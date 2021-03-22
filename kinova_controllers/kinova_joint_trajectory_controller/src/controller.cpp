@@ -52,7 +52,7 @@ bool KinovaJointTrajectoryController::init(hardware_interface::RobotHW* hw, ros:
     command_handles_[i] = command_interface->getHandle(joint_names_[i]);
   }
 
-  generator_ = TrajectoryGenerator(max_velocity_, max_acceleration, 7); // max vel, max acc, size
+  generator_ = std::make_unique<TrajectoryGenerator>(max_velocity_, max_acceleration, 7); // max vel, max acc, size
   joint_desired_ = Eigen::VectorXd::Zero(7);
   joint_current_ = Eigen::VectorXd::Zero(7);
 
@@ -73,7 +73,7 @@ void KinovaJointTrajectoryController::update(const ros::Time& time, const ros::D
     Eigen::VectorXd joint_desired_now;
     {
       std::unique_lock<std::mutex> lock(generator_mutex_);
-      joint_desired_now = generator_.get_next_point(ros::Time::now().toSec());  
+      joint_desired_now = generator_->get_next_point(ros::Time::now().toSec());  
     }
 
     for (size_t i=0; i<7; i++){
@@ -83,11 +83,20 @@ void KinovaJointTrajectoryController::update(const ros::Time& time, const ros::D
                                                           lower_limit_[i],
                                                           upper_limit_[i],
                                                           joint_error);
-      if (joint_error < tolerance_)
+      std::stringstream ss;
+      ss << "Joint current=" << command_handles_[i].getPosition() << std::endl;
+      ss << "joint desired=" << joint_desired_now(i) << std::endl;
+      ss << "lower limit=" << lower_limit_[i] << std::endl;
+      ss << "upper limit=" << upper_limit_[i] << std::endl;
+      ss << "error=" << joint_error << std::endl;
+      ROS_INFO_STREAM_THROTTLE(1.0, ss.str());
+
+      if (abs(joint_error) < tolerance_)
         velocity_command = 0.0;
       else
         velocity_command = std::min(std::max(gain_ * joint_error, -max_velocity_), max_velocity_);
-      command_handles_[i].setCommand(0.0);
+      
+      command_handles_[i].setCommand(velocity_command);
     }
   }
 }
@@ -119,7 +128,7 @@ void KinovaJointTrajectoryController::joint_callback(const sensor_msgs::JointSta
   
   {
     std::unique_lock<std::mutex> lock(generator_mutex_);
-    generator_.compute(joint_current_, joint_desired_, ros::Time::now().toSec());  
+    generator_->compute(joint_current_, joint_desired_, ros::Time::now().toSec());  
   }
   ROS_INFO("Computed new velocity profile.");
   trajectory_available_ = true;

@@ -75,6 +75,7 @@ void VelocityProfile_Trap::SetProfile(double pos1,double pos2) {
     duration = t1*2.0;
     t2=t1;
   }
+
   a3 = s*maxacc/2.0;
   a2 = 0;
   a1 = startpos;
@@ -86,6 +87,11 @@ void VelocityProfile_Trap::SetProfile(double pos1,double pos2) {
   c3 = -s*maxacc/2.0;
   c2 = b2+2*b3*t2 - 2.0*c3*t2;
   c1 = b1+t2*(b2+b3*t2) - t2*(c2+t2*c3);
+
+  // std::cout << a1 << ", " << a2 << ", " << a3 << std::endl;
+  // std::cout << b1 << ", " << b2 << ", " << b3 << std::endl;
+  // std::cout << c1 << ", " << c2 << ", " << c3 << std::endl;
+   
 }
 
 void VelocityProfile_Trap::SetProfileDuration(
@@ -94,7 +100,12 @@ void VelocityProfile_Trap::SetProfileDuration(
   // Fastest :
   SetProfile(pos1,pos2);
   // Must be Slower  :
+
+  if ((duration == newduration) || (duration < newduration))
+    return;
+
   double factor = duration/newduration;
+  
   if (factor > 1)
     return; // do not exceed max
   a2*=factor;
@@ -106,6 +117,12 @@ void VelocityProfile_Trap::SetProfileDuration(
   duration = newduration;
   t1 /= factor;
   t2 /= factor;
+
+  // std::cout << "Set profile duration" << std::endl;
+  // std::cout << a2 << ", " << a3 << std::endl;
+  // std::cout << b2 << ", " << b3 << std::endl;
+  // std::cout << c2 << ", " << c3 << std::endl;
+  // std::cout << t1 << ", " << t2 << std::endl;
 }
 
 void VelocityProfile_Trap::SetProfileVelocity(

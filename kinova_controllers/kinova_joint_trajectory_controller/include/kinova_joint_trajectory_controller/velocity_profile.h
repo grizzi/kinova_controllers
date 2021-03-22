@@ -59,35 +59,4 @@ class VelocityProfile_Trap
    // returns copy of current VelocityProfile object. (virtual constructor)
   ~VelocityProfile_Trap();
 };
-
-
-
-
-
-
-/* Niet OK
-	class VelocityProfile_Trap : public VelocityProfile {
-		double maxvel;
-		double maxacc;
-		double _t1,_t2,_T,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10;
-
-		void PrepTraj(double p1,double v1,double p2,double v2,
-		double acc,double vel,double t1,double t2,double T);
-		// Internal method. Sets the parameters <_t1>,..<c10> with the given
-		// arguments.
-	public:
-		VelocityProfile_Trap(double _maxvel,double _maxacc):
-		  maxvel(_maxvel),maxacc(_maxacc) {}
-		// constructs motion profile class with max velocity <maxvel>,
-		// and max acceleration <maxacc> as parameter of the
-		// trajectory.
-
-		void SetProfile(double pos1,double pos2);
-		virtual void SetProfileDuration(double pos1,double pos2,double duration);
-		virtual double Duration() ;
-		virtual double Pos(double time);
-		virtual double Vel(double time);
-	};
-*/
-
 }

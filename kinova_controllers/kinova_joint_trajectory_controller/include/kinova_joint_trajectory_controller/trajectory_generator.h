@@ -28,7 +28,7 @@ class TrajectoryGenerator
   double max_time;
   double initial_time;
  public:
-  std::vector<VelocityProfile_Trap*> generators_;
+  std::vector<std::unique_ptr<VelocityProfile_Trap>> generators_;
 };
 
 }

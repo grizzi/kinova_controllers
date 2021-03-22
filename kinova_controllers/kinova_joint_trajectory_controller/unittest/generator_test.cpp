@@ -9,8 +9,8 @@ TEST(KinovaJointTrajectoryController, GeneratorTest)
 {
   Eigen::VectorXd start(7);
   Eigen::VectorXd end(7);
-  start.setZero();
-  end.setConstant(1.0);
+  start << 2.5927340613682017, -0.011524563301208879, -0.3808176548114446, -1.7603542742323386, 0.3460089742311321, -1.5178074105855899, -1.7312453908855545;
+  end << 2.6927340613682017, -0.011524563301208879, -0.3808176548114446, -1.7603542742323386, 0.3460089742311321, -1.5178074105855899, -1.7312453908855545;
   kinova_controllers::TrajectoryGenerator generator(0.5, 1.5, 7);
   generator.compute(start, end, 0.0);
 
