@@ -191,7 +191,6 @@ class KinovaHardwareInterface : public hardware_interface::RobotHW, KortexArmDri
   std::vector<joint_limits_interface::JointLimits> limits_;
 
   hardware_interface::KinovaControlMode mode_;
-  hardware_interface::KinovaControlMode mode_copy_;
   hardware_interface::KinovaControlMode current_mode_;
 
   // multi-threading

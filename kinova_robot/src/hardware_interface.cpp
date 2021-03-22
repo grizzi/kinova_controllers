@@ -68,7 +68,6 @@ KinovaHardwareInterface::KinovaHardwareInterface(ros::NodeHandle& nh) : KortexAr
   current_mode_ = KinovaControlMode::NO_MODE;
   current_servoing_mode_ = Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING;
   mode_ = current_mode_;
-  mode_copy_ = current_mode_;
 
   // first read and fill command
   read();
@@ -267,14 +266,13 @@ void KinovaHardwareInterface::check_state() {
 
 void KinovaHardwareInterface::switch_mode() {
   if (mode_ != current_mode_) {
-    //ROS_INFO_STREAM("Switching to new mode: " << mode_);
+    ROS_INFO_STREAM("Switching to new mode: " << mode_);
     set_actuators_control_mode(mode_);
   }
 }
 
 void KinovaHardwareInterface::copy_commands() {
   std::lock_guard<std::mutex> lock(cmd_mutex_);
-  mode_copy_ = current_mode_;
   for (size_t i = 0; i < 7; i++) {
     pos_cmd_copy_[i] = pos_[i];  // avoid following error
     vel_cmd_copy_[i] = vel_cmd_[i];
@@ -283,8 +281,6 @@ void KinovaHardwareInterface::copy_commands() {
     pos_error_[i] = pos_cmd_[i] - pos_wrapped_[i];
     vel_error_[i] = -vel_[i];
 
-    // if (mode_copy_ == KinovaControlMode::EFFORT_PID)
-    //   eff_cmd_copy_[i] += pid_[i].computeCommand(pos_error_[i], vel_error_[i], ros::Duration(dt));  
   }
 
   if (isGripperPresent()) {
@@ -403,13 +399,13 @@ void KinovaHardwareInterface::write_loop() {
 void KinovaHardwareInterface::write(const double dt) {
   if (stop_writing_) return;
 
-  if (mode_copy_ == KinovaControlMode::POSITION || mode_copy_ == KinovaControlMode::EFFORT) 
+  if (current_mode_ == KinovaControlMode::POSITION || current_mode_ == KinovaControlMode::EFFORT) 
   {
     std::lock_guard<std::mutex> lock(cmd_mutex_);
     set_hardware_command(dt);
     send_lowlevel_command();
   } 
-  else if (mode_copy_ == KinovaControlMode::VELOCITY) 
+  else if (current_mode_ == KinovaControlMode::VELOCITY) 
   {
     {
         std::lock_guard<std::mutex> lock(cmd_mutex_);
@@ -421,12 +417,6 @@ void KinovaHardwareInterface::write(const double dt) {
     // Do not lock when sending the command
     m_base->SendJointSpeedsCommand(kortex_joint_speeds_cmd_);
 
-  } 
-  else if (mode_copy_ == KinovaControlMode::NO_MODE) 
-  {} 
-  else 
-  {
-    ROS_WARN_STREAM("Unknown mode: " << mode_copy_);
   }
 }
 
@@ -468,7 +458,9 @@ bool KinovaHardwareInterface::set_servoing_mode(Kinova::Api::Base::ServoingMode 
 }
 
 bool KinovaHardwareInterface::set_actuators_control_mode(KinovaControlMode new_mode) {
-  std::cout << "In set_actuators_control_mode" << std::endl;
+  // stop writing commands during the switching procedure
+  stop_writing_ = true;
+  
   Kinova::Api::ActuatorConfig::ControlModeInformation control_mode_info;
   try {
     // SINGLE LEVEL SERVOING (aka high level position/velocity control)
@@ -487,53 +479,56 @@ bool KinovaHardwareInterface::set_actuators_control_mode(KinovaControlMode new_m
       if (current_servoing_mode_ == Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING){
         current_mode_ = new_mode;
         ROS_INFO("Already in high servoing mode.");
-        return true;
       }
+      else{
+        // set command same as the current measurement
+        bool same_as_readings = true;
+        set_hardware_command(0.0, same_as_readings);
+        send_lowlevel_command();
 
-      // set command same as the current measurement
-      stop_writing_ = true;
-      bool same_as_readings = true;
-      set_hardware_command(0.0, same_as_readings);
-      send_lowlevel_command();
+        // switch actuators to position mode again
+        control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
+        for (size_t i = 1; i < 8; i++) 
+          m_actuator_config->SetControlMode(control_mode_info, i);
 
-      // switch actuators to position mode again
-      control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
-      for (size_t i = 1; i < 8; i++) m_actuator_config->SetControlMode(control_mode_info, i);
-
-      // go to single level servoing mode
-      if (!set_servoing_mode(Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING)) {
-        return false;
-      } else {
-        ROS_INFO_STREAM("Mode switched to " << new_mode);
-        current_mode_ = new_mode;
-        return true;
+        // go to single level servoing mode
+        if (!set_servoing_mode(Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING)) {
+          return false;
+        } 
+        else {
+          ROS_INFO_STREAM("Mode switched to " << new_mode);
+          current_mode_ = new_mode;
+        }  
       }
     }
 
     // LOW LEVEL SERVOING (position or torque)
     if (new_mode == KinovaControlMode::POSITION || new_mode == KinovaControlMode::EFFORT) {
-      stop_writing_ = false;
       if (!set_servoing_mode(Kinova::Api::Base::ServoingMode::LOW_LEVEL_SERVOING)) {
         return false;
       }
       bool same_as_readings = true;
       set_hardware_command(0.0, same_as_readings);
       send_lowlevel_command();
-    }
+    
 
-    if (new_mode == KinovaControlMode::EFFORT) {
-      control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
-    } else {
-      control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
-    }
+      if (new_mode == KinovaControlMode::EFFORT) {
+        control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
+      } 
+      else {
+        control_mode_info.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
+      }
 
-    for (size_t i = 1; i < 8; i++) {
-      m_actuator_config->SetControlMode(control_mode_info, i);
+      for (size_t i = 1; i < 8; i++) {
+        m_actuator_config->SetControlMode(control_mode_info, i);
+      }
+      ROS_INFO_STREAM("Mode switched to " << new_mode);
+      current_mode_ = new_mode;
     }
-    ROS_INFO_STREAM("Mode switched to " << new_mode);
-    current_mode_ = new_mode;
+    stop_writing_ = false;
     return true;
-  } catch (Kinova::Api::KDetailedException& ex) {
+  } 
+  catch (Kinova::Api::KDetailedException& ex) {
     ROS_ERROR_STREAM("Kortex exception: " << ex.what());
     ROS_ERROR_STREAM(
         "Error sub-code: " << Kinova::Api::SubErrorCodes_Name(
