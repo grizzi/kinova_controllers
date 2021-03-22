@@ -21,8 +21,7 @@ bool KinovaJointTrajectoryController::init(hardware_interface::RobotHW* hw, ros:
     return false;
   }
 
-  double max_velocity;
-  if (!controller_nh.getParam("max_velocity", max_velocity) || max_velocity < 0){
+  if (!controller_nh.getParam("max_velocity", max_velocity_) || max_velocity_ < 0){
     ROS_ERROR_STREAM("Failed to get max_velocity or invalid param");
     return false;
   }
@@ -48,7 +47,7 @@ bool KinovaJointTrajectoryController::init(hardware_interface::RobotHW* hw, ros:
     command_handles_[i] = command_interface->getHandle(joint_names_[i]);
   }
 
-  generator_ = TrajectoryGenerator(max_velocity, max_acceleration, 7); // max vel, max acc, size
+  generator_ = TrajectoryGenerator(max_velocity_, max_acceleration, 7); // max vel, max acc, size
   joint_desired_ = Eigen::VectorXd::Zero(7);
   joint_current_ = Eigen::VectorXd::Zero(7);
 
@@ -73,13 +72,14 @@ void KinovaJointTrajectoryController::update(const ros::Time& time, const ros::D
     }
 
     for (size_t i=0; i<7; i++){
-      double joint_error;
+      double joint_error, velocity_command;
       angles::shortest_angular_distance_with_large_limits(command_handles_[i].getPosition(),
                                                           joint_desired_now(i),
                                                           lower_limit_[i],
                                                           upper_limit_[i],
                                                           joint_error);
-      command_handles_[i].setCommand(gain_ * joint_error);
+      velocity_command = std::min(std::max(gain_ * joint_error, -max_velocity_), max_velocity_);
+      command_handles_[i].setCommand(velocity_command);
     }
   }
 }
