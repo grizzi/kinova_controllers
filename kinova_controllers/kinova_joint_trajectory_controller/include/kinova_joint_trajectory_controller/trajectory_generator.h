@@ -3,9 +3,10 @@
 // adapted from
 // https://github.com/PR2/pr2_common_actions/blob/kinetic-devel/joint_trajectory_generator/include/joint_trajectory_generator/trajectory_generation.h
 
-#include <kdl/velocityprofile_trap.hpp>
+#include <kinova_joint_trajectory_controller/velocity_profile.h>
 #include <vector>
 #include <Eigen/Core>
+#include_next <kdl/velocityprofile_trap.hpp>
 
 namespace kinova_controllers{
 
@@ -27,7 +28,7 @@ class TrajectoryGenerator
   double max_time;
   double initial_time;
  public:
-  std::vector<KDL::VelocityProfile_Trap*> generators_;
+  std::vector<VelocityProfile_Trap*> generators_;
 };
 
 }

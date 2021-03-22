@@ -15,7 +15,6 @@ set(PROJECT_DEPENDENCIES
         )
 
 find_package(catkin REQUIRED COMPONENTS ${PROJECT_DEPENDENCIES})
-find_package(orocos_kdl REQUIRED)
 
 catkin_package(
         INCLUDE_DIRS include
@@ -23,14 +22,15 @@ catkin_package(
         CATKIN_DEPENDS ${PROJECT_DEPENDENCIES}
 )
 
-set(DEPENDENCY_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
-set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${orocos_kdl_LIBRARIES})
+set(DEPENDENCY_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES})
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}
         src/controller.cpp
-        src/trajectory_generator.cpp)
+        src/trajectory_generator.cpp
+        src/velocity_profile.cpp)
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 
 #install(DIRECTORY config

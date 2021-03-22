@@ -1,4 +1,5 @@
 #include "kinova_joint_trajectory_controller/trajectory_generator.h"
+#include <iostream>
 
 namespace kinova_controllers{
 
@@ -6,7 +7,7 @@ TrajectoryGenerator::TrajectoryGenerator(double max_vel, double max_acc, unsigne
     : generators_(size)
 {
   for (unsigned int i=0; i<size; i++){
-    generators_[i] = new KDL::VelocityProfile_Trap(max_vel, max_acc);
+    generators_[i] = new kinova_controllers::VelocityProfile_Trap(max_vel, max_acc);
     std::cout << "Created generator " << i << std::endl;
   }
 }
@@ -65,7 +66,7 @@ Eigen::VectorXd TrajectoryGenerator::get_next_point(const double time){
 
 std::ostream& operator<<(std::ostream& os, const kinova_controllers::TrajectoryGenerator& gen){
   for(const auto& g : gen.generators_){
-    g->Write(os);
+    //g->Write(os);
     os << std::endl;
   }
 }
