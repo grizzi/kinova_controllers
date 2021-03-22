@@ -11,6 +11,6 @@ joint_trajectory_controller:
   lower_limit: [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23, -6.28]
   upper_limit: [6.28, 2.41, 6.28, 2.66, 6.28, 2.23, 6.28]
   max_velocity: 0.5
-  max_acceleration: 1.5
+  max_acceleration: 0.3
   gain: 1.0
   tolerance: 0.017 # 1 deg

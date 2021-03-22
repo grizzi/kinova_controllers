@@ -18,11 +18,6 @@
                output="screen" args="reflex_controller"/> -->
     </group>
     
-    <!-- Reflex controller -->
-    <include file="$(find kinova_reflex_controller)/launch/load_params.launch">
-        <arg name="namespace" value="my_gen3"/>
-    </include>
-
     <!--    Gripper control-->
     <group if="$(arg launch_gripper)">
         <node name="robotiq_2f_gripper_control" pkg="robotiq_2f_gripper_control" type="Robotiq2FGripperRtuNode.py" args="/dev/r2Fg" output="screen"/>
@@ -36,7 +31,7 @@
     </group>
     <group unless="$(arg launch_apriltag)">
         <node name="valve_broadcaster" type="static_transform_publisher" pkg="tf2_ros"
-              args="0.0, 0.46, 0.14 0.707 0 0 0.707 arm_base_link object_detection_mesh"/>
+              args="0.0, 0.46, 0.125 0.707 0 0 0.707 arm_base_link object_detection_mesh"/>
     </group>
     
 

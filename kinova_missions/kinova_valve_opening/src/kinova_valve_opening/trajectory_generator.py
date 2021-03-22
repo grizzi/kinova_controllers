@@ -412,7 +412,7 @@ def compute_execution_time(target_pose, max_linear_speed, max_angular_speed):
     return scale * 1.0  # s
 
 
-def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1, timeout=30, quiet=False):
+def wait_until_reached(target_pose, linear_tolerance=0.01, angular_tolerance=0.1, timeout=15, quiet=False):
     """
     Returns once the target pose has been reached
     """

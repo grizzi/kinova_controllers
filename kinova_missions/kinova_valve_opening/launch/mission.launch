@@ -4,12 +4,23 @@
     <arg name="test" default="false"/>
     <arg name="start_mission_delay" default="10.0"/>
 
-    <!-- MPC controllers -->
+    <!-- Load controllers -->
+    <!-- MPC -->
     <include file="$(find kinova_mpc_controllers)/launch/controller.launch">
         <arg name="prefix" value="arm_"/>
         <arg name="simulation" value="$(arg simulation)"/>
         <arg name="namespace" value="my_gen3"/>
     </include>
+    <!-- Joint Trajectory -->
+    <include file="$(find kinova_joint_trajectory_controller)/launch/load_controller.launch">
+        <arg name="prefix" value="arm_"/>
+        <arg name="namespace" value="my_gen3"/>
+    </include>
+        <!-- Reflex controller -->
+    <include file="$(find kinova_reflex_controller)/launch/load_params.launch">
+        <arg name="namespace" value="my_gen3"/>
+    </include>
+
     
     <!-- Remap description for moveit commander -->
     <param name="/moveit_planner/description_name" value="/my_gen3/robot_description"/>
@@ -35,7 +46,7 @@
     <group unless="$(arg simulation)">
         <rosparam command="load" file="$(find kinova_valve_opening)/config/mission_robot.yaml" subst_value="true"/>
         <node name="controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
-              output="screen" args="--stopped mpc_admittance_torque" ns="my_gen3"/>
+              output="screen" args="--stopped mpc_admittance_torque joint_trajectory_controller" ns="my_gen3"/>
         <node name="target_base_publisher" pkg="tf2_ros" type="static_transform_publisher" args="2.14 -0.75 0.0 -0.873 0.0 0.0 map navigation_target"/>      
     </group>
 

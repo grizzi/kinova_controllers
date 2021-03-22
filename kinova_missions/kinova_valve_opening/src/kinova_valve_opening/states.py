@@ -26,20 +26,26 @@ class HomePoseJointConfiguration(JointsConfigurationVisitor):
         JointsConfigurationVisitor.__init__(self, ns=ns)
 
 
-class JointsConfigurationAction(BaseStateRos):
+class JointsConfigurationAction(RosControlPoseReaching):
     """
     Send the arm to a joint configuration using the actionlib interface
     """
     def __init__(self, ns=""):
-        BaseStateRos.__init__(self,
-                              outcomes=['Completed', 'Failure'],
-                              ns=ns)
-
+        RosControlPoseReaching.__init__(self, ns=ns)
+        self.idx = 0
         self.joints_configurations = self.get_scoped_param("joints_configurations")
         self.n_configurations = len(self.joints_configurations)
         rospy.loginfo("Parsed {} joints configurations: {}".format(self.n_configurations, self.joints_configurations))
 
     def execute(self, ud):
+        
+        if self.default_outcome:
+            rospy.loginfo("Choosing default outcome: {}".format(self.default_outcome))
+            return self.default_outcome
+            
+        controller_switched = self.do_switch()
+        if not controller_switched:
+            return 'Failure'
 
         if self.idx == self.n_configurations:
             rospy.logwarn("No more configurations to visit! Looping")
@@ -49,7 +55,7 @@ class JointsConfigurationAction(BaseStateRos):
 
         action_name = '/kinova_joint_trajectory_server'
         client = actionlib.SimpleActionClient(action_name, JointAction)
-        if not client.wait_for_server(10.0):
+        if not client.wait_for_server(rospy.Duration(10.0)):
             rospy.logerr("Failed to connect to server {}".format(action_name))
             return 'Failure'
 
