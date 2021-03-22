@@ -1,4 +1,4 @@
-#include <kinova_joint_trajectory_controller/utils/trajectory_generator.h>
+#include "kinova_joint_trajectory_controller/trajectory_generator.h"
 
 namespace kinova_controllers{
 

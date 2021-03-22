@@ -24,17 +24,25 @@ catkin_package(
 )
 
 set(DEPENDENCY_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
-set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${orocos_kdl_INCLUDE_DIRS})
+set(COMMON_LIBRARIES ${catkin_LIBRARIES} ${COMMON_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 include_directories(include SYSTEM ${DEPENDENCY_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}
-        src/controller.cpp)
+        src/controller.cpp
+        src/trajectory_generator.cpp)
 target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 
 #install(DIRECTORY config
 #        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 #        )
+
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(generator_test unittest/generator_test.cpp)
+  target_link_libraries(generator_test ${PROJECT_NAME} ${catkin_LIBRARIES})
+  target_include_directories(generator_test PRIVATE include)
+  add_dependencies(generator_test ${PROJECT_NAME})
+endif()
 
 catkin_install_python(PROGRAMS scripts/joint_trajectory_commander.py
         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
