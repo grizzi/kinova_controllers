@@ -7,6 +7,8 @@
 
 #include "kinova_joint_trajectory_controller/trajectory_generator.h"
 
+#include <mutex>
+
 namespace kinova_controllers {
 
 class KinovaJointTrajectoryController
