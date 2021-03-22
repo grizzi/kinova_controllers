@@ -13,16 +13,18 @@ def joint_state_callback(msg):
 
 
 if __name__ == "__main__":
-    subscriber = rospy.Subscriber("/joint_states_desired", JointState, joint_state_callback, queue_size=1)
-    publisher = rospy.Publisher("/kinova_joint_trajectory_controller/goal", queue_size=1)
+    rospy.init_node("joint_state_commander")
+    subscriber = rospy.Subscriber("/joint_states_goal", JointState, joint_state_callback, queue_size=1)
+    publisher = rospy.Publisher("/kinova_joint_trajectory_controller/goal", JointState, queue_size=1)
 
-    while True:
+    while True or not rospy.is_shutdown():
         print("--------------------------------------")
-        ans = input("Send current desired goal? [y/n]")
+        ans = input("Send current desired goal? [y/n]\n")
         if ans == 'y':
             message = "Sending the robot to: ["
             for i in range(7):
                 message += str(joint_state_desired.position[i]) + " "
+            message += "]"
             print(message)
             publisher.publish(joint_state_desired)
         rospy.sleep(1.0)

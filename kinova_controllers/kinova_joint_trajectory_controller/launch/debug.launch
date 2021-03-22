@@ -1,0 +1,23 @@
+<launch>
+
+    <arg name="test" default="false"/>
+
+    <group if="$(arg test)">
+        <param name="my_gen3/robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3.xacro
+        dof:=7 vision:=true sim:=false"/>
+    </group>
+
+    <node name="joint_goal_publisher" type="joint_state_publisher_gui" pkg="joint_state_publisher_gui" output="screen">
+        <remap from="robot_description" to="/my_gen3/robot_description"/>
+        <remap from="joint_states" to="joint_states_goal"/>
+    </node>
+
+    <node name="robot_goal_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
+        <remap from="robot_description" to="/my_gen3/robot_description"/>
+        <remap from="joint_states" to="joint_states_goal"/>
+    </node>
+
+    <node name="rviz_joint_goal" type="rviz" pkg="rviz" args="-d $(find kinova_joint_trajectory_controller)/config/cfg.rviz" output="screen"/>
+
+    <node name="joint_trajectory_commander" type="joint_trajectory_commander.py" pkg="kinova_joint_trajectory_controller" output="screen"/>
+</launch>

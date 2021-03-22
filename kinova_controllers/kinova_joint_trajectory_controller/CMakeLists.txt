@@ -36,6 +36,9 @@ target_link_libraries(${PROJECT_NAME} ${COMMON_LIBRARIES})
 #        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 #        )
 
+catkin_install_python(PROGRAMS scripts/joint_trajectory_commander.py
+        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 # Install library
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
