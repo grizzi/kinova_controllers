@@ -28,7 +28,6 @@ void TrajectoryGenerator::compute(const Eigen::VectorXd& start,
 
   // generate initial profiles
   for (unsigned int i = 0; i < generators_.size(); i++){
-    std::cout << "Setting profile from: " << start(i) << " to " << end(i) << std::endl;
     generators_[i]->SetProfile(start(i), end(i));
   }
 

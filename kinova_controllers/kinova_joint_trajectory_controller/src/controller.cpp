@@ -76,6 +76,7 @@ void KinovaJointTrajectoryController::starting(const ros::Time& time) {
     command_handles_[i].setMode(hardware_interface::KinovaControlMode::VELOCITY);
     command_handles_[i].setCommand(0.0);
   }
+  action_server_->start();
 }
 
 void KinovaJointTrajectoryController::update(const ros::Time& time, const ros::Duration& period) {
@@ -98,7 +99,7 @@ void KinovaJointTrajectoryController::update(const ros::Time& time, const ros::D
       ss << "lower limit=" << lower_limit_[i] << std::endl;
       ss << "upper limit=" << upper_limit_[i] << std::endl;
       ss << "error=" << joint_error << std::endl;
-      ROS_INFO_STREAM_THROTTLE(1.0, ss.str());
+      ROS_DEBUG_STREAM_THROTTLE(1.0, ss.str());
 
       if (abs(joint_error) < tolerance_) {
         velocity_command = 0.0;
