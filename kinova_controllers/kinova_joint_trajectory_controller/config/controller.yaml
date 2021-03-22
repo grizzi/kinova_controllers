@@ -1,5 +1,5 @@
-joint_velocity_controller_test:
-  type: kinova_controllers/KinovaJointVelocityController
+joint_trajectory_controller:
+  type: kinova_controllers/KinovaJointTrajectoryController
   joint_names:
     - $(arg prefix)joint_1
     - $(arg prefix)joint_2

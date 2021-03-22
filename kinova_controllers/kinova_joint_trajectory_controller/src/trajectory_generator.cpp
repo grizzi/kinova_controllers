@@ -1,4 +1,4 @@
-#include <kinova_joint_trajectory_controller/utils/trajectory_generator.h>
+#include <kinova_joint_trajectory_controller/trajectory_generator.h>
 
 namespace kinova_controllers{
 
@@ -7,6 +7,7 @@ TrajectoryGenerator::TrajectoryGenerator(double max_vel, double max_acc, unsigne
 {
   for (unsigned int i=0; i<size; i++){
     generators_[i] = new KDL::VelocityProfile_Trap(max_vel, max_acc);
+    std::cout << "Created generator " << i << std::endl;
   }
 }
 
@@ -31,6 +32,7 @@ void TrajectoryGenerator::compute(const Eigen::VectorXd& start,
 
   // generate initial profiles
   for (unsigned int i = 0; i < generators_.size(); i++){
+    std::cout << "Setting profile from: " << start(i) << " to " << end(i) << std::endl;
     generators_[i]->SetProfile(start(i), end(i));
   }
 
