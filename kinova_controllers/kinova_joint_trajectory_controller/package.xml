@@ -18,6 +18,9 @@
   <depend>roscpp</depend>
   <depend>realtime_tools</depend>
   <depend>angles</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <exec_depend>message_generation</exec_depend>
 
   <export>
     <controller_interface plugin="${prefix}/plugins.xml"/>

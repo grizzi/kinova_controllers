@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(Eigen3 3.3 REQUIRED)
 
 set(PROJECT_DEPENDENCIES
+        actionlib
         kinova_robot
         controller_interface
         hardware_interface
@@ -12,10 +13,19 @@ set(PROJECT_DEPENDENCIES
         roscpp
         realtime_tools
         angles
+        actionlib_msgs
         )
 
 find_package(catkin REQUIRED COMPONENTS ${PROJECT_DEPENDENCIES})
 
+add_action_files(
+        DIRECTORY msg
+        FILES Joint.action
+)
+
+generate_messages(
+    DEPENDENCIES actionlib_msgs std_msgs
+)
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES ${PROJECT_NAME}

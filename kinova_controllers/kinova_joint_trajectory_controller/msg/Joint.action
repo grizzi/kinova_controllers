@@ -1,0 +1,7 @@
+#goal
+float64[] position
+---
+#result
+bool success
+---
+#feedback
