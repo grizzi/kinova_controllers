@@ -43,6 +43,7 @@ class KinovaJointTrajectoryController
   Eigen::VectorXd joint_desired_;
   Eigen::VectorXd joint_current_;
 
+  double tolerance_;
   double max_velocity_;
   std::vector<double> lower_limit_;
   std::vector<double> upper_limit_;

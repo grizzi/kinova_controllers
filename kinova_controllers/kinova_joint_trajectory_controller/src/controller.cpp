@@ -36,7 +36,12 @@ bool KinovaJointTrajectoryController::init(hardware_interface::RobotHW* hw, ros:
     ROS_ERROR_STREAM("Failed to get gain or invalid param");
     return false;
   }
-  
+
+  if (!controller_nh.getParam("tolerance", tolerance_) || tolerance_ < 0){
+    ROS_ERROR_STREAM("Failed to get tolerance or invalid param");
+    return false;
+  }
+
   auto command_interface = hw->get<hardware_interface::KinovaCommandInterface>();
   if (command_interface == nullptr) {
     ROS_ERROR_STREAM("Can't get command interface");
@@ -78,7 +83,10 @@ void KinovaJointTrajectoryController::update(const ros::Time& time, const ros::D
                                                           lower_limit_[i],
                                                           upper_limit_[i],
                                                           joint_error);
-      velocity_command = std::min(std::max(gain_ * joint_error, -max_velocity_), max_velocity_);
+      if (joint_error < tolerance_)
+        velocity_command = 0.0;
+      else
+        velocity_command = std::min(std::max(gain_ * joint_error, -max_velocity_), max_velocity_);
       command_handles_[i].setCommand(velocity_command);
     }
   }

@@ -13,3 +13,4 @@ joint_velocity_controller_test:
   max_velocity: 0.5
   max_acceleration: 1.5
   gain: 1.0
+  tolerance: 0.017 # 1 deg
