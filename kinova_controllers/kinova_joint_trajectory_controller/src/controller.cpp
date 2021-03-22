@@ -87,7 +87,7 @@ void KinovaJointTrajectoryController::update(const ros::Time& time, const ros::D
         velocity_command = 0.0;
       else
         velocity_command = std::min(std::max(gain_ * joint_error, -max_velocity_), max_velocity_);
-      command_handles_[i].setCommand(velocity_command);
+      command_handles_[i].setCommand(0.0);
     }
   }
 }
@@ -121,6 +121,7 @@ void KinovaJointTrajectoryController::joint_callback(const sensor_msgs::JointSta
     std::unique_lock<std::mutex> lock(generator_mutex_);
     generator_.compute(joint_current_, joint_desired_, ros::Time::now().toSec());  
   }
+  ROS_INFO("Computed new velocity profile.");
   trajectory_available_ = true;
 }
 }
