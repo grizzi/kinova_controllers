@@ -21,7 +21,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <robot name="stereolabs_camera" xmlns:xacro="http://ros.org/wiki/xacro">
 
 <!-- Includes -->
-    <xacro:include filename="$(find zed_wrapper)/urdf/include/materials.urdf.xacro" />
+    <xacro:include filename="$(find kinova_sensors)/zed/include/materials.urdf.xacro" />
 
  
 <!-- Properties -->
