@@ -30,8 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
     <!-- Arguments -->
 
-    <xacro:arg name="camera_name"   default="zed" />
-    <xacro:arg name="base_frame"    default="zed_base_link" />
+    <xacro:arg name="camera_name"   default="zedm" />
+    <xacro:arg name="base_frame"    default="zedm_base_link" />
     <xacro:arg name="cam_pos_x"     default="0.11613" />
     <xacro:arg name="cam_pos_y"     default="-0.00775" />
     <xacro:arg name="cam_pos_z"     default="0.023" />
@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <xacro:arg name="cam_yaw"       default="0.0" />
 
     
-       <link name="zed_sensor_mount">
+       <link name="zedm_sensor_mount">
         <visual>
           <origin xyz="0 0 0" rpy="0 0 0" />
           <geometry>
@@ -52,7 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         </visual>      
       </link>
 
-      <joint name="zed_mount_to_zed_link" type="fixed">
+      <joint name="zedm_mount_to_zed_link" type="fixed">
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <parent link="zed_sensor_mount"/>
         <child link="$(arg base_frame)"/>
