@@ -4,7 +4,7 @@
 
     <param name="zed_description" command="$(find xacro)/xacro --inorder $(find kinova_sensors)/zed/zed_descr.urdf.xacro"/>
 
-    <node name="zed_tf_publisher" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 3.14 0 0 ft_sensor0 zed_sensor_mount"/>
+    <node name="zed_tf_publisher" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 3.14 0 0 ft_sensor0 zedm_sensor_mount"/>
 
     <node name="zed_robot_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
       <remap from="robot_description" to="zed_description"/>
