@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <xacro:arg name="camera_name"   default="zedm" />
     <xacro:arg name="base_frame"    default="zedm_base_link" />
     <xacro:arg name="cam_pos_x"     default="0.11613" />
-    <xacro:arg name="cam_pos_y"     default="-0.00775" />
+    <xacro:arg name="cam_pos_y"     default="0.00775" />
     <xacro:arg name="cam_pos_z"     default="0.023" />
     <xacro:arg name="cam_roll"      default="0.0" />
-    <xacro:arg name="cam_pitch"     default="1.570796326" />
-    <xacro:arg name="cam_yaw"       default="0.0" />
+    <xacro:arg name="cam_pitch"     default="-1.570796326" />
+    <xacro:arg name="cam_yaw"       default="3.1415926535897931" />
 
     
        <link name="zedm_sensor_mount">
