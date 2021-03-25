@@ -19,6 +19,8 @@
         <arg name="debug"       value="$(arg debug)"/>
     </include>
 
+    <include file="$(find kinova_sensors)/launch/load_zed.launch"/>
+    
     <!-- Controller manager gui -->
     <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
 

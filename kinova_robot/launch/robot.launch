@@ -7,12 +7,14 @@
     <arg name="dof" default="7"/>
     <arg name="vision" default="true"/> <!-- True if the arm has a Vision module -->
     <arg name="use_hard_limits" default="false"/> <!-- Set soft limits as hard limits (Gen3 only) -->
-
+  
     <!-- Gripper configuration -->
     <arg name="gripper" default=""/>
     <arg name="has_gripper" default="true" if="$(eval arg('gripper')=='robotiq_2f_85')"/>
     <arg name="has_gripper" default="false" if="$(eval arg('gripper')!='robotiq_2f_85')"/>
     
+    <!-- Sensors -->
+    <arg name="zedm" default="false"/>
     <arg name="tool_frame_offset" default="0.12"/>
 
     <!-- Namespace -->
@@ -186,5 +188,10 @@
             <param name="wait_time" value="10.0" />
         </test>
 
+    </group>
+
+    <group if="$(arg zedm)">
+      <include file="$(find kinova_sensors)/launch/load_zed.launch"/>
+      
     </group>
 </launch>
