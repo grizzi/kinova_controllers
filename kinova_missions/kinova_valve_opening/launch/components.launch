@@ -30,8 +30,11 @@
         <include file="$(find kinova_valve_opening)/apriltag/apriltag_detection.launch"/>
     </group>
     <group unless="$(arg launch_apriltag)">
+<!--         <node name="valve_broadcaster" type="static_transform_publisher" pkg="tf2_ros"
+              args="0.0 0.46 0.125 0.707 0 0 0.707 arm_base_link object_detection_mesh"/> -->
         <node name="valve_broadcaster" type="static_transform_publisher" pkg="tf2_ros"
-              args="0.0, 0.46, 0.125 0.707 0 0 0.707 arm_base_link object_detection_mesh"/>
+              args="0.0 0.46 0.125  -0.6830127 0.1830127 0.1830127 0.6830127 arm_base_link object_detection_mesh"/>
+              
     </group>
     
 

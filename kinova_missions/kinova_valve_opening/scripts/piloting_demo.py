@@ -54,9 +54,13 @@ with state_machine:
     #######################################################################
     #                      Detection Subsequence
     ####################################################################### 
-    smach.StateMachine.add('VALVE_DETECTION', DetectionPosesVisitor(ns='valve_detection'),
-                           transitions={'Completed': 'LATERAL_MANIPULATION_SEQUENCE',
+    smach.StateMachine.add('VALVE_DETECTION', JointsConfigurationAction(ns='valve_detection'),
+                           transitions={'Completed': 'HOME_ROBOT',
                                         'Failure': 'Failure'})
+
+    smach.StateMachine.add('HOME_ROBOT', JointsConfigurationAction(ns="home_action"),
+                        transitions={'Completed': 'LATERAL_MANIPULATION_SEQUENCE',
+                                     'Failure': 'Failure'})
 
     #######################################################################
     #                      Lateral Grasp Subsequence

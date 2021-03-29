@@ -12,7 +12,7 @@ home_action:
   manager_namespace: /my_gen3
   whitelist: [reflex_controller]
   joints_configurations:
-    - [-1.236452963534207, 0.2156914307010919, 2.995119592583762, -1.611908077174668, -0.0010391654573496112, -1.5482041986355366, 1.4961178277196578] 
+    - [-1.5899806740233915, -0.48744316800716536, -3.1235457424628708, -1.938244380301926, 3.1225489212668545, 1.3859441850036247, -1.5689315813996227] 
     
 # home_pose:
 #   default_outcome: Completed
@@ -34,11 +34,12 @@ navigation_state:
   tolerance_deg: 50
 
 valve_detection:
-  default_outcome: Completed
-  controller_name: mpc_velocity_controller
+  controller_name: joint_trajectory_controller
   manager_namespace: /my_gen3
-  whitelist: [ reflex_controller ]
-  path_topic_name: /desired_path
+  whitelist: [reflex_controller]
+  joints_configurations: # home - > detection pose 
+    - [-1.5899806740233915, -0.48744316800716536, -3.1235457424628708, -1.938244380301926, 3.1225489212668545, 1.3859441850036247, -1.5689315813996227]
+    - [0.467773759275626, 0.57541470250548, 3.0453992750161314, -2.4733171191407215, -1.0093108888969127, -1.277924773293356, -1.83265377150581] 
 
 open_gripper_usb:
   command_topic: /gripper_command

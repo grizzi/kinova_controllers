@@ -31,8 +31,7 @@ class JointsConfigurationAction(RosControlPoseReaching):
     Send the arm to a joint configuration using the actionlib interface
     """
     def __init__(self, ns=""):
-        RosControlPoseReaching.__init__(self, ns=ns)
-        self.idx = 0
+        RosControlPoseReaching.__init__(self, ns=ns, outcomes=['Completed', 'Failure'])
         self.joints_configurations = self.get_scoped_param("joints_configurations")
         self.n_configurations = len(self.joints_configurations)
         rospy.loginfo("Parsed {} joints configurations: {}".format(self.n_configurations, self.joints_configurations))
@@ -47,11 +46,8 @@ class JointsConfigurationAction(RosControlPoseReaching):
         if not controller_switched:
             return 'Failure'
 
-        if self.idx == self.n_configurations:
-            rospy.logwarn("No more configurations to visit! Looping")
-            self.idx = 0
-
-        rospy.loginfo("Going to configuration {}: {}".format(self.idx, self.joints_configurations[self.idx]))
+        # Wait some time to let the controller setup (this should not be necessary)
+        rospy.sleep(1.0)
 
         action_name = '/kinova_joint_trajectory_server'
         client = actionlib.SimpleActionClient(action_name, JointAction)
@@ -60,15 +56,16 @@ class JointsConfigurationAction(RosControlPoseReaching):
             return 'Failure'
 
         goal = JointGoal()
-        goal.position = self.joints_configurations[self.idx]
-        client.send_goal_and_wait(goal, execute_timeout=rospy.Duration(15.0))
-        result = client.get_result()
-        if not result.success:
-            rospy.logerr("Failed to reach the goal configuration")
-            return 'Failure'
-        else:
-            self.idx += 1
-            return 'Completed'
+        for goal_position in self.joints_configurations:
+            goal.position = goal_position
+            rospy.loginfo("Going to configuration {}".format(goal_position))
+            client.send_goal_and_wait(goal, execute_timeout=rospy.Duration(20.0))
+            result = client.get_result()
+            if not result.success:
+                rospy.logerr("Failed to reach the goal configuration")
+                return 'Failure'
+            
+        return 'Completed'
 
 
 class HomePose(RosControlPoseReaching):
