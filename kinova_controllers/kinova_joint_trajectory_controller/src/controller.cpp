@@ -76,6 +76,7 @@ void KinovaJointTrajectoryController::starting(const ros::Time& time) {
     command_handles_[i].setMode(hardware_interface::KinovaControlMode::VELOCITY);
     command_handles_[i].setCommand(0.0);
   }
+  trajectory_available_ = false;
   action_server_->start();
 }
 
@@ -168,12 +169,15 @@ void KinovaJointTrajectoryController::execute_callback(
     if (action_server_->isPreemptRequested()) {
       ROS_INFO("KinovaJointTrajectoryController preempted");
       action_server_->setPreempted();
+      trajectory_available_ = false;
       return;
     }
 
     if (success_) {
       result.success = true;
       action_server_->setSucceeded(result);
+      ROS_INFO("[KinovaJointTrajectoryController::execute_callback]: Goal reached.");
+      trajectory_available_ = false;
       return;
     }
     r.sleep();
