@@ -7,8 +7,8 @@
 
     <!-- Load controllers -->
     <arg name="namespace" default="my_gen3"/>
-    <arg name="simulation" default="true"/>
-    <arg name="prefix" default=""/>
+    <arg name="simulation" default="false"/>
+    <arg name="prefix" default="arm_"/>
 
     <rosparam command="load" file="$(find kinova_mpc_controllers)/params/common.yaml" subst_value="true"/>
     <rosparam command="load" file="$(find kinova_mpc_controllers)/params/gains.yaml" unless="$(arg simulation)" subst_value="true"/>

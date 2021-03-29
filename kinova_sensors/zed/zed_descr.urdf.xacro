@@ -54,7 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       <joint name="zedm_mount_to_zed_link" type="fixed">
         <origin xyz="0 0 0" rpy="0 0 0"/>
-        <parent link="zed_sensor_mount"/>
+        <parent link="zedm_sensor_mount"/>
         <child link="$(arg base_frame)"/>
       </joint>
 
@@ -72,7 +72,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://zed_wrapper/urdf/models/zedm.stl" />
+                <mesh filename="package://kinova_sensors/zed/models/zedm.stl" />
             </geometry>
             <material name="zedm_mat" />
         </visual>
