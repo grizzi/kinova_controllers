@@ -40,7 +40,7 @@
     </include>
 
     <!-- Delay before homing the arm -->
-    <arg name="start_delay_seconds" default="15"/>
+    <arg name="start_delay_seconds" default="10"/>
 
     <group ns="$(arg robot_name)">
 
@@ -95,7 +95,7 @@
               unless="$(eval not arg('gripper'))"/>
 
         <!-- Start simulated Kortex Driver -->
-        <node name="$(arg robot_name)_driver" pkg="kortex_driver" type="kortex_arm_driver" output="screen">
+        <node name="$(arg robot_name)_driver" pkg="kortex_driver" type="kortex_arm_driver" output="screen" launch-prefix="gdb -ex run --args">
             <param name="sim" value="true"/>
             <param name="cyclic_data_publish_rate" value="$(arg cyclic_data_publish_rate)"/>
             <param name="arm" value="$(arg arm)"/>

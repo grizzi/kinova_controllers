@@ -31,7 +31,7 @@
 
 
     <!-- Controller manager gui -->
-    <node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager"/>
+    <!--node name="rqt_controller_manager" type="rqt_controller_manager" pkg="rqt_controller_manager" -->
 
     <!-- Interactive reference -->
     <node pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"

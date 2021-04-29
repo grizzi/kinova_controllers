@@ -2,10 +2,10 @@
     <arg name="debug"       default="false"/>
     <arg name="rviz"        default="true"/>
     <arg name="test"        default="false"/>
-    <arg name="task_file"   default="$(find kinova_mpc_controllers)/config/task.info"/>
+    <arg name="task_file"   default="$(find kinova_mpc_controllers)/params/task.info"/>
     <arg name="rvizconfig"  default="$(find kinova_mpc_controllers)/config/ocs2_test.rviz"/>
 
-    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3.xacro dof:=7 vision:=true sim:=true"/>
+    <param name="my_gen3/robot_description" command="$(find xacro)/xacro --inorder $(find kortex_description)/robots/gen3.xacro dof:=7 vision:=true sim:=true"/>
     <param name="robot_description_mpc"
            command="$(find xacro)/xacro --inorder $(find kinova_description_for_controllers)/urdf/kinova.urdf.xacro"/>
 
@@ -24,4 +24,6 @@
 
     <node if="$(arg rviz)" pkg="ocs2_mobile_manipulator_example" type="mobile_manipulator_target" name="mobile_manipulator_target"
           output="screen" args="$(arg task_file)"/>
+
+    <node name="world_tf_publisher" pkg="tf2_ros" type="static_transform_publisher" args=" 0 0 0 0 0 0 world base_link"/>
 </launch>
