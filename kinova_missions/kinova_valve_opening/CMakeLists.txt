@@ -13,6 +13,7 @@ catkin_python_setup()
 catkin_install_python(PROGRAMS
         scripts/mock_modules.py
         scripts/piloting_demo.py
+        scripts/pcl_relay.py
         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY launch config

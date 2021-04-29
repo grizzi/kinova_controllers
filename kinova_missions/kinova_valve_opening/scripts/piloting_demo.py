@@ -48,13 +48,17 @@ with state_machine:
     #                      Navigation Subsequence
     ####################################################################### 
     smach.StateMachine.add('REACH_DETECTION_HOTSPOT', NavigationState(ns="navigation_state"),
-                           transitions={'Completed': 'VALVE_DETECTION',
+                           transitions={'Completed': 'REACH_VIEWPOINT',
                                         'Aborted': 'Failure'})
 
     #######################################################################
     #                      Detection Subsequence
     ####################################################################### 
-    smach.StateMachine.add('VALVE_DETECTION', JointsConfigurationAction(ns='valve_detection'),
+    smach.StateMachine.add('REACH_VIEWPOINT', JointsConfigurationAction(ns='reach_viewpoint'),
+                           transitions={'Completed': 'FETCH_DETECTION',
+                                        'Failure': 'Failure'})
+
+    smach.StateMachine.add('FETCH_DETECTION', DetectionState(ns='valve_detection'),
                            transitions={'Completed': 'HOME_ROBOT',
                                         'Failure': 'Failure'})
 

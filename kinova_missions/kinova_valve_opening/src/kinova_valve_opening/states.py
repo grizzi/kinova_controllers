@@ -67,6 +67,65 @@ class JointsConfigurationAction(RosControlPoseReaching):
             
         return 'Completed'
 
+class DetectionState(BaseStateRos):
+    """
+    TODO
+    """
+
+    def __init__(self, ns, outcomes=['Completed', 'Failure']):
+        BaseStateRos.__init__(self, ns=ns, outcomes=outcomes)
+        self.detection_pose_topic = self.get_scoped_param("detection_topic")
+        self.detection_frame_name = self.get_scoped_param("detection_frame_name")
+        self.detection_pose = None
+        self.detection_sub = rospy.Subscriber(self.detection_pose_topic, PoseStamped, self.pose_callback)
+
+    def pose_callback(self, msg):
+        if not self.detection_pose:
+            self.detection_pose = msg
+
+    def execute(self, ud):
+        rospy.loginfo("Sleeping 2 sec before recording the detection")
+        rospy.sleep(2.0)
+
+        while not self.detection_pose:
+            if ros.is_shutdown():
+                return 'Failure'
+            rospy.loginfo_throttle(1.0, "Waiting for the detection pose on: [{}]".format(self.detection_pose_topic))
+        
+        tf_buffer = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buffer)
+        transform = tf_buffer.lookup_transform(valve_traj_data.base_frame,  # target frame
+                                               self.detection_pose.header.frame_id,  # source frame
+                                               rospy.Time(0),  # tf at first available time
+                                               rospy.Duration(3))
+
+        # B = base frame
+        # D = detection frame
+        # V = valve frame
+        T_BD = tf_to_se3(transform)                                                 
+        T_DV = pose_to_se3(self.detection_pose.pose)
+        T_BV = T_BD.act(T_DV)
+
+        broadcaster = tf2_ros.StaticTransformBroadcaster()
+        valve_pose = TransformStamped()
+
+        valve_pose.header.stamp = rospy.Time.now()
+        valve_pose.header.frame_id = valve_traj_data.base_frame
+        valve_pose.child_frame_id = self.detection_frame_name
+
+        valve_pose.transform.translation.x = T_BV.translation[0]
+        valve_pose.transform.translation.y = T_BV.translation[1]
+        valve_pose.transform.translation.z = T_BV.translation[2]
+        q = R.from_dcm(T_BV.rotation).as_quat()
+        valve_pose.transform.rotation.x = q[0]
+        valve_pose.transform.rotation.y = q[1]
+        valve_pose.transform.rotation.z = q[2]
+        valve_pose.transform.rotation.w = q[3]
+
+        broadcaster.sendTransform(valve_pose)
+        rospy.sleep(1.0)
+        return 'Completed'
+
 
 class HomePose(RosControlPoseReaching):
     """
